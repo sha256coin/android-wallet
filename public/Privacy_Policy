@@ -1,0 +1,105 @@
+Privacy Policy
+Effective Date: November 30, 2025
+Last Updated: January 19, 2026
+Issued by: S256 Team
+Contact: info@sha256coin.eu
+
+We, the creators of the SHA256COIN (S256) Wallet, are committed to protecting your privacy. This Privacy Policy outlines the types of data we collect, how it is used, and your rights regarding that data. By using our app, you agree to the practices described below.
+
+1. Data Collection and Processing
+
+• We do not collect personal information unless you voluntarily provide it.
+• The S256 Wallet operates without requiring account registration.
+• Wallet creation happens locally on your device.
+• We do not store or have access to your recovery phrase or private keys.
+• However, certain data may be automatically collected during app usage:
+    - Device Information: Includes device type, operating system, and app version for troubleshooting and compatibility purposes.
+    - Transaction Data: Public blockchain details such as sending/receiving addresses and transaction amounts (this is inherent to blockchain technology).
+    - Push Notifications: If enabled, we collect your wallet address and device notification token to send transaction alerts.
+
+2. Use of Collected Data
+
+• Automatically collected data is used solely to ensure the wallet functions properly.
+• Wallet addresses and device tokens are used exclusively to deliver push notifications about incoming transactions.
+• We do not track, monitor, or analyze your transactions beyond what is necessary for notifications.
+• We do not use collected data for marketing, advertising, or any other purpose.
+
+3. Age Restrictions and Children's Privacy
+
+• The S256 Wallet is intended for users 18 years of age or older.
+• We do not knowingly collect personal information from anyone under 18.
+• The app is not directed at children or minors and involves financial instruments that require adult supervision.
+• If we become aware that we have inadvertently collected data from a person under 18, we will take steps to delete such information promptly.
+• Parents or guardians who believe their child has provided us with information should contact us immediately.
+
+4. Sharing Data with Third Parties
+
+• We do not share, sell, or rent personal data with third parties for marketing, advertising, or any commercial purpose.
+• Push notifications are delivered via Firebase Cloud Messaging (Google), which processes device tokens as a data processor on our behalf.
+• Firebase operates under Google's privacy policy and security standards.
+• All blockchain transactions are publicly visible on the S256 blockchain. This is inherent to how blockchain technology works and is not controlled by us.
+• We do not track or associate blockchain data with individual users beyond notification delivery.
+
+5. Data Security
+
+• Your privacy and security are our top priorities.
+• Private keys and recovery phrases are generated and stored exclusively on your device using industry-standard encryption.
+• Private keys are never transmitted to us, our servers, or any third party.
+• Notification server data (wallet addresses and device tokens) is encrypted and protected with industry-standard security measures.
+• We implement appropriate technical and organizational measures to protect against unauthorized access, alteration, or destruction of data.
+
+6. Data Retention
+
+• Push Notification Data: Device tokens and associated wallet addresses are retained only while push notifications are enabled.
+• Tokens are automatically deleted when they expire, become invalid, or when you disable notifications in the app.
+• Device Information: Collected only temporarily for app functionality and not permanently stored.
+• We do not retain any other personal data beyond what is necessary for notification delivery.
+• All data is deleted when you uninstall the app.
+
+7. User Rights
+
+• You may disable push notifications at any time in the app settings.
+• Disabling notifications will immediately remove your device token and wallet address from our server.
+• You have the right to access, modify, or request deletion of any data we hold.
+• Since we operate as a non-custodial wallet and do not retain personal data, you may delete the app at any time without leaving any trace of personal information.
+• If you have questions or wish to exercise your privacy rights (including GDPR/CCPA rights where applicable), contact us at info@sha256coin.eu
+
+8. International Data Transfers
+
+• Our push notification server infrastructure may be located in different geographic regions.
+• By using push notifications, you consent to your data (wallet addresses and device tokens) being transferred to and processed in these locations.
+• We ensure that all data transfers comply with applicable data protection laws and use appropriate safeguards.
+
+9. Blockchain Technology Notice
+
+• SHA256COIN operates on a public, decentralized blockchain.
+• All transactions recorded on the blockchain are permanent and publicly visible.
+• This includes transaction amounts, sending addresses, and receiving addresses.
+• We have no control over blockchain data as it is maintained by the decentralized network.
+• Anyone can view blockchain transactions using a block explorer.
+• We do not link blockchain addresses to your identity.
+
+10. Changes to This Privacy Policy
+
+• We may update this Privacy Policy from time to time to reflect legal, technical, or operational changes.
+• When we make changes, we will update the "Last Updated" date at the top of this policy.
+• Significant changes will be communicated to you through the app or via email (if you have provided one).
+• The latest version will always be available within the app and on our website.
+• Continued use of the app after changes constitute acceptance of the updated policy.
+
+11. Your Consent
+
+By using the S256 Wallet, you consent to this Privacy Policy and agree to its terms. If you do not agree with this policy, please do not use the app.
+
+12. Contact Us
+
+If you have any questions, concerns, or requests regarding this Privacy Policy or how we handle your data, please contact us at:
+
+Email: info@sha256coin.eu
+Website: https://sha256coin.eu
+
+We will respond to all inquiries within a reasonable timeframe.
+
+---
+
+This Privacy Policy is provided in good faith to ensure transparency about our data practices. We are committed to protecting your privacy and operating the S256 Wallet in accordance with applicable privacy laws and regulations.
