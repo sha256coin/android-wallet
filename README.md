@@ -36,7 +36,7 @@ flutter run
 flutter build apk
 
 # Build with custom RPC
-flutter build apk --dart-define-from-file=dart_defines.json
+flutter build apk --release --obfuscate --split-debug-info=build/app/outputs/symbols --dart-define-from-file=dart_defines.json
 ```
 
 ## Configuration
