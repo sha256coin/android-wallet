@@ -91,8 +91,7 @@ class _ExchangeViewState extends State<ExchangeView> with TickerProviderStateMix
 
     try {
       final response = await http.get(
-        Uri.parse('https://explorer.sha256coin.eu/ext/getmoneysupply'),
-        headers: {'Accept': 'application/json'},
+        Uri.parse('https://explorer.sha256coin.eu/api/supply'),
       ).timeout(
         const Duration(seconds: 10),
         onTimeout: () {
@@ -102,6 +101,13 @@ class _ExchangeViewState extends State<ExchangeView> with TickerProviderStateMix
 
       if (response.statusCode == 200) {
         final responseBody = response.body.trim();
+        
+        // If it starts with <, it's likely HTML (error page)
+        if (responseBody.startsWith('<')) {
+           debugPrint('Money supply endpoint returned HTML instead of data');
+           return;
+        }
+
         final supply = double.tryParse(responseBody);
         if (supply != null) {
           setState(() {
@@ -114,9 +120,9 @@ class _ExchangeViewState extends State<ExchangeView> with TickerProviderStateMix
               setState(() {
                 _moneySupply = data.toDouble();
               });
-            } else if (data is Map && data.containsKey('moneysupply')) {
+            } else if (data is Map && data.containsKey('circulatingSupply')) {
               setState(() {
-                _moneySupply = double.tryParse(data['moneysupply'].toString());
+                _moneySupply = double.tryParse(data['circulatingSupply'].toString());
               });
             }
           } catch (e) {

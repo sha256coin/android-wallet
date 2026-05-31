@@ -24,6 +24,6 @@ class Config {
   // static const String liveCoinWatchApiKey = '4ec13b1b-7248-4d53-94a2-940017952f82';
   // static const String s256Code = '____S256';
 
-  // Legacy price URL (disabled for S256)
-  // static const String priceUrl = 'https://sha256coin.eu/api/';
+  // S256 explorer price api
+  static const String s256ExplorerUrl = 'https://explorer.sha256coin.eu/api/price';
 }

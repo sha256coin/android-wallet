@@ -60,3 +60,4 @@ build_playstore.sh
 key.properties
 android/key.properties
 android/app/keystore.jks
+android/app/src/main/assets/adi-registration.properties

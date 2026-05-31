@@ -37,49 +37,52 @@ class TransactionTile extends StatelessWidget {
         color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.15),
-            shape: BoxShape.circle,
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 20),
           ),
-          child: Icon(icon, color: color, size: 20),
-        ),
-        title: Row(
-          children: [
-            Text(
-              isReceived ? '+' : '-',
-              style: TextStyle(
-                color: color,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+          title: Row(
+            children: [
+              Text(
+                isReceived ? '+' : '-',
+                style: TextStyle(
+                  color: color,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            Text(
-              amount,
-              style: TextStyle(
-                color: color,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+              Text(
+                amount,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              'S256',
-              style: TextStyle(
-                color: color.withValues(alpha: 0.7),
-                fontSize: 12,
+              const SizedBox(width: 4),
+              Text(
+                'S256',
+                style: TextStyle(
+                  color: color.withValues(alpha: 0.7),
+                  fontSize: 12,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
+          subtitle: Text(
+            formattedDate,
+            style: const TextStyle(color: Colors.white54, fontSize: 12),
+          ),
+          trailing: const Icon(Icons.chevron_right, color: Colors.white38),
+          onTap: onTap,
         ),
-        subtitle: Text(
-          formattedDate,
-          style: const TextStyle(color: Colors.white54, fontSize: 12),
-        ),
-        trailing: const Icon(Icons.chevron_right, color: Colors.white38),
-        onTap: onTap,
       ),
     );
   }

@@ -345,26 +345,29 @@ class _SettingsViewState extends State<SettingsView> {
                           color: Colors.white.withValues(alpha: 0.1),
                         ),
                       ),
-                      child: SwitchListTile(
-                        title: Text(
-                          'Enable $_biometricType',
-                          style: const TextStyle(color: Colors.white),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: SwitchListTile(
+                          title: Text(
+                            'Enable $_biometricType',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          subtitle: Text(
+                            _biometricEnabled
+                                ? 'App requires $_biometricType authentification'
+                                : 'Secure your wallet with $_biometricType',
+                            style: const TextStyle(color: Colors.white54, fontSize: 12),
+                          ),
+                          secondary: Icon(
+                            _biometricType.contains('Face')
+                                ? Icons.face
+                                : Icons.fingerprint,
+                            color: _biometricEnabled ? S256Colors.primary : Colors.white,
+                          ),
+                          value: _biometricEnabled,
+                          onChanged: _toggleBiometric,
+                          activeTrackColor: S256Colors.primary,
                         ),
-                        subtitle: Text(
-                          _biometricEnabled
-                              ? 'App requires $_biometricType authentification'
-                              : 'Secure your wallet with $_biometricType',
-                          style: const TextStyle(color: Colors.white54, fontSize: 12),
-                        ),
-                        secondary: Icon(
-                          _biometricType.contains('Face')
-                              ? Icons.face
-                              : Icons.fingerprint,
-                          color: _biometricEnabled ? S256Colors.primary : Colors.white,
-                        ),
-                        value: _biometricEnabled,
-                        onChanged: _toggleBiometric,
-                        activeTrackColor: S256Colors.primary,
                       ),
                     )
                   else

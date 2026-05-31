@@ -7,7 +7,7 @@ import 'package:s256_wallet/config.dart';
 class BlockchainProvider with ChangeNotifier {
   String _timestamp = '';
   final List<dynamic> _transactions = [];
-  final double _price = 0.0; // Price API disabled, keeping as final constant
+  double _price = 0.0;
   bool _isLoading = false;
   bool _hasMore = true;
   int _startIndex = 0;
@@ -34,22 +34,10 @@ class BlockchainProvider with ChangeNotifier {
   }
 
   Future<void> fetchPrice() async {
-    // Price API disabled - S256 not listed on LiveCoinWatch yet
-    // TODO: Re-enable when S256 gets listed on price tracking services
-    /*
-    const url = Config.liveCoinWatchUrl;
+    const url = Config.s256ExplorerUrl;
     try {
-      final response = await http.post(
+      final response = await http.get(
         Uri.parse(url),
-        headers: {
-          'content-type': 'application/json',
-          'x-api-key': Config.liveCoinWatchApiKey,
-        },
-        body: json.encode({
-          'currency': 'USD',
-          'code': Config.s256Code,
-          'meta': true,
-        }),
       ).timeout(
         const Duration(seconds: 10),
         onTimeout: () {
@@ -59,9 +47,9 @@ class BlockchainProvider with ChangeNotifier {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        // LiveCoinWatch returns the price in 'rate' field
-        if (data['rate'] != null) {
-          _price = (data['rate'] as num).toDouble();
+        if (data['price'] != null) {
+          _price = (data['price'] as num).toDouble();
+          debugPrint('Price updated: $_price');
         } else {
           throw Exception('Price data not available in response');
         }
@@ -75,9 +63,6 @@ class BlockchainProvider with ChangeNotifier {
     } finally {
       notifyListeners();
     }
-    */
-    // Price fetching disabled for S256 - no price API available yet
-    debugPrint('Price fetching disabled - S256 not listed on exchanges yet');
   }
 
   Future<void> fetchTransactions(String? address) async {
