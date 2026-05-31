@@ -120,8 +120,8 @@ class SupportView extends StatelessWidget {
               _buildContactCard(
                 icon: Icons.tag,
                 title: 'X (Twitter)',
-                subtitle: 'Coming Soon',
-                url: '',
+                subtitle: 'Follow S256 coin on X',
+                url: 'https://x.com/s256coin',
                 color: Colors.black,
                 iconColor: Colors.white,
               ),
@@ -144,16 +144,16 @@ class SupportView extends StatelessWidget {
                 icon: Icons.code,
                 title: 'Developers',
                 subtitle: 'View our GitHub repository',
-                url: 'https://github.com/sha256coin/s256-core',
+                url: 'https://github.com/sha256coin',
                 color: const Color(0xFF24292e),
                 iconColor: Colors.white,
               ),
 
               _buildContactCard(
                 icon: Icons.savings,
-                title: 'Mining Pool Stats',
-                subtitle: 'Coming Soon',
-                url: '',
+                title: 'MiningPoolStat.app',
+                subtitle: 'Check S256 mining pools',
+                url: 'https://miningpoolstats.app/coins/S256',
                 color: Colors.green,
               ),
 
