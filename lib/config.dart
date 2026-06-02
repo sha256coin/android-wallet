@@ -1,6 +1,6 @@
 class Config {
   static const String addressPrefix = 's2';
-  static const int networkPrefix = 0x80;
+  static const int networkPrefix = 0xBF;
 
   // RPC Configuration
   // S256 RPC is publicly accessible at https://sha256coin.eu/rpc (no authentication required)
@@ -11,18 +11,9 @@ class Config {
   static const String rpcPassword = String.fromEnvironment('RPC_PASSWORD', defaultValue: '');
 
   // Explorer API Configuration
-  // Explorer running at: https://explorer.sha256coin.eu
-  // Endpoints implemented in server-mongodb.js:
-  //   - /ext/getaddresstxs/:address/:start/:limit
-  //   - /ext/gettx/:txid
   static const String explorerUrl = 'https://explorer.sha256coin.eu';
   static const String getAddressTxsEndpoint = '/ext/getaddresstxs';
   static const String getTxEndpoint = '/ext/gettx';
-
-  // LiveCoinWatch API Configuration (disabled - S256 not listed yet)
-  // static const String liveCoinWatchUrl = 'https://api.livecoinwatch.com/coins/single';
-  // static const String liveCoinWatchApiKey = '4ec13b1b-7248-4d53-94a2-940017952f82';
-  // static const String s256Code = '____S256';
 
   // S256 explorer price api
   static const String s256ExplorerUrl = 'https://explorer.sha256coin.eu/api/price';
