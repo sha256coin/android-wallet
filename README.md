@@ -16,12 +16,14 @@
 
 ## Features
 
-- Create new wallet or recover from private key (WIF)
-- Send and receive S256
-- QR code scanning (supports BIP21 URI format)
-- Transaction history with confirmation tracking
-- Biometric authentication (fingerprint/face)
-- Secure private key storage
+- **BIP39 Seed Phrase Support**: Create or restore wallets using 12 or 24-word recovery phrases.
+- **Cross-Platform Compatibility**: Uses standard derivation path `m/44'/0'/0'/0/0` (same as Web Wallet 2.0).
+- **Advanced Recovery**: Support for raw private key (WIF) recovery and generation.
+- **Send and Receive**: Seamless S256 transfers.
+- **QR Code Scanning**: Supports BIP21 URI format for easy payments.
+- **Transaction Tracking**: Real-time history with smart confirmation tracking.
+- **Biometric Security**: Protect your wallet and recovery phrase with fingerprint or face recognition.
+- **Secure Storage**: Sensitive keys and mnemonics are stored in encrypted secure storage.
 
 ## Quick Start
 

@@ -198,7 +198,7 @@ class _SettingsViewState extends State<SettingsView> {
                       ),
                       SizedBox(height: 8),
                       Text(
-                        '✓ Make sure your private key is safely backed up\n'
+                        '✓ Make sure your recovery phrase or private key is safely backed up\n'
                         '✓ Without it, you CANNOT recover your funds\n'
                         '✓ This action is IRREVERSIBLE',
                         style: TextStyle(color: Colors.red, fontSize: 13),
@@ -237,6 +237,67 @@ class _SettingsViewState extends State<SettingsView> {
         Navigator.pushReplacementNamed(context, '/setup');
       }
     }
+  }
+
+  Future<void> _viewSeedPhrase(WalletProvider wp) async {
+    if (_biometricEnabled) {
+      final authenticated = await _biometricService.authenticate(
+        localizedReason: 'Authenticate to view your seed phrase',
+      );
+      if (!authenticated) return;
+    }
+
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text('Recovery Phrase', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Your recovery phrase is the only way to restore your wallet. Never share it with anyone.',
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: S256Colors.accent.withValues(alpha: 0.3)),
+              ),
+              child: Text(
+                wp.mnemonic ?? 'No mnemonic found',
+                style: const TextStyle(
+                  color: S256Colors.accent,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: wp.mnemonic ?? ''));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Copied to clipboard'), backgroundColor: Colors.green),
+              );
+            },
+            child: const Text('Copy'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -337,61 +398,107 @@ class _SettingsViewState extends State<SettingsView> {
                       ),
                     )
                   else if (_biometricAvailable)
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.1),
-                        ),
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: SwitchListTile(
-                          title: Text(
-                            'Enable $_biometricType',
-                            style: const TextStyle(color: Colors.white),
+                    Column(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.1),
+                            ),
                           ),
-                          subtitle: Text(
-                            _biometricEnabled
-                                ? 'App requires $_biometricType authentification'
-                                : 'Secure your wallet with $_biometricType',
-                            style: const TextStyle(color: Colors.white54, fontSize: 12),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: SwitchListTile(
+                              title: Text(
+                                'Enable $_biometricType',
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                              subtitle: Text(
+                                _biometricEnabled
+                                    ? 'App requires $_biometricType authentification'
+                                    : 'Secure your wallet with $_biometricType',
+                                style: const TextStyle(color: Colors.white54, fontSize: 12),
+                              ),
+                              secondary: Icon(
+                                _biometricType.contains('Face')
+                                    ? Icons.face
+                                    : Icons.fingerprint,
+                                color: _biometricEnabled ? S256Colors.primary : Colors.white,
+                              ),
+                              value: _biometricEnabled,
+                              onChanged: _toggleBiometric,
+                              activeTrackColor: S256Colors.primary,
+                            ),
                           ),
-                          secondary: Icon(
-                            _biometricType.contains('Face')
-                                ? Icons.face
-                                : Icons.fingerprint,
-                            color: _biometricEnabled ? S256Colors.primary : Colors.white,
-                          ),
-                          value: _biometricEnabled,
-                          onChanged: _toggleBiometric,
-                          activeTrackColor: S256Colors.primary,
                         ),
-                      ),
-                    )
-                  else
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.orange.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.info_outline, color: Colors.orange, size: 20),
-                          SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Biometric authentication not available on this device',
-                              style: TextStyle(color: Colors.orange, fontSize: 12),
+                        if (wp.walletType == WalletType.seed) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.1),
+                              ),
+                            ),
+                            child: ListTile(
+                              title: const Text('Recovery Phrase', style: TextStyle(color: Colors.white)),
+                              subtitle: const Text('View your 12/24 word seed phrase', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                              leading: const Icon(Icons.vpn_key, color: S256Colors.secondary),
+                              trailing: const Icon(Icons.chevron_right, color: Colors.white24),
+                              onTap: () => _viewSeedPhrase(wp),
                             ),
                           ),
                         ],
-                      ),
+                      ],
+                    )
+                  else
+                    Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.orange.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Biometric authentication not available on this device',
+                                  style: TextStyle(color: Colors.orange, fontSize: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (wp.walletType == WalletType.seed) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.1),
+                              ),
+                            ),
+                            child: ListTile(
+                              title: const Text('Recovery Phrase', style: TextStyle(color: Colors.white)),
+                              subtitle: const Text('View your 12/24 word seed phrase', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                              leading: const Icon(Icons.vpn_key, color: S256Colors.secondary),
+                              trailing: const Icon(Icons.chevron_right, color: Colors.white24),
+                              onTap: () => _viewSeedPhrase(wp),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
 
                   const SizedBox(height: 30),

@@ -54,6 +54,7 @@ dependencies:
   base_x: ^2.0.1
   fl_chart: ^1.1.1
   url_launcher: ^6.3.0
+  bip39: ^1.0.6
   # flutter_svg: ^2.0.10+1
 
 dev_dependencies:

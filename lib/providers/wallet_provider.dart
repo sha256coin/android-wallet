@@ -3,12 +3,16 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 // import 'package:s256_wallet/config.dart'; // Unused import
 import 'package:s256_wallet/services/wallet_service.dart';
 
+enum WalletType { wif, seed }
+
 class WalletProvider with ChangeNotifier {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   final WalletService _ws = WalletService();
 
   String? _privateKey;
   String? _address;
+  String? _mnemonic;
+  WalletType? _walletType;
   double? _balance = 0.0;
   double? _pendingBalance = 0.0;
   // double? _lastKnownBalance; // Unused - Store balance before sending transaction
@@ -27,6 +31,8 @@ class WalletProvider with ChangeNotifier {
   // Getters
   String? get privateKey => _privateKey;
   String? get address => _address;
+  String? get mnemonic => _mnemonic;
+  WalletType? get walletType => _walletType;
   double? get balance => _balance;
   double? get pendingBalance => _pendingBalance;
   List? get utxos => _utxos;
@@ -65,6 +71,15 @@ class WalletProvider with ChangeNotifier {
       notifyListeners();
 
       _privateKey = await _storage.read(key: 'key');
+      _mnemonic = await _storage.read(key: 'mnemonic');
+      final typeStr = await _storage.read(key: 'wallet_type');
+
+      if (typeStr == 'seed') {
+        _walletType = WalletType.seed;
+      } else if (typeStr == 'wif' || _privateKey != null) {
+        _walletType = WalletType.wif;
+      }
+
       if (_privateKey != null) {
         _address = _ws.loadAddressFromKey(_privateKey!);
         await fetchUtxos(force: true);
@@ -77,16 +92,29 @@ class WalletProvider with ChangeNotifier {
     }
   }
 
-  Future<void> saveWallet(String address, String privateKey) async {
+  Future<void> saveWallet(String address, String privateKey, {String? mnemonic, WalletType type = WalletType.wif}) async {
     _privateKey = privateKey;
     _address = address;
+    _mnemonic = mnemonic;
+    _walletType = type;
+
     await _storage.write(key: 'key', value: privateKey);
+    await _storage.write(key: 'wallet_type', value: type == WalletType.seed ? 'seed' : 'wif');
+
+    if (mnemonic != null) {
+      await _storage.write(key: 'mnemonic', value: mnemonic);
+    } else {
+      await _storage.delete(key: 'mnemonic');
+    }
+
     notifyListeners();
   }
 
   Future<void> deleteWallet() async {
     _privateKey = null;
     _address = null;
+    _mnemonic = null;
+    _walletType = null;
     _balance = 0.0;
     _pendingBalance = 0.0;
     // _lastKnownBalance = null;
@@ -95,6 +123,8 @@ class WalletProvider with ChangeNotifier {
     _pendingTimestamps.clear();
     _pendingTransactions.clear();
     await _storage.delete(key: 'key');
+    await _storage.delete(key: 'mnemonic');
+    await _storage.delete(key: 'wallet_type');
     notifyListeners();
   }
 

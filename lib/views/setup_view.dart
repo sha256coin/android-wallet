@@ -346,81 +346,109 @@ class SetupView extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            const SizedBox(height: 50),
+                          const SizedBox(height: 50),
                           const Text(
-                            'Welcome to Your Future',
+                            'S256 Wallet',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 24,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          const Text(
-                            'Recover Your Wallet',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 2,
                             ),
                           ),
                           const SizedBox(height: 10),
                           const Text(
-                            'Enter your private key to recover your wallet. Ensure that the key is correct to access your previous assets and data securely.',
+                            'Secure. Private. Fast.',
+                            style: TextStyle(
+                              color: S256Colors.accent,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 60),
+                          
+                          // Seed Phrase Section
+                          const Text(
+                            'Seed Phrase (Recommended)',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          const Text(
+                            'Create a new wallet with a recovery phrase or restore an existing one.',
                             style: TextStyle(color: Colors.white54),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 20),
-                          TextField(
-                            controller: _recoverController,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              hintText: 'Enter your private key',
-                              hintStyle: const TextStyle(color: Colors.white54),
-                              filled: true,
-                              fillColor: Colors.transparent,
-                              enabledBorder: OutlineInputBorder(
-                                borderSide:
-                                    const BorderSide(color: Colors.white),
-                                borderRadius: BorderRadius.circular(8.0),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderSide:
-                                    const BorderSide(color: Colors.white),
-                                borderRadius: BorderRadius.circular(8.0),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
                           ButtonWidget(
-                            text: 'Recover',
+                            text: 'Create New Seed',
                             isPrimary: true,
-                            onPressed: () => _recoverWallet(context),
+                            onPressed: () => Navigator.pushNamed(context, '/seed-setup'),
                           ),
+                          const SizedBox(height: 12),
+                          ButtonWidget(
+                            text: 'Restore from Seed',
+                            isPrimary: false,
+                            onPressed: () => Navigator.pushNamed(context, '/seed-restore'),
+                          ),
+                          
                           const SizedBox(height: 40),
-                          const Divider(color: Colors.white),
-                          const SizedBox(height: 20),
-                          const Text(
-                            'Generate a New Wallet',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
+                          
+                          // Advanced Section
+                          ExpansionTile(
+                            title: const Text(
+                              'Advanced Options (WIF)',
+                              style: TextStyle(color: Colors.white70, fontSize: 14),
                             ),
+                            iconColor: Colors.white70,
+                            collapsedIconColor: Colors.white70,
+                            children: [
+                              const SizedBox(height: 10),
+                              const Text(
+                                'Use a raw private key (WIF) to manage your wallet.',
+                                style: TextStyle(color: Colors.white54, fontSize: 12),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 20),
+                              TextField(
+                                controller: _recoverController,
+                                style: const TextStyle(color: Colors.white),
+                                decoration: InputDecoration(
+                                  hintText: 'Enter your private key (WIF)',
+                                  hintStyle: const TextStyle(color: Colors.white54),
+                                  filled: true,
+                                  fillColor: Colors.white.withValues(alpha: 0.05),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderSide: const BorderSide(color: Colors.white24),
+                                    borderRadius: BorderRadius.circular(8.0),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderSide: const BorderSide(color: S256Colors.accent),
+                                    borderRadius: BorderRadius.circular(8.0),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              ButtonWidget(
+                                text: 'Recover with WIF',
+                                isPrimary: true,
+                                onPressed: () => _recoverWallet(context),
+                              ),
+                              const SizedBox(height: 12),
+                              ButtonWidget(
+                                text: 'Generate New WIF',
+                                isPrimary: false,
+                                onPressed: () => _generateWallet(context),
+                              ),
+                              const SizedBox(height: 20),
+                            ],
                           ),
-                          const SizedBox(height: 10),
+                          const Spacer(),
                           const Text(
-                            'Create a new wallet to securely store your assets. A new private key will be generated which you should keep safe and secure.',
-                            style: TextStyle(color: Colors.white54),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 20),
-                          ButtonWidget(
-                            text: 'Generate',
-                            isPrimary: true,
-                            onPressed: () => _generateWallet(context),
-                          ),
-                          const SizedBox(height: 20),
-                          const Text(
-                            'Note: Always keep your private key secure. Losing it means losing access to your wallet and assets.',
-                            style: TextStyle(color: Colors.white54),
+                            'Note: Always keep your recovery phrase and private keys secure. Anyone with these can access your funds.',
+                            style: TextStyle(color: Colors.white54, fontSize: 12),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 20),

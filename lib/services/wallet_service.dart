@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:pointycastle/digests/ripemd160.dart';
 import 'package:bip32/bip32.dart' as bip32;
+import 'package:bip39/bip39.dart' as bip39;
 import 'package:crypto/crypto.dart';
 import 'package:bech32/bech32.dart';
 import 'package:base_x/base_x.dart';
@@ -15,11 +16,36 @@ class WalletService {
       BaseXCodec('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz');
   final RpcConfigService _rpcConfig = RpcConfigService();
 
+  // Mnemonic generation (strength: 128 for 12 words, 256 for 24 words)
+  String generateMnemonic({int strength = 128}) {
+    return bip39.generateMnemonic(strength: strength);
+  }
+
+  // Check if mnemonic is valid
+  bool validateMnemonic(String mnemonic) {
+    return bip39.validateMnemonic(mnemonic);
+  }
+
+  // Derive private key from mnemonic
+  Uint8List derivePrivateKeyFromMnemonic(String mnemonic) {
+    final seed = bip39.mnemonicToSeed(mnemonic);
+    final root = bip32.BIP32.fromSeed(seed);
+    // Standard Bitcoin-style path: m/44'/0'/0'/0/0
+    final child = root.derivePath("m/44'/0'/0'/0/0");
+    return child.privateKey!;
+  }
+
+  // Get WIF from private key
+  String getWifFromPrivateKey(Uint8List privateKey) {
+    return _privateKeyToWif(privateKey);
+  }
+
   String? generatePrivateKey() {
     String? key;
     final seed = List<int>.generate(32, (i) => Random.secure().nextInt(256));
     final root = bip32.BIP32.fromSeed(Uint8List.fromList(seed));
-    final child = root.derivePath('m/0/0');
+    // Updating to standard path as per plan
+    final child = root.derivePath("m/44'/0'/0'/0/0");
     key = _privateKeyToWif(child.privateKey!);
     return key;
   }

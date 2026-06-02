@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:s256_wallet/providers/wallet_provider.dart';
 import 'package:s256_wallet/providers/blockchain_provider.dart';
 import 'package:s256_wallet/views/setup_view.dart';
+import 'package:s256_wallet/views/seed_setup_view.dart';
 import 'package:s256_wallet/views/biometric_gate.dart';
 import 'package:s256_wallet/services/rpc_config_service.dart';
 
@@ -243,6 +244,8 @@ class MyApp extends StatelessWidget {
       initialRoute: initialRoute,
       routes: {
         '/setup': (context) => SetupView(),
+        '/seed-setup': (context) => const SeedSetupView(),
+        '/seed-restore': (context) => const SeedSetupView(isRestore: true),
         '/home': (context) => const BiometricGate(),
       },
 
