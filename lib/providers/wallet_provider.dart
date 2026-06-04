@@ -36,8 +36,29 @@ class WalletProvider with ChangeNotifier {
   List<Map<String, dynamic>>? _lastUtxos;
 
   String? get lastError => _lastError;
-  bool get hasPendingTransactions => _pendingTransactions.isNotEmpty || (_wallet?.isPending ?? false);
-  int get pendingTransactionsCount => _pendingTransactions.length;
+  bool get hasPendingTransactions => pendingTransactionsCount > 0;
+  
+  int get pendingTransactionsCount {
+    // 1. Get unique TXIDs from the actual network mempool (via _lastUtxos)
+    final mempoolTxids = _lastUtxos
+            ?.where((u) => u['confirmations'] == 0 && u['txid'] != 'pending_marker')
+            .map((u) => u['txid'] as String)
+            .toSet() ??
+        {};
+
+    // 2. Get TXIDs from our local optimistic tracking
+    final localTxids = _pendingTransactions.keys.toSet();
+
+    // 3. The total count is the union of both (to avoid double counting)
+    int count = mempoolTxids.union(localTxids).length;
+
+    // 4. If the mempool has activity but no specific TXIDs are found yet (force-yellow logic), count it as 1
+    if (count == 0 && (_lastUtxos?.any((u) => u['txid'] == 'pending_marker') ?? false)) {
+      count = 1;
+    }
+
+    return count;
+  }
 
   // Display balance - shows actual spendable balance considering consumed UTXOs
   double? get displayBalance {
