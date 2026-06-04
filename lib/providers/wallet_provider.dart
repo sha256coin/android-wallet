@@ -1,54 +1,53 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-// import 'package:s256_wallet/config.dart'; // Unused import
+import 'package:s256_wallet/models/wallet_model.dart';
 import 'package:s256_wallet/services/wallet_service.dart';
-
-enum WalletType { wif, seed }
+import 'package:s256_wallet/services/rpc_config_service.dart';
 
 class WalletProvider with ChangeNotifier {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   final WalletService _ws = WalletService();
+  final RpcConfigService _rpcConfig = RpcConfigService();
 
-  String? _privateKey;
-  String? _address;
-  String? _mnemonic;
-  WalletType? _walletType;
-  double? _balance = 0.0;
-  double? _pendingBalance = 0.0;
-  // double? _lastKnownBalance; // Unused - Store balance before sending transaction
-  List _utxos = [];
+  WalletModel? _wallet;
   bool _isLoading = false;
   String? _lastError;
   DateTime? _lastFetch;
   bool _isCurrentlySending = false;
   DateTime? _lastSendAttempt;
 
-  // Pending transaction tracking
+  // Pending transaction tracking (kept for UI compatibility)
   final Set<String> _pendingTxids = {};
   final Map<String, DateTime> _pendingTimestamps = {};
   final Map<String, PendingTransaction> _pendingTransactions = {};
 
   // Getters
-  String? get privateKey => _privateKey;
-  String? get address => _address;
-  String? get mnemonic => _mnemonic;
-  WalletType? get walletType => _walletType;
-  double? get balance => _balance;
-  double? get pendingBalance => _pendingBalance;
-  List? get utxos => _utxos;
+  WalletModel? get wallet => _wallet;
+  String? get privateKey => _wallet?.privateKey;
+  String? get address => _wallet?.address;
+  String? get mnemonic => _wallet?.mnemonic;
+  WalletType? get walletType => _wallet?.type;
+  double? get balance => _wallet?.balance;
+  double? get unconfirmedBalance => _wallet?.unconfirmedBalance;
+  List<Map<String, dynamic>>? get utxos => _lastUtxos;
   bool get isLoading => _isLoading;
+
+  List<Map<String, dynamic>>? _lastUtxos;
+
   String? get lastError => _lastError;
-  bool get hasPendingTransactions => _pendingTransactions.isNotEmpty;
+  bool get hasPendingTransactions => _pendingTransactions.isNotEmpty || (_wallet?.isPending ?? false);
   int get pendingTransactionsCount => _pendingTransactions.length;
 
   // Display balance - shows actual spendable balance considering consumed UTXOs
   double? get displayBalance {
+    if (_wallet == null) return 0.0;
     if (_pendingTransactions.isEmpty) {
-      return _balance;
+      return _wallet!.balance + _wallet!.unconfirmedBalance;
     }
 
-    // Start with confirmed balance from available UTXOs
-    double spendableBalance = _balance ?? 0.0;
+    // Start with confirmed balance
+    double spendableBalance = _wallet!.balance;
 
     // Add expected change from pending transactions back to the wallet
     for (final tx in _pendingTransactions.values) {
@@ -70,19 +69,28 @@ class WalletProvider with ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      _privateKey = await _storage.read(key: 'key');
-      _mnemonic = await _storage.read(key: 'mnemonic');
+      final privateKey = await _storage.read(key: 'key');
+      final mnemonic = await _storage.read(key: 'mnemonic');
       final typeStr = await _storage.read(key: 'wallet_type');
 
+      WalletType type = WalletType.wif;
       if (typeStr == 'seed') {
-        _walletType = WalletType.seed;
-      } else if (typeStr == 'wif' || _privateKey != null) {
-        _walletType = WalletType.wif;
+        type = WalletType.seed;
+      } else if (typeStr == 'wif' || privateKey != null) {
+        type = WalletType.wif;
       }
 
-      if (_privateKey != null) {
-        _address = _ws.loadAddressFromKey(_privateKey!);
-        await fetchUtxos(force: true);
+      if (privateKey != null) {
+        final address = _ws.loadAddressFromKey(privateKey);
+        if (address != null) {
+          _wallet = WalletModel(
+            address: address,
+            privateKey: privateKey,
+            mnemonic: mnemonic,
+            type: type,
+          );
+          await fetchUtxos(force: true);
+        }
       }
     } catch (e) {
       _lastError = 'Failed to load wallet: $e';
@@ -92,14 +100,18 @@ class WalletProvider with ChangeNotifier {
     }
   }
 
-  Future<void> saveWallet(String address, String privateKey, {String? mnemonic, WalletType type = WalletType.wif}) async {
-    _privateKey = privateKey;
-    _address = address;
-    _mnemonic = mnemonic;
-    _walletType = type;
+  Future<void> saveWallet(String address, String privateKey,
+      {String? mnemonic, WalletType type = WalletType.wif}) async {
+    _wallet = WalletModel(
+      address: address,
+      privateKey: privateKey,
+      mnemonic: mnemonic,
+      type: type,
+    );
 
     await _storage.write(key: 'key', value: privateKey);
-    await _storage.write(key: 'wallet_type', value: type == WalletType.seed ? 'seed' : 'wif');
+    await _storage.write(
+        key: 'wallet_type', value: type == WalletType.seed ? 'seed' : 'wif');
 
     if (mnemonic != null) {
       await _storage.write(key: 'mnemonic', value: mnemonic);
@@ -107,18 +119,12 @@ class WalletProvider with ChangeNotifier {
       await _storage.delete(key: 'mnemonic');
     }
 
+    await fetchUtxos(force: true);
     notifyListeners();
   }
 
   Future<void> deleteWallet() async {
-    _privateKey = null;
-    _address = null;
-    _mnemonic = null;
-    _walletType = null;
-    _balance = 0.0;
-    _pendingBalance = 0.0;
-    // _lastKnownBalance = null;
-    _utxos = [];
+    _wallet = null;
     _pendingTxids.clear();
     _pendingTimestamps.clear();
     _pendingTransactions.clear();
@@ -128,13 +134,12 @@ class WalletProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Clean up old pending transactions (30 minutes timeout)
   void _cleanupPendingTransactions() {
     final now = DateTime.now();
     final toRemove = <String>[];
 
     _pendingTimestamps.forEach((txid, timestamp) {
-      if (now.difference(timestamp).inMinutes > 30) {
+      if (now.difference(timestamp).inMinutes > 60) {
         toRemove.add(txid);
       }
     });
@@ -144,22 +149,10 @@ class WalletProvider with ChangeNotifier {
       _pendingTimestamps.remove(txid);
       _pendingTransactions.remove(txid);
     }
-
-    // Notify listeners if any pending transactions were removed
-    if (toRemove.isNotEmpty) {
-      notifyListeners();
-    }
   }
 
-
   Future<void> fetchUtxos({bool force = false, bool silent = false}) async {
-    if (_address == null) {
-      _balance = 0.0;
-      _pendingBalance = 0.0;
-      _utxos = [];
-      notifyListeners();
-      return;
-    }
+    if (_wallet == null) return;
 
     // Rate limiting
     if (!force && _lastFetch != null) {
@@ -177,147 +170,54 @@ class WalletProvider with ChangeNotifier {
 
       _cleanupPendingTransactions();
 
-      // Scan for UTXOs
-      final result = await _ws.rpcRequest('scantxoutset', [
-        'start',
-        [{'desc': 'addr($_address)'}]
-      ]);
+      final rpcUrl = await _rpcConfig.getRpcUrl();
+      final rpcUser = await _rpcConfig.getRpcUser();
+      final rpcPassword = await _rpcConfig.getRpcPassword();
 
-      if (result == null || result['result'] == null) {
-        // Keep pending balance if we have pending transactions
-        if (_pendingTransactions.isEmpty) {
-          _balance = 0.0;
-          _pendingBalance = 0.0;
-          _utxos = [];
-        }
-        notifyListeners();
-        return;
-      }
+      final utxos = await _ws.getUtxos(rpcUrl, rpcUser, rpcPassword, _wallet!.address);
+      _lastUtxos = utxos;
+      
+      final balance = _ws.calculateBalance(utxos);
+      final unconfirmed = _ws.calculateUnconfirmedBalance(utxos);
+      final hasMempoolActivity = utxos.any((u) => u['confirmations'] == 0);
 
-      final utxos = result['result']['unspents'] as List<dynamic>? ?? [];
+      // Check if any of our locally tracked pending transactions are now confirmed
+      // (If they are not in the mempool anymore and not in the UTXO list with 0 confirmations)
+      final mempoolTxidsInUtxos = utxos
+          .where((u) => u['confirmations'] == 0 && u['txid'] != 'pending_marker')
+          .map((u) => u['txid'] as String)
+          .toSet();
 
-      if (utxos.isEmpty) {
-        _balance = 0.0;
-        _utxos = [];
-        notifyListeners();
-        return;
-      }
-
-      // Get blockchain height
-      final blockchainInfo = await _ws.rpcRequest('getblockchaininfo');
-      final currentHeight = blockchainInfo?['result']?['blocks'] ?? 0;
-
-      if (currentHeight == 0) {
-        _lastError = 'Could not get blockchain info';
-        notifyListeners();
-        return;
-      }
-
-      // Get mempool transactions
-      final mempoolResult = await _ws.rpcRequest('getrawmempool', [false]);
-      final mempoolTxIds = mempoolResult?['result'] as List<dynamic>? ?? [];
-      final lockedUtxos = <String>{};
-
-      // Batch check mempool transactions (process in chunks to avoid huge requests)
-      const batchSize = 20;
-      for (int i = 0; i < mempoolTxIds.length; i += batchSize) {
-        final chunk = mempoolTxIds.skip(i).take(batchSize).toList();
-
-        try {
-          // Build batch request for getrawtransaction
-          final batchRequests = chunk.map((txid) => {
-            'method': 'getrawtransaction',
-            'params': [txid, true],
-          }).toList();
-
-          final batchResults = await _ws.batchRpcRequest(batchRequests);
-
-          // Process batch results
-          for (final tx in batchResults) {
-            if (tx != null && tx['result'] != null) {
-              final vinList = tx['result']['vin'] as List<dynamic>? ?? [];
-              for (final vin in vinList) {
-                lockedUtxos.add('${vin['txid']}:${vin['vout']}');
-              }
-            }
-          }
-        } catch (e) {
-          // Continue with next batch
-        }
-      }
-
-      // Also lock UTXOs consumed by our pending transactions
-      for (final pendingTx in _pendingTransactions.values) {
-        for (final utxo in pendingTx.consumedUtxos) {
-          lockedUtxos.add('${utxo['txid']}:${utxo['vout']}');
-        }
-      }
-
-      // Check if pending transactions are confirmed (batch request)
       final confirmedTxs = <String>[];
-      if (_pendingTxids.isNotEmpty) {
-        try {
-          final batchRequests = _pendingTxids.map((txid) => {
-            'method': 'getrawtransaction',
-            'params': [txid, true],
-          }).toList();
-
-          final batchResults = await _ws.batchRpcRequest(batchRequests);
-
-          for (int i = 0; i < batchResults.length; i++) {
-            final tx = batchResults[i];
-            final pendingTxid = _pendingTxids.elementAt(i);
-
-            if (tx != null && tx['result'] != null) {
-              if (tx['result']['confirmations'] != null && tx['result']['confirmations'] > 0) {
-                confirmedTxs.add(pendingTxid);
-              } else {
-                // Still pending - lock its inputs
-                final vinList = tx['result']['vin'] as List<dynamic>? ?? [];
-                for (final vin in vinList) {
-                  lockedUtxos.add('${vin['txid']}:${vin['vout']}');
-                }
-              }
-            }
-          }
-        } catch (e) {
-          // Transactions might not be in mempool yet
+      for (final txid in _pendingTxids) {
+        // If it's not in mempool (via getUtxos logic), it might be confirmed or dropped
+        // We'll check if it's in the confirmed UTXOs as well (not perfect but good enough)
+        bool inConfirmedUtxos = utxos.any((u) => u['txid'] == txid && u['confirmations'] > 0);
+        bool inMempool = mempoolTxidsInUtxos.contains(txid);
+        
+        if (inConfirmedUtxos) {
+          confirmedTxs.add(txid);
+        } else if (!inMempool) {
+          // If it's not in mempool and not in confirmed UTXOs, it might be confirmed in a way
+          // that doesn't create a UTXO for us (e.g. sweep to someone else), or still pending.
+          // For now, let's keep it until it's actually seen as confirmed or timed out.
         }
       }
 
-      // Remove confirmed transactions
       for (final txid in confirmedTxs) {
         _pendingTxids.remove(txid);
         _pendingTimestamps.remove(txid);
         _pendingTransactions.remove(txid);
       }
 
-      // Filter available UTXOs
-      final availableUtxos = <Map<String, dynamic>>[];
-      double totalBalance = 0.0;
+      _wallet = _wallet!.copyWith(
+        balance: balance,
+        unconfirmedBalance: unconfirmed,
+        isPending: hasMempoolActivity,
+      );
 
-      for (final utxo in utxos) {
-        final utxoId = '${utxo['txid']}:${utxo['vout']}';
-
-        int confirmations = 0;
-        if (utxo['height'] != null && utxo['height'] > 0) {
-          confirmations = currentHeight - utxo['height'] + 1;
-        }
-
-        // Only use confirmed UTXOs that are not locked
-        if (confirmations > 0 && !lockedUtxos.contains(utxoId)) {
-          availableUtxos.add({
-            ...utxo,
-            'confirmations': confirmations,
-          });
-          totalBalance += (utxo['amount'] as num).toDouble();
-        }
-      }
-
-      _utxos = availableUtxos;
-      _balance = totalBalance;
       _lastFetch = DateTime.now();
-
+      _lastError = null;
     } catch (e) {
       _lastError = 'Failed to fetch UTXOs: $e';
     } finally {
@@ -328,126 +228,19 @@ class WalletProvider with ChangeNotifier {
     }
   }
 
-  Future<Map<String, dynamic>> createTransaction(
-      String address,
-      double? amount, {
-        double? feeRateOverride,
-      }) async {
-
-    if (amount == null || amount <= 0) {
-      return {
-        'success': false,
-        'message': 'Invalid amount',
-      };
-    }
-
-    // Fetch fresh UTXOs
-    await fetchUtxos(force: true);
-
-    if (_utxos.isEmpty) {
-      return {
-        'success': false,
-        'message': 'No confirmed UTXOs available. Please wait for confirmations.',
-      };
-    }
-
-    // Sort UTXOs by amount (largest first)
-    _utxos.sort((a, b) => (b['amount'] as num).toDouble().compareTo((a['amount'] as num).toDouble()));
-
-    // Get fee rate
-    double feeRate = feeRateOverride ?? 0.00001;
-    if (feeRateOverride == null) {
-      try {
-        final feeResult = await _ws.rpcRequest('estimatesmartfee', [6]);
-        feeRate = feeResult?['result']?['feerate'] ?? 0.00001;
-        if (feeRate <= 0) feeRate = 0.00001;
-      } catch (e) {
-        feeRate = 0.00001;
-      }
-    }
-
-    List<Map<String, dynamic>> selectedUtxos = [];
-    double inputSum = 0.0;
-
-    // Select UTXOs
-    for (var utxo in _utxos) {
-      selectedUtxos.add({
-        'txid': utxo['txid'],
-        'vout': utxo['vout'],
-      });
-
-      inputSum += (utxo['amount'] as num).toDouble();
-
-      // Calculate transaction size and fee
-      final inputCount = selectedUtxos.length;
-      final outputCount = 2; // Assume change output
-      final txSize = 10 + (inputCount * 148) + (outputCount * 34);
-      final fee = (feeRate * txSize / 1000);
-
-      if (inputSum >= amount + fee) {
-        final actualFee = double.parse(fee.toStringAsFixed(8));
-        final change = double.parse((inputSum - amount - actualFee).toStringAsFixed(8));
-
-        final outputs = <String, dynamic>{
-          address: double.parse(amount.toStringAsFixed(8)),
-        };
-
-        // Add change output if above dust threshold
-        if (change > 0.00000546) {
-          outputs[_address!] = change;
-        }
-
-        final createRawResult = await _ws.rpcRequest('createrawtransaction', [selectedUtxos, outputs]);
-
-        if (createRawResult == null || createRawResult['result'] == null) {
-          return {
-            'success': false,
-            'message': 'Failed to create raw transaction',
-          };
-        }
-
-        return {
-          'success': true,
-          'result': createRawResult['result'],
-          'fee': actualFee,
-          'toAddress': address,
-          'consumedUtxos': selectedUtxos.map((utxo) {
-            // Find the full UTXO data for tracking
-            final fullUtxo = _utxos.firstWhere(
-              (u) => u['txid'] == utxo['txid'] && u['vout'] == utxo['vout'],
-              orElse: () => {'amount': 0.0},
-            );
-            return {
-              'txid': utxo['txid'],
-              'vout': utxo['vout'],
-              'amount': (fullUtxo['amount'] as num?)?.toDouble() ?? 0.0,
-            };
-          }).toList(),
-          'changeAmount': change,
-        };
-      }
-    }
-
-    return {
-      'success': false,
-      'message': 'Insufficient funds. Available: ${inputSum.toStringAsFixed(8)} S256',
-    };
-  }
-
   Future<Map<String, dynamic>> sendTransaction(
       String address,
       double amount,
       {double? feeRate}
       ) async {
 
-    if (_privateKey == null || _address == null) {
+    if (_wallet == null) {
       return {
         'success': false,
         'message': 'Wallet not initialized'
       };
     }
 
-    // Prevent multiple simultaneous sends
     if (_isCurrentlySending) {
       return {
         'success': false,
@@ -455,7 +248,6 @@ class WalletProvider with ChangeNotifier {
       };
     }
 
-    // Prevent rapid-fire sends (minimum 3 seconds between attempts)
     if (_lastSendAttempt != null) {
       final timeSinceLastSend = DateTime.now().difference(_lastSendAttempt!);
       if (timeSinceLastSend.inSeconds < 3) {
@@ -468,100 +260,54 @@ class WalletProvider with ChangeNotifier {
 
     _isCurrentlySending = true;
     _lastSendAttempt = DateTime.now();
-
-    // Store balance before sending
-    // _lastKnownBalance = _balance;
-
-    // Create transaction
-    final createResult = await createTransaction(
-        address,
-        amount,
-        feeRateOverride: feeRate
-    );
-
-    if (!createResult['success']) {
-      _isCurrentlySending = false;
-      return createResult;
-    }
+    notifyListeners();
 
     try {
-      final rawTx = createResult['result'];
+      final rpcUrl = await _rpcConfig.getRpcUrl();
+      final rpcUser = await _rpcConfig.getRpcUser();
+      final rpcPassword = await _rpcConfig.getRpcPassword();
 
-      // Sign transaction
-      final signResult = await _ws.rpcRequest('signrawtransactionwithkey', [
-        rawTx,
-        [_privateKey]
-      ]);
+      // We need to estimate change for our optimistic display balance
+      // We'll call the service logic to create the transaction but we'll use its internal steps
+      
+      final result = await _ws.sendTransaction(
+        rpcUrl,
+        rpcUser,
+        rpcPassword,
+        _wallet!.privateKey,
+        _wallet!.address,
+        address,
+        amount,
+        feeRate: feeRate,
+      );
 
-      if (signResult == null || signResult['result'] == null) {
-        return {
-          'success': false,
-          'message': 'Failed to sign transaction'
-        };
-      }
+      if (result['success']) {
+        final txid = result['txid'] as String;
+        final fee = result['fee'] as double;
+        final change = result['change'] as double? ?? 0.0;
 
-      if (!signResult['result']['complete']) {
-        return {
-          'success': false,
-          'message': 'Transaction signature incomplete'
-        };
-      }
-
-      final signedTx = signResult['result']['hex'];
-
-      // Send transaction
-      final sendResult = await _ws.rpcRequest('sendrawtransaction', [signedTx, 0]);
-
-      if (sendResult != null && sendResult['result'] != null) {
-        final txid = sendResult['result'];
-
-        // Track pending transaction with consumed UTXOs
         _pendingTxids.add(txid);
         _pendingTimestamps[txid] = DateTime.now();
         _pendingTransactions[txid] = PendingTransaction(
           txid: txid,
           amount: amount,
-          fee: createResult['fee'],
+          fee: fee,
           toAddress: address,
           timestamp: DateTime.now(),
-          consumedUtxos: List<Map<String, dynamic>>.from(createResult['consumedUtxos'] ?? []),
-          changeAmount: createResult['changeAmount'] ?? 0.0,
+          changeAmount: change,
         );
 
-        // Notify listeners to update UI with new pending state
-        notifyListeners();
-
-        // Start smart confirmation checking
         _startSmartConfirmationChecking(txid);
-
+        await fetchUtxos(force: true, silent: true);
+        
         return {
           'success': true,
           'txid': txid,
-          'message': 'Transaction sent successfully',
-          'fee': createResult['fee'],
+          'fee': fee,
         };
+      } else {
+        return result;
       }
-
-      // Handle error
-      final errorMessage = sendResult?['error']?['message'] ?? 'Unknown error';
-
-      // Check for fee errors
-      final feeRateMatch = RegExp(r'new feerate ([\d.]+) S256/kvB').firstMatch(errorMessage);
-      if (feeRateMatch != null) {
-        final suggestedFeeRate = double.parse(feeRateMatch.group(1)!);
-        return {
-          'success': false,
-          'message': 'Fee too low',
-          'suggestedFeeRate': suggestedFeeRate,
-          'currentFeeRate': feeRate ?? 0.00001,
-        };
-      }
-
-      return {
-        'success': false,
-        'message': errorMessage,
-      };
-
     } catch (e) {
       return {
         'success': false,
@@ -569,59 +315,168 @@ class WalletProvider with ChangeNotifier {
       };
     } finally {
       _isCurrentlySending = false;
+      notifyListeners();
     }
   }
 
-  // Smart confirmation checking with exponential backoff
   void _startSmartConfirmationChecking(String txid) async {
-    // Initial checks: 5s, 10s, 20s, 40s, 1m20s, 2m40s, 5m, 10m
     final checkIntervals = [5, 10, 20, 40, 80, 160, 300, 600];
 
     for (int i = 0; i < checkIntervals.length; i++) {
       if (!_pendingTxids.contains(txid)) break;
-
       await Future.delayed(Duration(seconds: checkIntervals[i]));
-
       if (_pendingTxids.contains(txid)) {
         await fetchUtxos(force: true, silent: true);
       }
-    }
-
-    // Then check every 5 minutes for up to 2 hours
-    int additionalChecks = 0;
-    while (additionalChecks < 24 && _pendingTxids.contains(txid)) {
-      await Future.delayed(const Duration(minutes: 5));
-
-      if (_pendingTxids.contains(txid)) {
-        await fetchUtxos(force: true, silent: true);
-      }
-      additionalChecks++;
-    }
-
-    // Clean up after 2 hours
-    if (_pendingTxids.contains(txid)) {
-      _pendingTxids.remove(txid);
-      _pendingTimestamps.remove(txid);
-      _pendingTransactions.remove(txid);
-      await fetchUtxos(force: true);
     }
   }
 
-  // Helper method to refresh balance
   Future<void> refreshBalance() async {
     await fetchUtxos(force: true);
   }
+
+  Future<void> loadWifWallet(String wif) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final address = _ws.loadAddressFromKey(wif);
+      if (address == null) {
+        _lastError = 'Invalid WIF Private Key';
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+
+      await saveWallet(address, wif, type: WalletType.wif);
+    } catch (e) {
+      _lastError = e.toString();
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadSeedWallet(String mnemonic) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final walletData = await _ws.getWalletFromMnemonic(mnemonic);
+      if (walletData == null) {
+        _lastError = 'Invalid Seed Phrase';
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+
+      await saveWallet(walletData['address']!, walletData['privateKey']!,
+          mnemonic: mnemonic, type: WalletType.seed);
+    } catch (e) {
+      _lastError = e.toString();
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> generateNewWifWallet() async {
+    _isLoading = true;
+    notifyListeners();
+
+    final walletData = _ws.generateNewWallet();
+    await saveWallet(walletData['address']!, walletData['privateKey']!,
+        type: WalletType.wif);
+  }
+
+  Future<void> generateNewSeedWallet({int words = 12}) async {
+    _isLoading = true;
+    notifyListeners();
+
+    final walletData = await _ws.generateNewSeedWallet(words: words);
+    await saveWallet(walletData['address']!, walletData['privateKey']!,
+        mnemonic: walletData['mnemonic'], type: WalletType.seed);
+  }
+
+  Future<Map<String, dynamic>?> getNetworkInfo() async {
+    final rpcUrl = await _rpcConfig.getRpcUrl();
+    final rpcUser = await _rpcConfig.getRpcUser();
+    final rpcPassword = await _rpcConfig.getRpcPassword();
+    return await _ws.getNetworkInfo(rpcUrl, rpcUser, rpcPassword);
+  }
+
+  // New function from web-wallet: Migrate from WIF to Seed
+  Future<bool> migrateToSeed({int words = 12, bool skipSweep = false}) async {
+    if (_wallet == null || _wallet!.type != WalletType.wif) return false;
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final oldWif = _wallet!.privateKey;
+      final oldAddress = _wallet!.address;
+
+      await refreshBalance();
+      final currentBalance = _wallet!.balance;
+      
+      final walletData = await _ws.generateNewSeedWallet(words: words);
+      final mnemonic = walletData['mnemonic']!;
+      final newAddress = walletData['address']!;
+      final newWif = walletData['privateKey']!;
+
+      if (currentBalance > 0.00001 && !skipSweep) {
+        final rpcUrl = await _rpcConfig.getRpcUrl();
+        final rpcUser = await _rpcConfig.getRpcUser();
+        final rpcPassword = await _rpcConfig.getRpcPassword();
+
+        final result = await _ws.sendTransaction(
+          rpcUrl,
+          rpcUser,
+          rpcPassword,
+          oldWif,
+          oldAddress,
+          newAddress,
+          currentBalance,
+        );
+
+        if (!result['success']) {
+          _lastError = 'Migration failed: ${result['message']}';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+        
+        _pendingTxids.add(result['txid'] as String);
+        _pendingTimestamps[result['txid'] as String] = DateTime.now();
+        _pendingTransactions[result['txid'] as String] = PendingTransaction(
+          txid: result['txid'] as String,
+          amount: currentBalance,
+          fee: result['fee'] ?? 0.0,
+          toAddress: newAddress,
+          timestamp: DateTime.now(),
+          changeAmount: 0.0,
+        );
+      }
+
+      await saveWallet(newAddress, newWif, mnemonic: mnemonic, type: WalletType.seed);
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _lastError = 'Migration error: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
 }
 
-// Pending transaction model
 class PendingTransaction {
   final String txid;
   final double amount;
   final double fee;
   final String toAddress;
   final DateTime timestamp;
-  final List<Map<String, dynamic>> consumedUtxos; // UTXOs used as inputs
-  final double changeAmount; // Expected change back to wallet
+  final double changeAmount;
 
   PendingTransaction({
     required this.txid,
@@ -629,7 +484,6 @@ class PendingTransaction {
     required this.fee,
     required this.toAddress,
     required this.timestamp,
-    required this.consumedUtxos,
-    required this.changeAmount,
+    this.changeAmount = 0.0,
   });
 }

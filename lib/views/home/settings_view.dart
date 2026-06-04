@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 // import 'package:url_launcher/url_launcher.dart'; // Unused import
 import 'package:s256_wallet/providers/wallet_provider.dart';
 import 'package:s256_wallet/providers/blockchain_provider.dart';
+import 'package:s256_wallet/models/wallet_model.dart';
 import 'package:s256_wallet/views/home/privacy_view.dart';
 import 'package:s256_wallet/views/home/about_view.dart';
 import 'package:s256_wallet/views/home/support_view.dart';
@@ -300,6 +301,75 @@ class _SettingsViewState extends State<SettingsView> {
     );
   }
 
+  Future<void> _showMigrationDialog(BuildContext context, WalletProvider wp) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color.fromARGB(255, 25, 25, 25),
+        title: const Text('Migrate to Seed Phrase', style: TextStyle(color: Colors.white)),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'This will generate a new 12-word recovery phrase and transfer all your funds to the new address.',
+              style: TextStyle(color: Colors.white70),
+            ),
+            SizedBox(height: 16),
+            Text(
+              '⚠️ Why migrate?',
+              style: TextStyle(color: S256Colors.accent, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text(
+              '• Seed phrases are easier to back up\n• Standard for modern wallets\n• Enhanced security',
+              style: TextStyle(color: Colors.white60, fontSize: 13),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: S256Colors.accent, foregroundColor: Colors.black),
+            child: const Text('Start Migration'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      if (!context.mounted) return;
+      
+      // Show loading overlay
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator(color: S256Colors.accent)),
+      );
+
+      final success = await wp.migrateToSeed();
+
+      if (context.mounted) {
+        Navigator.pop(context); // Close loading dialog
+        
+        if (success) {
+          _viewSeedPhrase(wp); // Show new seed phrase
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Migration successful!'), backgroundColor: Colors.green),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(wp.lastError ?? 'Migration failed'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final wp = Provider.of<WalletProvider>(context);
@@ -451,6 +521,24 @@ class _SettingsViewState extends State<SettingsView> {
                               onTap: () => _viewSeedPhrase(wp),
                             ),
                           ),
+                        ] else ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.1),
+                              ),
+                            ),
+                            child: ListTile(
+                              title: const Text('Migrate to Seed Phrase', style: TextStyle(color: Colors.white)),
+                              subtitle: const Text('Secure your funds with a 12-word recovery phrase', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                              leading: const Icon(Icons.upgrade, color: S256Colors.accent),
+                              trailing: const Icon(Icons.chevron_right, color: Colors.white24),
+                              onTap: () => _showMigrationDialog(context, wp),
+                            ),
+                          ),
                         ],
                       ],
                     )
@@ -495,6 +583,24 @@ class _SettingsViewState extends State<SettingsView> {
                               leading: const Icon(Icons.vpn_key, color: S256Colors.secondary),
                               trailing: const Icon(Icons.chevron_right, color: Colors.white24),
                               onTap: () => _viewSeedPhrase(wp),
+                            ),
+                          ),
+                        ] else ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.1),
+                              ),
+                            ),
+                            child: ListTile(
+                              title: const Text('Migrate to Seed Phrase', style: TextStyle(color: Colors.white)),
+                              subtitle: const Text('Secure your funds with a 12-word recovery phrase', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                              leading: const Icon(Icons.upgrade, color: S256Colors.accent),
+                              trailing: const Icon(Icons.chevron_right, color: Colors.white24),
+                              onTap: () => _showMigrationDialog(context, wp),
                             ),
                           ),
                         ],

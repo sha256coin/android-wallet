@@ -1,9 +1,80 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:s256_wallet/widgets/app_background.dart';
+import 'package:s256_wallet/providers/wallet_provider.dart';
 
 class AboutView extends StatelessWidget {
   const AboutView({super.key});
+
+  Future<void> _showNetworkInfo(BuildContext context) async {
+    final wp = Provider.of<WalletProvider>(context, listen: false);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text('Network Information', style: TextStyle(color: Colors.white)),
+        content: FutureBuilder<Map<String, dynamic>?>(
+          future: wp.getNetworkInfo(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(
+                height: 100,
+                child: Center(child: CircularProgressIndicator(color: S256Colors.accent)),
+              );
+            }
+            
+            if (snapshot.hasError || snapshot.data == null) {
+              return const Text('Failed to load network info', style: TextStyle(color: Colors.red));
+            }
+            
+            final info = snapshot.data!;
+            return SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildNetworkRow('Blocks', info['blocks']?.toString() ?? 'N/A'),
+                  _buildNetworkRow('Connections', info['connections']?.toString() ?? 'N/A'),
+                  _buildNetworkRow('Difficulty', (info['difficulty'] as num?)?.toStringAsFixed(2) ?? 'N/A'),
+                  _buildNetworkRow('Mempool Size', info['mempool_size']?.toString() ?? 'N/A'),
+                  _buildNetworkRow('Network Hash', '${((info['networkhashps'] ?? 0) / 1e12).toStringAsFixed(2)} TH/s'),
+                  _buildNetworkRow('Version', info['subversion']?.toString() ?? 'N/A'),
+                ],
+              ),
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNetworkRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.white54, fontSize: 13)),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              value, 
+              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,12 +144,22 @@ class AboutView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Text(
-                    'Version 1.1',
+                    'Version 1.2',
                     style: TextStyle(color: S256Colors.accent, fontSize: 14),
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
+
+              // Network Info Button
+              Center(
+                child: TextButton.icon(
+                  onPressed: () => _showNetworkInfo(context),
+                  icon: const Icon(Icons.hub, color: S256Colors.accent, size: 18),
+                  label: const Text('View Network Status', style: TextStyle(color: S256Colors.accent)),
+                ),
+              ),
+              const SizedBox(height: 16),
 
               // Main description
               Container(

@@ -15,15 +15,14 @@ class SetupView extends StatelessWidget {
   final BiometricService _biometricService = BiometricService();
 
   Future<void> _processWallet(BuildContext context, String privateKey, {bool isNewWallet = false}) async {
+    final wp = Provider.of<WalletProvider>(context, listen: false);
     final address = _walletService.loadAddressFromKey(privateKey);
+    
     if (address != null) {
       // Show private key dialog for new wallets
       if (isNewWallet) {
         final confirmed = await _showPrivateKeyDialog(context, privateKey, address);
-        if (!confirmed) {
-          // User cancelled, don't proceed
-          return;
-        }
+        if (!confirmed) return;
       } else {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -34,23 +33,18 @@ class SetupView extends StatelessWidget {
       }
 
       if (!context.mounted) return;
-      final wp = Provider.of<WalletProvider>(context, listen: false);
-      await wp.saveWallet(address, privateKey);
+      await wp.loadWifWallet(privateKey);
 
-      // Fetch UTXOs before loading blockchain
-      await wp.fetchUtxos(force: true);
+      if (context.mounted && wp.wallet != null) {
+        final bp = Provider.of<BlockchainProvider>(context, listen: false);
+        await bp.loadBlockchain(wp.wallet!.address);
 
-      if (!context.mounted) return;
-      final bp = Provider.of<BlockchainProvider>(context, listen: false);
-      await bp.loadBlockchain(address);
-
-      // Ask about biometric authentication
-      if (context.mounted) {
+        // Ask about biometric authentication
         await _askBiometricSetup(context);
-      }
 
-      if (context.mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
+        if (context.mounted) {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(

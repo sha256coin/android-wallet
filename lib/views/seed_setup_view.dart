@@ -70,19 +70,12 @@ class _SeedSetupViewState extends State<SeedSetupView> {
   Future<void> _finalizeWallet() async {
     if (_mnemonic == null) return;
     
-    final privateKeyBytes = _ws.derivePrivateKeyFromMnemonic(_mnemonic!);
-    final wif = _ws.getWifFromPrivateKey(privateKeyBytes);
-    final address = _ws.loadAddressFromKey(wif);
+    final wp = Provider.of<WalletProvider>(context, listen: false);
+    await wp.loadSeedWallet(_mnemonic!);
 
-    if (address != null) {
-      final wp = Provider.of<WalletProvider>(context, listen: false);
-      await wp.saveWallet(address, wif, mnemonic: _mnemonic, type: WalletType.seed);
-      
-      await wp.fetchUtxos(force: true);
-      
-      if (!mounted) return;
+    if (context.mounted && wp.wallet != null) {
       final bp = Provider.of<BlockchainProvider>(context, listen: false);
-      await bp.loadBlockchain(address);
+      await bp.loadBlockchain(wp.wallet!.address);
       
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');

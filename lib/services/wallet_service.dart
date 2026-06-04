@@ -16,7 +16,34 @@ class WalletService {
       BaseXCodec('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz');
   final RpcConfigService _rpcConfig = RpcConfigService();
 
-  // Mnemonic generation (strength: 128 for 12 words, 256 for 24 words)
+  static const String addressPrefix = Config.addressPrefix;
+  static const int networkPrefix = Config.networkPrefix;
+
+  // Generate a new wallet
+  Map<String, String> generateNewWallet() {
+    final random = Random.secure();
+    final privateKeyBytes = Uint8List(32);
+    for (int i = 0; i < 32; i++) {
+      privateKeyBytes[i] = random.nextInt(256);
+    }
+
+    final wif = _privateKeyToWif(privateKeyBytes);
+    final address = loadAddressFromKey(wif);
+
+    return {
+      'privateKey': wif,
+      'address': address ?? '',
+    };
+  }
+
+  // Generate a new Seed Phrase wallet
+  Future<Map<String, String>> generateNewSeedWallet({int words = 12}) async {
+    final int strength = words == 24 ? 256 : 128;
+    final mnemonic = bip39.generateMnemonic(strength: strength);
+    return (await getWalletFromMnemonic(mnemonic))!;
+  }
+
+  // Mnemonic generation
   String generateMnemonic({int strength = 128}) {
     return bip39.generateMnemonic(strength: strength);
   }
@@ -26,11 +53,35 @@ class WalletService {
     return bip39.validateMnemonic(mnemonic);
   }
 
-  // Derive private key from mnemonic
+  // Generate a new private key (WIF)
+  String? generatePrivateKey() {
+    final wallet = generateNewWallet();
+    return wallet['privateKey'];
+  }
+
+  Future<Map<String, String>?> getWalletFromMnemonic(String mnemonic) async {
+    if (!bip39.validateMnemonic(mnemonic)) return null;
+
+    final seed = bip39.mnemonicToSeed(mnemonic);
+    final root = bip32.BIP32.fromSeed(seed);
+
+    final child = root.derivePath("m/44'/0'/0'/0/0");
+    final privateKey = child.privateKey!;
+
+    final wif = _privateKeyToWif(privateKey);
+    final address = loadAddressFromKey(wif);
+
+    return {
+      'mnemonic': mnemonic,
+      'privateKey': wif,
+      'address': address ?? '',
+    };
+  }
+
+  // Derive private key from mnemonic (legacy support if needed)
   Uint8List derivePrivateKeyFromMnemonic(String mnemonic) {
     final seed = bip39.mnemonicToSeed(mnemonic);
     final root = bip32.BIP32.fromSeed(seed);
-    // Standard Bitcoin-style path: m/44'/0'/0'/0/0
     final child = root.derivePath("m/44'/0'/0'/0/0");
     return child.privateKey!;
   }
@@ -40,16 +91,6 @@ class WalletService {
     return _privateKeyToWif(privateKey);
   }
 
-  String? generatePrivateKey() {
-    String? key;
-    final seed = List<int>.generate(32, (i) => Random.secure().nextInt(256));
-    final root = bip32.BIP32.fromSeed(Uint8List.fromList(seed));
-    // Updating to standard path as per plan
-    final child = root.derivePath("m/44'/0'/0'/0/0");
-    key = _privateKeyToWif(child.privateKey!);
-    return key;
-  }
-
   String? loadAddressFromKey(String wifPrivateKey) {
     try {
       final privateKey = _wifToPrivateKey(wifPrivateKey);
@@ -57,22 +98,24 @@ class WalletService {
       final pubKey = node.publicKey;
       final pubKeyHash = _pubKeyToP2WPKH(pubKey);
 
-      return _encodeBech32Address(Config.addressPrefix, 0, pubKeyHash);
-    } catch (e) { // , stacktrace) { // Removed unused stacktrace variable
-      //print('Error recovering address from WIF: $e');
-      //print(stacktrace);
+      return _encodeBech32Address(addressPrefix, 0, pubKeyHash);
+    } catch (e) {
       return null;
     }
   }
 
   String _privateKeyToWif(Uint8List privateKey) {
-    final prefix = Uint8List.fromList([Config.networkPrefix]);
-    final compressedKey =
-        Uint8List.fromList(prefix + privateKey.toList() + [0x01]);
-    final checksum = _calculateChecksum(compressedKey);
-    final keyWithChecksum = Uint8List.fromList(compressedKey + checksum);
+    final extended = Uint8List(1 + privateKey.length + 1);
+    extended[0] = networkPrefix;
+    extended.setRange(1, 1 + privateKey.length, privateKey);
+    extended[extended.length - 1] = 0x01; // Compressed flag
 
-    return base58.encode(keyWithChecksum);
+    final checksum = _calculateChecksum(extended);
+    final withChecksum = Uint8List(extended.length + checksum.length);
+    withChecksum.setRange(0, extended.length, extended);
+    withChecksum.setRange(extended.length, withChecksum.length, checksum);
+
+    return base58.encode(withChecksum);
   }
 
   Uint8List _wifToPrivateKey(String wif) {
@@ -82,8 +125,12 @@ class WalletService {
 
     final calculatedChecksum = _calculateChecksum(keyWithChecksum);
     if (!_listEquals(checksum, calculatedChecksum)) {
-      //print('Checksum mismatch: expected $checksum but got $calculatedChecksum');
       throw Exception('Invalid WIF checksum');
+    }
+
+    if (keyWithChecksum[0] != networkPrefix) {
+      throw Exception(
+          'Incompatible WIF prefix: 0x${keyWithChecksum[0].toRadixString(16).toUpperCase()}. S256 uses 0x${networkPrefix.toRadixString(16).toUpperCase()}');
     }
 
     return Uint8List.fromList(keyWithChecksum.sublist(
@@ -139,68 +186,384 @@ class WalletService {
     return true;
   }
 
-  Future<Map<String, dynamic>?> rpcRequest(String method, [List<dynamic>? params]) async {
-    final rpcUrl = await _rpcConfig.getRpcUrl();
-    final rpcUser = await _rpcConfig.getRpcUser();
-    final rpcPassword = await _rpcConfig.getRpcPassword();
+  // RPC calls
+  Future<Map<String, dynamic>?> rpcRequest(
+    String rpcUrl,
+    String rpcUser,
+    String rpcPassword,
+    String method,
+    [List<dynamic>? params]
+  ) async {
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+    };
 
-    final auth = 'Basic ${base64Encode(utf8.encode('$rpcUser:$rpcPassword'))}';
-    final headers = {'Content-Type': 'application/json', 'Authorization': auth};
+    if (rpcUser.isNotEmpty || rpcPassword.isNotEmpty) {
+      final auth =
+          'Basic ${base64Encode(utf8.encode('$rpcUser:$rpcPassword'))}';
+      headers['Authorization'] = auth;
+    }
 
     final body = jsonEncode({
       'jsonrpc': '1.0',
-      'id': 'curltext',
+      'id': 'mobile',
       'method': method,
       'params': params ?? [],
     });
 
-    final response = await http.post(
-      Uri.parse(rpcUrl),
-      headers: headers,
-      body: body,
-    );
+    try {
+      final response = await http.post(
+        Uri.parse(rpcUrl),
+        headers: headers,
+        body: body,
+      );
 
-    final decoded = jsonDecode(response.body);
-    //print('Response body: ${response.body}');
-
-    return decoded; // ✅ Always return the parsed body
+      return jsonDecode(response.body);
+    } catch (e) {
+      return null;
+    }
   }
 
-  // Batch RPC request - send multiple requests in one HTTP call
-  Future<List<Map<String, dynamic>?>> batchRpcRequest(
-      List<Map<String, dynamic>> requests) async {
+  // Legacy rpcRequest for backward compatibility if needed, but better to use the one with credentials
+  Future<Map<String, dynamic>?> rpcRequestLegacy(String method,
+      [List<dynamic>? params]) async {
     final rpcUrl = await _rpcConfig.getRpcUrl();
     final rpcUser = await _rpcConfig.getRpcUser();
     final rpcPassword = await _rpcConfig.getRpcPassword();
 
-    final auth = 'Basic ${base64Encode(utf8.encode('$rpcUser:$rpcPassword'))}';
-    final headers = {'Content-Type': 'application/json', 'Authorization': auth};
+    return rpcRequest(rpcUrl, rpcUser, rpcPassword, method, params);
+  }
 
-    // Build batch request body
-    final batchBody = requests
-        .asMap()
-        .entries
-        .map((entry) => {
-              'jsonrpc': '1.0',
-              'id': entry.key,
-              'method': entry.value['method'],
-              'params': entry.value['params'] ?? [],
-            })
+  // Get UTXOs for address
+  Future<List<Map<String, dynamic>>> getUtxos(
+    String rpcUrl,
+    String rpcUser,
+    String rpcPassword,
+    String address,
+  ) async {
+    // 1. Get confirmed UTXOs from the chain
+    final result =
+        await rpcRequest(rpcUrl, rpcUser, rpcPassword, 'scantxoutset', [
+      'start',
+      [
+        {'desc': 'addr($address)'}
+      ]
+    ]);
+
+    final List<Map<String, dynamic>> confirmedUtxos = [];
+    if (result != null && result['result'] != null) {
+      final unspents = result['result']['unspents'] as List<dynamic>? ?? [];
+      for (var u in unspents) {
+        confirmedUtxos.add({
+          'txid': u['txid'],
+          'vout': u['vout'],
+          'amount': (u['amount'] as num).toDouble(),
+          'height': u['height'],
+          'confirmations': 1,
+        });
+      }
+    }
+
+    // 2. Get mempool txids
+    final List<Map<String, dynamic>> decodedMempool = [];
+    bool rpcMempoolSucceeded = false;
+    final mempoolResult =
+        await rpcRequest(rpcUrl, rpcUser, rpcPassword, 'getrawmempool', [false]);
+
+    if (mempoolResult != null && mempoolResult['result'] != null) {
+      rpcMempoolSucceeded = true;
+      final List<dynamic> txids = mempoolResult['result'] as List<dynamic>;
+      
+      // Batch processing mempool to avoid too many requests
+      for (var txid in txids) {
+        final rawTx = await rpcRequest(
+            rpcUrl, rpcUser, rpcPassword, 'getrawtransaction', [txid, true]);
+        if (rawTx != null && rawTx['result'] != null) {
+          decodedMempool.add(rawTx['result'] as Map<String, dynamic>);
+        }
+      }
+    }
+
+    // Fallback: ONLY if RPC failed (not if mempool was just empty)
+    if (!rpcMempoolSucceeded) {
+      try {
+        final explorerResponse =
+            await http.get(Uri.parse('https://sha256coin.eu/api/mempool'));
+        if (explorerResponse.statusCode == 200) {
+          final List<dynamic> explorerTxs =
+              jsonDecode(explorerResponse.body)['transactions'];
+          for (var tx in explorerTxs) {
+            decodedMempool.add(tx as Map<String, dynamic>);
+          }
+        }
+      } catch (_) {}
+    }
+
+    final List<Map<String, dynamic>> finalUtxos = [];
+    bool hasMempoolActivity = false;
+
+    // 3. Process Decoded Mempool (Detect spends and incoming)
+    final spentInMempool = <String>{};
+    final incomingFromMempool = <Map<String, dynamic>>[];
+
+    for (var data in decodedMempool) {
+      final String txid = data['txid'] ?? '';
+
+      // Check inputs (detect our coins being spent)
+      final vins = data['vin'] as List<dynamic>? ?? [];
+      for (var vin in vins) {
+        final String? vinTxid = vin['txid'] ?? vin['prev_txid'];
+        final dynamic vinVout = vin['vout'] ?? vin['prev_vout'];
+        if (vinTxid != null && vinVout != null) {
+          spentInMempool.add('$vinTxid:$vinVout');
+        }
+      }
+
+      // Check outputs (detect new funds or change)
+      final vouts = data['vout'] as List<dynamic>? ?? [];
+      for (var vout in vouts) {
+        final scriptPubKey = vout['scriptPubKey'] as Map<String, dynamic>? ?? {};
+        final addresses = scriptPubKey['addresses'] as List<dynamic>? ?? [];
+        final String? singleAddr = scriptPubKey['address'] as String?;
+
+        if (addresses.contains(address) ||
+            (singleAddr != null && singleAddr == address)) {
+          incomingFromMempool.add({
+            'txid': txid,
+            'vout': vout['n'] ?? 0,
+            'amount': (vout['value'] as num? ?? 0.0).toDouble(),
+            'confirmations': 0,
+          });
+          hasMempoolActivity = true;
+        }
+      }
+    }
+
+    // 4. Merge Confirmed and Mempool
+    for (var utxo in confirmedUtxos) {
+      final outpoint = '${utxo['txid']}:${utxo['vout']}';
+      if (spentInMempool.contains(outpoint)) {
+        hasMempoolActivity = true;
+      } else {
+        finalUtxos.add(utxo);
+      }
+    }
+    finalUtxos.addAll(incomingFromMempool);
+
+    // 5. Final Force-Yellow logic
+    if (hasMempoolActivity && !finalUtxos.any((u) => u['confirmations'] == 0)) {
+      finalUtxos.add({
+        'txid': 'pending_marker',
+        'amount': 0.0,
+        'confirmations': 0,
+      });
+    }
+
+    return finalUtxos;
+  }
+
+  // Send transaction
+  Future<Map<String, dynamic>> sendTransaction(
+    String rpcUrl,
+    String rpcUser,
+    String rpcPassword,
+    String privateKeyWif,
+    String fromAddress,
+    String toAddress,
+    double amount, {
+    double? feeRate,
+  }) async {
+    // Get UTXOs (Filter out pending marker)
+    final allUtxos = await getUtxos(rpcUrl, rpcUser, rpcPassword, fromAddress);
+    final utxos = allUtxos
+        .where((u) => u['txid'] != 'pending_marker' && (u['confirmations'] as int) > 0)
         .toList();
 
-    final response = await http.post(
-      Uri.parse(rpcUrl),
-      headers: headers,
-      body: jsonEncode(batchBody),
-    );
-
-    final decoded = jsonDecode(response.body);
-
-    // Handle both single and batch responses
-    if (decoded is List) {
-      return decoded.cast<Map<String, dynamic>?>();
-    } else {
-      return [decoded as Map<String, dynamic>?];
+    if (utxos.isEmpty) {
+      final hasPending = allUtxos.any(
+          (u) => u['txid'] != 'pending_marker' && (u['confirmations'] as int) == 0);
+      return {
+        'success': false,
+        'message': hasPending
+            ? 'Your funds are pending confirmation. Please wait approximately 20 minutes before sending again.'
+            : 'No confirmed funds available. Please wait approximately 20 minutes for your deposit to confirm.'
+      };
     }
+
+    final totalAvailable =
+        utxos.fold(0.0, (sum, utxo) => sum + (utxo['amount'] as num).toDouble());
+    final bool isSweep = (amount >= totalAvailable - 0.00001);
+
+    // Sort by amount (largest first)
+    utxos.sort((a, b) =>
+        ((b['amount'] as num).toDouble()).compareTo((a['amount'] as num).toDouble()));
+
+    // Fetch fee rate
+    double currentFeeRate = feeRate ?? 0.00001;
+    if (feeRate == null) {
+      try {
+        final feeResult =
+            await rpcRequest(rpcUrl, rpcUser, rpcPassword, 'estimatesmartfee', [6]);
+        if (feeResult != null &&
+            feeResult['result'] != null &&
+            feeResult['result']['feerate'] != null) {
+          currentFeeRate = (feeResult['result']['feerate'] as num).toDouble();
+        }
+      } catch (_) {}
+    }
+
+    // Select UTXOs
+    List<Map<String, dynamic>> selectedUtxos = [];
+    double inputSum = 0.0;
+
+    for (int i = 0; i < utxos.length; i++) {
+      final utxo = utxos[i];
+      selectedUtxos.add({'txid': utxo['txid'], 'vout': utxo['vout']});
+      inputSum += (utxo['amount'] as num).toDouble();
+
+      if (isSweep && i < utxos.length - 1) continue;
+
+      // Estimate fee
+      final inputCount = selectedUtxos.length;
+      final txSize = 10 + (inputCount * 148) + (isSweep ? 1 : 2) * 34;
+
+      final fee = (currentFeeRate * txSize / 1000);
+      final actualFee = double.parse(fee.toStringAsFixed(8));
+
+      if (inputSum >= (isSweep ? actualFee : amount + actualFee)) {
+        final Map<String, dynamic> outputs = {};
+
+        if (isSweep) {
+          final sweepAmount =
+              double.parse((inputSum - actualFee).toStringAsFixed(8));
+          if (sweepAmount <= 0.00000546) {
+            return {
+              'success': false,
+              'message': 'Balance too low to cover transaction fees.'
+            };
+          }
+          outputs[toAddress] = sweepAmount;
+        } else {
+          final change =
+              double.parse((inputSum - amount - actualFee).toStringAsFixed(8));
+          outputs[toAddress] = double.parse(amount.toStringAsFixed(8));
+          if (change > 0.00000546) {
+            outputs[fromAddress] = change;
+          }
+        }
+
+        // Create raw transaction
+        final createResult = await rpcRequest(rpcUrl, rpcUser, rpcPassword,
+            'createrawtransaction', [selectedUtxos, outputs]);
+
+        if (createResult == null || createResult['result'] == null) {
+          return {
+            'success': false,
+            'message':
+                'Unable to create transaction. Please try again or contact support.'
+          };
+        }
+
+        // Sign transaction
+        final signResult = await rpcRequest(rpcUrl, rpcUser, rpcPassword,
+            'signrawtransactionwithkey', [
+          createResult['result'],
+          [privateKeyWif]
+        ]);
+
+        if (signResult == null || signResult['result'] == null) {
+          return {
+            'success': false,
+            'message':
+                'Unable to sign transaction with your private key. Please verify your wallet is loaded correctly.'
+          };
+        }
+
+        if (!signResult['result']['complete']) {
+          return {
+            'success': false,
+            'message':
+                'Transaction could not be fully signed. Please check your wallet and try again.'
+          };
+        }
+
+        // Send transaction
+        final sendResult = await rpcRequest(rpcUrl, rpcUser, rpcPassword,
+            'sendrawtransaction', [signResult['result']['hex'], 0]);
+
+        if (sendResult != null && sendResult['result'] != null) {
+          final changeAmount = isSweep ? 0.0 : double.parse((inputSum - amount - actualFee).toStringAsFixed(8));
+          return {
+            'success': true,
+            'txid': sendResult['result'],
+            'fee': actualFee,
+            'change': changeAmount,
+          };
+        }
+
+        final errorMessage = sendResult?['error']?['message'] ?? 'Unknown error';
+        if (errorMessage.contains('insufficient fee') ||
+            errorMessage.contains('rejecting replacement')) {
+          return {
+            'success': false,
+            'message':
+                'You have a pending transaction. Please wait approximately 20 minutes before sending another transaction.'
+          };
+        }
+        return {'success': false, 'message': errorMessage};
+      }
+    }
+
+    return {
+      'success': false,
+      'message':
+          'Insufficient funds. Available balance: ${inputSum.toStringAsFixed(8)} S256.'
+    };
+  }
+
+  // Get network info
+  Future<Map<String, dynamic>?> getNetworkInfo(
+    String rpcUrl,
+    String rpcUser,
+    String rpcPassword,
+  ) async {
+    final blockchainInfo =
+        await rpcRequest(rpcUrl, rpcUser, rpcPassword, 'getblockchaininfo');
+    final networkInfo =
+        await rpcRequest(rpcUrl, rpcUser, rpcPassword, 'getnetworkinfo');
+    final mempoolInfo =
+        await rpcRequest(rpcUrl, rpcUser, rpcPassword, 'getmempoolinfo');
+    final miningInfo =
+        await rpcRequest(rpcUrl, rpcUser, rpcPassword, 'getmininginfo');
+
+    if (blockchainInfo == null) return null;
+
+    return {
+      'blocks': blockchainInfo['result']?['blocks'],
+      'difficulty': blockchainInfo['result']?['difficulty'],
+      'bestblockhash': blockchainInfo['result']?['bestblockhash'],
+      'mediantime': blockchainInfo['result']?['mediantime'],
+      'version': networkInfo?['result']?['version'],
+      'subversion': networkInfo?['result']?['subversion'],
+      'connections': networkInfo?['result']?['connections'],
+      'mempool_size': mempoolInfo?['result']?['size'],
+      'mempool_bytes': mempoolInfo?['result']?['bytes'],
+      'networkhashps': miningInfo?['result']?['networkhashps'],
+    };
+  }
+
+  // Calculate balance from UTXOs
+  double calculateBalance(List<Map<String, dynamic>> utxos) {
+    return utxos
+        .where((u) =>
+            u['txid'] != 'pending_marker' && (u['confirmations'] as int) > 0)
+        .fold(0.0, (sum, u) => sum + (u['amount'] as double));
+  }
+
+  double calculateUnconfirmedBalance(List<Map<String, dynamic>> utxos) {
+    return utxos
+        .where((u) =>
+            u['txid'] != 'pending_marker' && (u['confirmations'] as int) == 0)
+        .fold(0.0, (sum, u) => sum + (u['amount'] as double));
   }
 }
