@@ -28,6 +28,7 @@ class WalletProvider with ChangeNotifier {
   String? get address => _wallet?.address;
   String? get mnemonic => _wallet?.mnemonic;
   WalletType? get walletType => _wallet?.type;
+  WalletService get walletService => _ws;
   double? get balance => _wallet?.balance;
   double? get unconfirmedBalance => _wallet?.unconfirmedBalance;
   List<Map<String, dynamic>>? get utxos => _lastUtxos;

@@ -1,13 +1,14 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-// import 'package:url_launcher/url_launcher.dart'; // Unused import
 import 'package:s256_wallet/providers/wallet_provider.dart';
 import 'package:s256_wallet/providers/blockchain_provider.dart';
-import 'package:s256_wallet/models/wallet_model.dart';
 import 'package:s256_wallet/views/home/privacy_view.dart';
 import 'package:s256_wallet/views/home/about_view.dart';
 import 'package:s256_wallet/views/home/support_view.dart';
+import 'package:s256_wallet/views/home/network_info_view.dart';
 import 'package:s256_wallet/services/biometric_service.dart';
 import 'package:s256_wallet/widgets/app_background.dart';
 
@@ -89,6 +90,101 @@ class _SettingsViewState extends State<SettingsView> {
             content: Text('$_biometricType disabled'),
             backgroundColor: Colors.orange,
           ),
+        );
+      }
+    }
+  }
+
+  Future<void> _showMigrationDialog(BuildContext context, WalletProvider wp, BlockchainProvider bp) async {
+    int migrationSeedWords = 12;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          backgroundColor: const Color(0xFF1A1A1A),
+          title: const Row(
+            children: [
+              Icon(Icons.auto_awesome, color: Colors.cyanAccent),
+              SizedBox(width: 8),
+              Text('Upgrade to Seed Phrase', style: TextStyle(color: Colors.white, fontSize: 18)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'This will generate a new BIP39 seed phrase and move your funds to it.',
+                style: TextStyle(color: Colors.white70),
+              ),
+              const SizedBox(height: 16),
+              const Text('Choose Phrase Length:', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              Row(
+                children: [
+                  Radio<int>(
+                    value: 12,
+                    groupValue: migrationSeedWords,
+                    onChanged: (val) => setState(() => migrationSeedWords = val!),
+                    activeColor: Colors.cyanAccent,
+                  ),
+                  const Text('12 Words', style: TextStyle(color: Colors.white70)),
+                  const SizedBox(width: 20),
+                  Radio<int>(
+                    value: 24,
+                    groupValue: migrationSeedWords,
+                    onChanged: (val) => setState(() => migrationSeedWords = val!),
+                    activeColor: Colors.cyanAccent,
+                  ),
+                  const Text('24 Words', style: TextStyle(color: Colors.white70)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Note: If you have a balance, a transaction will be sent to sweep your funds to the new address. Fees will apply.',
+                style: TextStyle(color: Colors.orange, fontSize: 12, fontStyle: FontStyle.italic),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.cyanAccent, foregroundColor: Colors.black),
+              child: const Text('Start Migration'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed == true) {
+      if (!context.mounted) return;
+      
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator(color: Colors.cyanAccent)),
+      );
+
+      final success = await wp.migrateToSeed(words: migrationSeedWords);
+
+      if (!context.mounted) return;
+      Navigator.pop(context); // Close loading indicator
+
+      if (success) {
+        await bp.loadBlockchain(wp.address);
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Migration successful!'), backgroundColor: Colors.green),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(wp.lastError ?? 'Migration failed'), backgroundColor: Colors.red),
         );
       }
     }
@@ -199,7 +295,7 @@ class _SettingsViewState extends State<SettingsView> {
                       ),
                       SizedBox(height: 8),
                       Text(
-                        '✓ Make sure your recovery phrase or private key is safely backed up\n'
+                        '✓ Make sure your private key is safely backed up\n'
                         '✓ Without it, you CANNOT recover your funds\n'
                         '✓ This action is IRREVERSIBLE',
                         style: TextStyle(color: Colors.red, fontSize: 13),
@@ -240,159 +336,95 @@ class _SettingsViewState extends State<SettingsView> {
     }
   }
 
-  Future<void> _viewSeedPhrase(WalletProvider wp) async {
-    if (_biometricEnabled) {
-      final authenticated = await _biometricService.authenticate(
-        localizedReason: 'Authenticate to view your seed phrase',
-      );
-      if (!authenticated) return;
-    }
-
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text('Recovery Phrase', style: TextStyle(color: Colors.white)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Your recovery phrase is the only way to restore your wallet. Never share it with anyone.',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
-            ),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: S256Colors.accent.withValues(alpha: 0.3)),
-              ),
-              child: Text(
-                wp.mnemonic ?? 'No mnemonic found',
-                style: const TextStyle(
-                  color: S256Colors.accent,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: wp.mnemonic ?? ''));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Copied to clipboard'), backgroundColor: Colors.green),
-              );
-            },
-            child: const Text('Copy'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showMigrationDialog(BuildContext context, WalletProvider wp) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color.fromARGB(255, 25, 25, 25),
-        title: const Text('Migrate to Seed Phrase', style: TextStyle(color: Colors.white)),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'This will generate a new 12-word recovery phrase and transfer all your funds to the new address.',
-              style: TextStyle(color: Colors.white70),
-            ),
-            SizedBox(height: 16),
-            Text(
-              '⚠️ Why migrate?',
-              style: TextStyle(color: S256Colors.accent, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Text(
-              '• Seed phrases are easier to back up\n• Standard for modern wallets\n• Enhanced security',
-              style: TextStyle(color: Colors.white60, fontSize: 13),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: S256Colors.accent, foregroundColor: Colors.black),
-            child: const Text('Start Migration'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      if (!context.mounted) return;
-      
-      // Show loading overlay
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator(color: S256Colors.accent)),
-      );
-
-      final success = await wp.migrateToSeed();
-
-      if (context.mounted) {
-        Navigator.pop(context); // Close loading dialog
-        
-        if (success) {
-          _viewSeedPhrase(wp); // Show new seed phrase
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Migration successful!'), backgroundColor: Colors.green),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(wp.lastError ?? 'Migration failed'), backgroundColor: Colors.red),
-          );
-        }
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final wp = Provider.of<WalletProvider>(context);
     final bp = Provider.of<BlockchainProvider>(context);
     final privateKey = wp.privateKey ?? '';
+    final mnemonic = wp.mnemonic;
 
     return Scaffold(
       body: AppBackground(
         child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: ConstrainedBox(
             constraints: BoxConstraints(
               minHeight:
-                  MediaQuery.of(context).size.height - kBottomNavigationBarHeight,
+              MediaQuery.of(context).size.height - kBottomNavigationBarHeight,
             ),
             child: Padding(
-              padding: const EdgeInsets.only(top: 75, left: 16.0, right: 16.0),
+              padding: const EdgeInsets.only(top: 75, left: 16.0, right: 16.0, bottom: 130.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (mnemonic != null) ...[
+                    const Text(
+                      'Seed Phrase',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: TextEditingController(text: mnemonic),
+                      decoration: InputDecoration(
+                        labelText: 'Your 12/24 Word Phrase',
+                        labelStyle: const TextStyle(color: Colors.white),
+                        filled: true,
+                        fillColor: const Color.fromARGB(100, 0, 0, 0),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                          borderSide:
+                              const BorderSide(color: Colors.white, width: 1.0),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                          borderSide:
+                              const BorderSide(color: Colors.white, width: 1.0),
+                        ),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.copy, color: Colors.white),
+                          onPressed: () {
+                            Clipboard.setData(ClipboardData(text: mnemonic));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Seed phrase copied to clipboard'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+                      obscureText: true,
+                      maxLines: 1,
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Your Seed Phrase above recovers your entire wallet, including all future addresses. Keep it secure and never share it with anyone.',
+                      style: TextStyle(color: Colors.white54, fontSize: 14),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                  const Text(
+                    'Private Key (WIF)',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                   TextField(
                     controller: TextEditingController(text: privateKey),
                     decoration: InputDecoration(
-                      labelText: 'Private Key',
+                      labelText: 'Private Key (WIF)',
                       labelStyle: const TextStyle(color: Colors.white),
                       filled: true,
                       fillColor: const Color.fromARGB(100, 0, 0, 0),
@@ -429,10 +461,33 @@ class _SettingsViewState extends State<SettingsView> {
                   ),
                   const SizedBox(height: 20),
                   const Text(
-                    'Your private key is a critical piece of information for accessing your cryptocurrency. Keep it secure and never share it with anyone. If someone gains access to your private key, they can control your assets. Make sure to store it in a safe place and back it up if necessary.',
-                    style: TextStyle(color: Colors.white54),
+                    'This WIF key is derived from your seed and controls ONLY the current address. The Seed Phrase is the primary backup.',
+                    style: TextStyle(color: Colors.white54, fontSize: 14),
                   ),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 20),
+
+                  if (mnemonic == null) ...[
+                    ElevatedButton.icon(
+                      onPressed: () => _showMigrationDialog(context, wp, bp),
+                      icon: const Icon(Icons.upgrade),
+                      label: const Text('Migrate to Seed Phrase'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.cyanAccent.withValues(alpha: 0.1),
+                        foregroundColor: Colors.cyanAccent,
+                        side: const BorderSide(color: Colors.cyanAccent),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Upgrade to a modern 12 or 24 word recovery phrase. This is more secure and easier to back up.',
+                      style: TextStyle(color: Colors.cyanAccent, fontSize: 11, fontStyle: FontStyle.italic),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+
+                  const SizedBox(height: 10),
 
                   // Security Section
                   const Text(
@@ -462,149 +517,64 @@ class _SettingsViewState extends State<SettingsView> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(S256Colors.primary),
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFC0C0C0)),
                           ),
                         ),
                       ),
                     )
                   else if (_biometricAvailable)
-                    Column(
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.05),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.1),
-                            ),
-                          ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: SwitchListTile(
-                              title: Text(
-                                'Enable $_biometricType',
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                              subtitle: Text(
-                                _biometricEnabled
-                                    ? 'App requires $_biometricType authentification'
-                                    : 'Secure your wallet with $_biometricType',
-                                style: const TextStyle(color: Colors.white54, fontSize: 12),
-                              ),
-                              secondary: Icon(
-                                _biometricType.contains('Face')
-                                    ? Icons.face
-                                    : Icons.fingerprint,
-                                color: _biometricEnabled ? S256Colors.primary : Colors.white,
-                              ),
-                              value: _biometricEnabled,
-                              onChanged: _toggleBiometric,
-                              activeTrackColor: S256Colors.primary,
-                            ),
-                          ),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.1),
                         ),
-                        if (wp.walletType == WalletType.seed) ...[
-                          const SizedBox(height: 12),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.1),
-                              ),
-                            ),
-                            child: ListTile(
-                              title: const Text('Recovery Phrase', style: TextStyle(color: Colors.white)),
-                              subtitle: const Text('View your 12/24 word seed phrase', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                              leading: const Icon(Icons.vpn_key, color: S256Colors.secondary),
-                              trailing: const Icon(Icons.chevron_right, color: Colors.white24),
-                              onTap: () => _viewSeedPhrase(wp),
-                            ),
-                          ),
-                        ] else ...[
-                          const SizedBox(height: 12),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.1),
-                              ),
-                            ),
-                            child: ListTile(
-                              title: const Text('Migrate to Seed Phrase', style: TextStyle(color: Colors.white)),
-                              subtitle: const Text('Secure your funds with a 12-word recovery phrase', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                              leading: const Icon(Icons.upgrade, color: S256Colors.accent),
-                              trailing: const Icon(Icons.chevron_right, color: Colors.white24),
-                              onTap: () => _showMigrationDialog(context, wp),
-                            ),
-                          ),
-                        ],
-                      ],
+                      ),
+                      child: SwitchListTile(
+                        title: Text(
+                          'Enable $_biometricType',
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        subtitle: Text(
+                          _biometricEnabled
+                              ? 'App requires $_biometricType authentification'
+                              : 'Secure your wallet with $_biometricType',
+                          style: const TextStyle(color: Colors.white54, fontSize: 12),
+                        ),
+                        secondary: Icon(
+                          _biometricType.contains('Face')
+                              ? Icons.face
+                              : Icons.fingerprint,
+                          color: _biometricEnabled ? const Color(0xFFC0C0C0) : Colors.white,
+                        ),
+                        value: _biometricEnabled,
+                        onChanged: _toggleBiometric,
+                        activeThumbColor: const Color(0xFFC0C0C0),
+                      ),
                     )
                   else
-                    Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.orange.withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: const Row(
-                            children: [
-                              Icon(Icons.info_outline, color: Colors.orange, size: 20),
-                              SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  'Biometric authentication not available on this device',
-                                  style: TextStyle(color: Colors.orange, fontSize: 12),
-                                ),
-                              ),
-                            ],
-                          ),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.orange.withValues(alpha: 0.3),
                         ),
-                        if (wp.walletType == WalletType.seed) ...[
-                          const SizedBox(height: 12),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.1),
-                              ),
-                            ),
-                            child: ListTile(
-                              title: const Text('Recovery Phrase', style: TextStyle(color: Colors.white)),
-                              subtitle: const Text('View your 12/24 word seed phrase', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                              leading: const Icon(Icons.vpn_key, color: S256Colors.secondary),
-                              trailing: const Icon(Icons.chevron_right, color: Colors.white24),
-                              onTap: () => _viewSeedPhrase(wp),
-                            ),
-                          ),
-                        ] else ...[
-                          const SizedBox(height: 12),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.1),
-                              ),
-                            ),
-                            child: ListTile(
-                              title: const Text('Migrate to Seed Phrase', style: TextStyle(color: Colors.white)),
-                              subtitle: const Text('Secure your funds with a 12-word recovery phrase', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                              leading: const Icon(Icons.upgrade, color: S256Colors.accent),
-                              trailing: const Icon(Icons.chevron_right, color: Colors.white24),
-                              onTap: () => _showMigrationDialog(context, wp),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Biometric authentication not available on this device',
+                              style: TextStyle(color: Colors.orange, fontSize: 12),
                             ),
                           ),
                         ],
-                      ],
+                      ),
                     ),
 
                   const SizedBox(height: 30),
@@ -618,6 +588,24 @@ class _SettingsViewState extends State<SettingsView> {
                   ),
                   const SizedBox(height: 10),
 
+                  ListTile(
+                    title: const Text(
+                      'Network Status',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    leading: const Icon(Icons.lan, color: Colors.white),
+                    onTap: () {
+                      if (context.mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const NetworkInfoView(),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                  const Divider(color: Colors.white),
                   ListTile(
                     title: const Text(
                       'Privacy Policy',

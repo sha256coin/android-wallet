@@ -28,8 +28,8 @@ android {
         applicationId = "eu.sha256coin.s256_wallet"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = 2
-        versionName = "S256-W-1.1"
+        versionCode = 5
+        versionName = "S256-W-1.4"
     }
 
     signingConfigs {
