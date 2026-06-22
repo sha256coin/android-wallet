@@ -22,6 +22,12 @@ class WalletProvider with ChangeNotifier {
   final Map<String, DateTime> _pendingTimestamps = {};
   final Map<String, PendingTransaction> _pendingTransactions = {};
 
+  // Coin control and advanced send state
+  List<Map<String, dynamic>> _availableUtxos = [];
+  Set<String> _selectedUtxoKeys = {};
+  bool _isLoadingUtxos = false;
+  double _feeRate = 0.00001;
+
   // Getters
   WalletModel? get wallet => _wallet;
   String? get privateKey => _wallet?.privateKey;
@@ -33,6 +39,34 @@ class WalletProvider with ChangeNotifier {
   double? get unconfirmedBalance => _wallet?.unconfirmedBalance;
   List<Map<String, dynamic>>? get utxos => _lastUtxos;
   bool get isLoading => _isLoading;
+  List<Map<String, dynamic>> get availableUtxos => _availableUtxos;
+  Set<String> get selectedUtxoKeys => _selectedUtxoKeys;
+  bool get isLoadingUtxos => _isLoadingUtxos;
+
+  double get selectedUtxoTotal => _availableUtxos
+      .where((u) => _selectedUtxoKeys.contains('${u['txid']}:${u['vout']}'))
+      .fold(0.0, (sum, u) => sum + (u['amount'] as num).toDouble());
+
+  int get selectedUtxoCount => _selectedUtxoKeys.length;
+
+  List<Map<String, dynamic>> get selectedUtxoList => _availableUtxos
+      .where((u) => _selectedUtxoKeys.contains('${u['txid']}:${u['vout']}'))
+      .toList();
+
+  double get estimatedFee {
+    if (_selectedUtxoKeys.isEmpty) return 0.0;
+    final inputCount = _selectedUtxoKeys.length;
+    final txSize = 10 + (inputCount * 148) + 2 * 34;
+    return double.parse((_feeRate * txSize / 1000).toStringAsFixed(8));
+  }
+
+  double get estimatedNetSend {
+    final net = selectedUtxoTotal - estimatedFee;
+    return net > 0 ? net : 0.0;
+  }
+
+  double get estimatedSimpleFee =>
+      double.parse((_feeRate * 226 / 1000).toStringAsFixed(8));
 
   List<Map<String, dynamic>>? _lastUtxos;
 
@@ -173,6 +207,102 @@ class WalletProvider with ChangeNotifier {
     }
   }
 
+  Future<void> fetchFeeRate() async {
+    try {
+      final rpcUrl = await _rpcConfig.getRpcUrl();
+      final rpcUser = await _rpcConfig.getRpcUser();
+      final rpcPassword = await _rpcConfig.getRpcPassword();
+      final feeResult = await _ws.rpcRequest(
+        rpcUrl,
+        rpcUser,
+        rpcPassword,
+        'estimatesmartfee',
+        [6],
+      );
+      if (feeResult != null &&
+          feeResult['result'] != null &&
+          feeResult['result']['feerate'] != null) {
+        _feeRate = (feeResult['result']['feerate'] as num).toDouble();
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> fetchUtxosForCoinControl() async {
+    if (_wallet == null) return;
+    _isLoadingUtxos = true;
+    _availableUtxos = [];
+    _selectedUtxoKeys = {};
+    notifyListeners();
+
+    try {
+      final rpcUrl = await _rpcConfig.getRpcUrl();
+      final rpcUser = await _rpcConfig.getRpcUser();
+      final rpcPassword = await _rpcConfig.getRpcPassword();
+
+      final all = await _ws.getUtxos(rpcUrl, rpcUser, rpcPassword, _wallet!.address);
+      _availableUtxos = all
+          .where((u) =>
+              u['txid'] != 'pending_marker' && (u['confirmations'] as int) > 0)
+          .toList();
+      _availableUtxos.sort((a, b) =>
+          (b['amount'] as num).toDouble().compareTo((a['amount'] as num).toDouble()));
+
+      await fetchFeeRate();
+    } catch (_) {
+    } finally {
+      _isLoadingUtxos = false;
+      notifyListeners();
+    }
+  }
+
+  void toggleUtxo(String key) {
+    if (_selectedUtxoKeys.contains(key)) {
+      _selectedUtxoKeys.remove(key);
+    } else {
+      _selectedUtxoKeys.add(key);
+    }
+    notifyListeners();
+  }
+
+  void selectAllUtxos() {
+    _selectedUtxoKeys = _availableUtxos.map((u) => '${u['txid']}:${u['vout']}').toSet();
+    notifyListeners();
+  }
+
+  void clearUtxoSelection() {
+    _selectedUtxoKeys = {};
+    notifyListeners();
+  }
+
+  void resetCoinControl() {
+    _availableUtxos = [];
+    _selectedUtxoKeys = {};
+    _isLoadingUtxos = false;
+    notifyListeners();
+  }
+
+  Future<bool> validateAddress(String address) async {
+    if (address.isEmpty) return false;
+    try {
+      final rpcUrl = await _rpcConfig.getRpcUrl();
+      final rpcUser = await _rpcConfig.getRpcUser();
+      final rpcPassword = await _rpcConfig.getRpcPassword();
+      final result = await _ws.rpcRequest(
+        rpcUrl,
+        rpcUser,
+        rpcPassword,
+        'validateaddress',
+        [address],
+      );
+      return result != null &&
+          result['result'] != null &&
+          result['result']['isvalid'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> fetchUtxos({bool force = false, bool silent = false}) async {
     if (_wallet == null) return;
 
@@ -253,7 +383,8 @@ class WalletProvider with ChangeNotifier {
   Future<Map<String, dynamic>> sendTransaction(
       String address,
       double amount,
-      {double? feeRate}
+      {double? feeRate,
+      List<Map<String, dynamic>>? preSelectedUtxos}
       ) async {
 
     if (_wallet == null) {
@@ -301,6 +432,7 @@ class WalletProvider with ChangeNotifier {
         address,
         amount,
         feeRate: feeRate,
+        preSelectedUtxos: preSelectedUtxos,
       );
 
       if (result['success']) {

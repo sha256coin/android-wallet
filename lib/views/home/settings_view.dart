@@ -9,6 +9,7 @@ import 'package:s256_wallet/views/home/privacy_view.dart';
 import 'package:s256_wallet/views/home/about_view.dart';
 import 'package:s256_wallet/views/home/support_view.dart';
 import 'package:s256_wallet/views/home/network_info_view.dart';
+import 'package:s256_wallet/views/home/regulatory_notice_view.dart';
 import 'package:s256_wallet/services/biometric_service.dart';
 import 'package:s256_wallet/widgets/app_background.dart';
 
@@ -634,6 +635,24 @@ class _SettingsViewState extends State<SettingsView> {
                           context,
                           MaterialPageRoute(
                             builder: (context) => const SupportView(),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                  const Divider(color: Colors.white),
+                  ListTile(
+                    title: const Text(
+                      'Regulatory Notice',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    leading: const Icon(Icons.gavel_rounded, color: Colors.white),
+                    onTap: () {
+                      if (context.mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const RegulatoryNoticeView(),
                           ),
                         );
                       }

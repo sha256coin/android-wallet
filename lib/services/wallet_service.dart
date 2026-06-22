@@ -8,8 +8,10 @@ import 'package:bip39/bip39.dart' as bip39;
 import 'package:crypto/crypto.dart';
 import 'package:bech32/bech32.dart';
 import 'package:base_x/base_x.dart';
+import 'package:hex/hex.dart';
 import 'package:s256_wallet/config.dart';
 import 'package:s256_wallet/services/rpc_config_service.dart';
+import 'package:s256_wallet/services/s256_signer.dart';
 
 class WalletService {
   final BaseXCodec base58 =
@@ -218,9 +220,18 @@ class WalletService {
         body: body,
       );
 
-      return jsonDecode(response.body);
+      if (response.statusCode != 200) {
+        throw Exception('Server returned HTTP status code: ${response.statusCode}');
+      }
+
+      final dynamic decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+
+      throw Exception('Invalid RPC response format received');
     } catch (e) {
-      return null;
+      rethrow;
     }
   }
 
@@ -242,24 +253,36 @@ class WalletService {
     String address,
   ) async {
     // 1. Get confirmed UTXOs from the chain
-    final result =
-        await rpcRequest(rpcUrl, rpcUser, rpcPassword, 'scantxoutset', [
+    final result = await rpcRequest(rpcUrl, rpcUser, rpcPassword, 'scantxoutset', [
       'start',
       [
         {'desc': 'addr($address)'}
       ]
     ]);
 
+    int currentHeight = 0;
+    final blockCountResult =
+        await rpcRequest(rpcUrl, rpcUser, rpcPassword, 'getblockcount');
+    if (blockCountResult != null && blockCountResult['result'] != null) {
+      currentHeight = (blockCountResult['result'] as num).toInt();
+    }
+
     final List<Map<String, dynamic>> confirmedUtxos = [];
     if (result != null && result['result'] != null) {
       final unspents = result['result']['unspents'] as List<dynamic>? ?? [];
       for (var u in unspents) {
+        final int utxoHeight = (u['height'] as num).toInt();
+        final int conf = currentHeight > 0 && utxoHeight > 0
+            ? currentHeight - utxoHeight + 1
+            : 1;
         confirmedUtxos.add({
           'txid': u['txid'],
           'vout': u['vout'],
-          'amount': (u['amount'] as num).toDouble(),
-          'height': u['height'],
-          'confirmations': 1,
+          'amount': (u['amount'] is num)
+              ? (u['amount'] as num).toDouble()
+              : double.tryParse(u['amount'].toString()) ?? 0.0,
+          'height': utxoHeight,
+          'confirmations': conf,
         });
       }
     }
@@ -328,10 +351,18 @@ class WalletService {
 
         if (addresses.contains(address) ||
             (singleAddr != null && singleAddr == address)) {
+          double parsedAmount = 0.0;
+          final rawValue = vout['value'];
+          if (rawValue is num) {
+            parsedAmount = rawValue.toDouble();
+          } else if (rawValue is String) {
+            parsedAmount = double.tryParse(rawValue) ?? 0.0;
+          }
+
           incomingFromMempool.add({
             'txid': txid,
             'vout': vout['n'] ?? 0,
-            'amount': (vout['value'] as num? ?? 0.0).toDouble(),
+            'amount': parsedAmount,
             'confirmations': 0,
           });
           hasMempoolActivity = true;
@@ -372,12 +403,15 @@ class WalletService {
     String toAddress,
     double amount, {
     double? feeRate,
+    List<Map<String, dynamic>>? preSelectedUtxos,
   }) async {
-    // Get UTXOs (Filter out pending marker)
     final allUtxos = await getUtxos(rpcUrl, rpcUser, rpcPassword, fromAddress);
-    final utxos = allUtxos
-        .where((u) => u['txid'] != 'pending_marker' && (u['confirmations'] as int) > 0)
-        .toList();
+    final utxos = (preSelectedUtxos != null && preSelectedUtxos.isNotEmpty)
+        ? List<Map<String, dynamic>>.from(preSelectedUtxos)
+        : allUtxos
+            .where((u) =>
+                u['txid'] != 'pending_marker' && (u['confirmations'] as int) > 0)
+            .toList();
 
     if (utxos.isEmpty) {
       final hasPending = allUtxos.any(
@@ -390,20 +424,54 @@ class WalletService {
       };
     }
 
-    final totalAvailable =
-        utxos.fold(0.0, (sum, utxo) => sum + (utxo['amount'] as num).toDouble());
+    for (final utxo in utxos) {
+      if (utxo['scriptPubKey'] == null || (utxo['scriptPubKey'] as String).isEmpty) {
+        try {
+          final txOut = await rpcRequest(
+            rpcUrl,
+            rpcUser,
+            rpcPassword,
+            'gettxout',
+            [utxo['txid'], utxo['vout']],
+          );
+          if (txOut?['result']?['scriptPubKey']?['hex'] != null) {
+            utxo['scriptPubKey'] = txOut!['result']['scriptPubKey']['hex'] as String;
+          }
+        } catch (_) {}
+      }
+
+      if (utxo['scriptPubKey'] == null || (utxo['scriptPubKey'] as String).isEmpty) {
+        try {
+          final generatedScript = S256Signer.scriptFromAddress(fromAddress);
+          utxo['scriptPubKey'] = HEX.encode(generatedScript);
+        } catch (_) {
+          return {
+            'success': false,
+            'message': 'Could not resolve scriptPubKey for UTXO ${utxo['txid']}.',
+          };
+        }
+      }
+    }
+
+    final totalAvailable = utxos.fold(
+      0.0,
+      (sum, utxo) => sum + (utxo['amount'] as num).toDouble(),
+    );
     final bool isSweep = (amount >= totalAvailable - 0.00001);
 
-    // Sort by amount (largest first)
-    utxos.sort((a, b) =>
-        ((b['amount'] as num).toDouble()).compareTo((a['amount'] as num).toDouble()));
+    utxos.sort((a, b) => ((b['amount'] as num).toDouble())
+        .compareTo((a['amount'] as num).toDouble()));
 
-    // Fetch fee rate
     double currentFeeRate = feeRate ?? 0.00001;
     if (feeRate == null) {
       try {
-        final feeResult =
-            await rpcRequest(rpcUrl, rpcUser, rpcPassword, 'estimatesmartfee', [6]);
+        final feeResult = await rpcRequest(
+          rpcUrl,
+          rpcUser,
+          rpcPassword,
+          'estimatesmartfee',
+          [6],
+        );
         if (feeResult != null &&
             feeResult['result'] != null &&
             feeResult['result']['feerate'] != null) {
@@ -412,87 +480,105 @@ class WalletService {
       } catch (_) {}
     }
 
-    // Select UTXOs
     List<Map<String, dynamic>> selectedUtxos = [];
     double inputSum = 0.0;
 
     for (int i = 0; i < utxos.length; i++) {
+      selectedUtxos.add(utxos[i]);
       final utxo = utxos[i];
-      selectedUtxos.add({'txid': utxo['txid'], 'vout': utxo['vout']});
       inputSum += (utxo['amount'] as num).toDouble();
 
       if (isSweep && i < utxos.length - 1) continue;
 
-      // Estimate fee
       final inputCount = selectedUtxos.length;
-      final txSize = 10 + (inputCount * 148) + (isSweep ? 1 : 2) * 34;
+      final bool isDestLegacy = !toAddress.toLowerCase().startsWith('s2');
+      final int destOutputSize = isDestLegacy ? 34 : 31;
+      const int changeOutputSize = 31;
 
-      final fee = (currentFeeRate * txSize / 1000);
+      int txSize = 11 + (inputCount * 68);
+      if (isSweep) {
+        txSize += destOutputSize;
+      } else {
+        txSize += destOutputSize + changeOutputSize;
+      }
+
+      final fee = currentFeeRate * txSize / 1000;
       final actualFee = double.parse(fee.toStringAsFixed(8));
 
       if (inputSum >= (isSweep ? actualFee : amount + actualFee)) {
-        final Map<String, dynamic> outputs = {};
-
-        if (isSweep) {
-          final sweepAmount =
-              double.parse((inputSum - actualFee).toStringAsFixed(8));
-          if (sweepAmount <= 0.00000546) {
-            return {
-              'success': false,
-              'message': 'Balance too low to cover transaction fees.'
-            };
+        final inputs = selectedUtxos.map((u) {
+          String? scriptHex = u['scriptPubKey'] as String?;
+          if (scriptHex == null || scriptHex.isEmpty) {
+            scriptHex = HEX.encode(S256Signer.scriptFromAddress(fromAddress));
           }
-          outputs[toAddress] = sweepAmount;
-        } else {
-          final change =
-              double.parse((inputSum - amount - actualFee).toStringAsFixed(8));
-          outputs[toAddress] = double.parse(amount.toStringAsFixed(8));
-          if (change > 0.00000546) {
-            outputs[fromAddress] = change;
+          return S256TxInput(
+            txid: u['txid'] as String,
+            vout: u['vout'] as int,
+            scriptPubKey: Uint8List.fromList(HEX.decode(scriptHex)),
+            satoshis: ((u['amount'] as num).toDouble() * 1e8).round(),
+          );
+        }).toList();
+
+        final outputs = <S256TxOutput>[];
+        try {
+          if (isSweep) {
+            final sweepSats = ((inputSum - actualFee) * 1e8).round();
+            if (sweepSats <= 546) {
+              return {
+                'success': false,
+                'message': 'Balance too low to cover transaction fees.'
+              };
+            }
+            outputs.add(S256TxOutput(
+              scriptPubKey: S256Signer.scriptFromAddress(toAddress),
+              satoshis: sweepSats,
+            ));
+          } else {
+            outputs.add(S256TxOutput(
+              scriptPubKey: S256Signer.scriptFromAddress(toAddress),
+              satoshis: (amount * 1e8).round(),
+            ));
+            final changeSats = ((inputSum - amount - actualFee) * 1e8).round();
+            if (changeSats > 546) {
+              outputs.add(S256TxOutput(
+                scriptPubKey: S256Signer.scriptFromAddress(fromAddress),
+                satoshis: changeSats,
+              ));
+            }
           }
-        }
-
-        // Create raw transaction
-        final createResult = await rpcRequest(rpcUrl, rpcUser, rpcPassword,
-            'createrawtransaction', [selectedUtxos, outputs]);
-
-        if (createResult == null || createResult['result'] == null) {
+        } catch (_) {
           return {
             'success': false,
-            'message':
-                'Unable to create transaction. Please try again or contact support.'
+            'message': 'Invalid destination address provided.'
           };
         }
 
-        // Sign transaction
-        final signResult = await rpcRequest(rpcUrl, rpcUser, rpcPassword,
-            'signrawtransactionwithkey', [
-          createResult['result'],
-          [privateKeyWif]
-        ]);
-
-        if (signResult == null || signResult['result'] == null) {
+        String signedHex;
+        try {
+          signedHex = S256Signer.signTransaction(
+            inputs: inputs,
+            outputs: outputs,
+            wif: privateKeyWif,
+          );
+        } catch (e) {
           return {
             'success': false,
-            'message':
-                'Unable to sign transaction with your private key. Please verify your wallet is loaded correctly.'
+            'message': 'Signing failed: $e'
           };
         }
 
-        if (!signResult['result']['complete']) {
-          return {
-            'success': false,
-            'message':
-                'Transaction could not be fully signed. Please check your wallet and try again.'
-          };
-        }
-
-        // Send transaction
-        final sendResult = await rpcRequest(rpcUrl, rpcUser, rpcPassword,
-            'sendrawtransaction', [signResult['result']['hex'], 0]);
+        final sendResult = await rpcRequest(
+          rpcUrl,
+          rpcUser,
+          rpcPassword,
+          'sendrawtransaction',
+          [signedHex],
+        );
 
         if (sendResult != null && sendResult['result'] != null) {
-          final changeAmount = isSweep ? 0.0 : double.parse((inputSum - amount - actualFee).toStringAsFixed(8));
+          final changeAmount = isSweep
+              ? 0.0
+              : double.parse((inputSum - amount - actualFee).toStringAsFixed(8));
           return {
             'success': true,
             'txid': sendResult['result'],
@@ -519,6 +605,51 @@ class WalletService {
       'message':
           'Insufficient funds. Available balance: ${inputSum.toStringAsFixed(8)} S256.'
     };
+  }
+
+  // Get transaction history for an address via explorer API with pagination.
+  Future<Map<String, dynamic>> getTransactions(
+    String address, {
+    int offset = 0,
+    int limit = 10,
+  }) async {
+    const String explorerBase = 'https://explorer.sha256coin.eu/api/address';
+    final url = '$explorerBase/$address/txs?offset=$offset&limit=$limit';
+
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode != 200) {
+        return {'transactions': <Map<String, dynamic>>[], 'txCount': 0};
+      }
+
+      final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+      final txList = decoded['transactions'] as List<dynamic>? ?? [];
+      final txCount = decoded['txCount'] as int? ?? 0;
+
+      final parsedTransactions = txList.whereType<Map<String, dynamic>>().map((tx) {
+        final amt = tx['addressAmount'] as Map<String, dynamic>? ?? {};
+        final direction = (amt['direction'] as String?) ?? 'in';
+        final net = (amt['net'] as num?)?.toDouble() ?? 0.0;
+        final confirmations = (tx['confirmations'] as int?) ?? 0;
+        final blocktime = tx['blocktime'] as int? ?? tx['time'] as int?;
+
+        return {
+          'txid': tx['txid'] as String,
+          'amount': net.abs(),
+          'direction': direction == 'out' ? 'sent' : 'received',
+          'confirmations': confirmations,
+          'timestamp': blocktime,
+          'counterparty': null,
+        };
+      }).toList();
+
+      return {
+        'transactions': parsedTransactions,
+        'txCount': txCount,
+      };
+    } catch (_) {
+      return {'transactions': <Map<String, dynamic>>[], 'txCount': 0};
+    }
   }
 
   // Get network info

@@ -12,6 +12,4 @@ class Config {
   static const String getAddressTxsEndpoint = '/ext/getaddresstxs';
   static const String getTxEndpoint = '/ext/gettx';
 
-  // S256 explorer price api
-  static const String s256ExplorerUrl = 'https://explorer.sha256coin.eu/api/price';
 }

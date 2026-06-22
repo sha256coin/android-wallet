@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:s256_wallet/widgets/app_background.dart';
+import 'package:s256_wallet/views/home/regulatory_notice_view.dart';
 
 class AboutView extends StatelessWidget {
   const AboutView({super.key});
@@ -75,7 +76,7 @@ class AboutView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Text(
-                    'Version 1.4',
+                    'Version 1.5',
                     style: TextStyle(color: S256Colors.accent, fontSize: 14),
                   ),
                 ),
@@ -239,6 +240,64 @@ class AboutView extends StatelessWidget {
                           ),
                         ),
                       ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // Regulatory notice entry
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.blue.withValues(alpha: 0.35),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.gavel_rounded, color: Colors.blue),
+                        SizedBox(width: 10),
+                        Text(
+                          'Regulatory Notice',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Read risk and non-custodial disclosures aligned with MiCA-oriented transparency expectations.',
+                      style: TextStyle(color: Colors.white70, height: 1.4),
+                    ),
+                    const SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const RegulatoryNoticeView(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.open_in_new_rounded),
+                        label: const Text('Open Regulatory Notice'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.blue,
+                          side: BorderSide(color: Colors.blue.withValues(alpha: 0.5)),
+                        ),
+                      ),
                     ),
                   ],
                 ),

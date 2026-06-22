@@ -441,11 +441,6 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
     final double? confirmedBalance = walletProvider.balance;
     final bool hasPending = walletProvider.hasPendingTransactions;
 
-    final double price = blockchainProvider.price;
-    final String balanceInUSD = displayBalance != null
-        ? '\$${(displayBalance * price).toStringAsFixed(2)}'
-        : '\$0.00';
-
     return Scaffold(
       body: RefreshIndicator(
         backgroundColor: const Color(0xFF3A3A3A),
@@ -514,16 +509,6 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                         Column(
                           children: [
                             const SizedBox(height: 20),
-
-                            // USD Value
-                            Text(
-                              balanceInUSD,
-                              style: TextStyle(
-                                color: hasPending ? Colors.orange.withValues(alpha: 0.8) : Colors.white54,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
 
                             const SizedBox(height: 8),
 
@@ -711,32 +696,18 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Expanded(
-                                child: AnimatedOpacity(
-                                  opacity: hasPending ? 0.6 : 1.0,
-                                  duration: const Duration(milliseconds: 200),
-                                  child: ButtonWidget(
-                                    text: 'Send',
-                                    isPrimary: true,
-                                    icon: Icons.arrow_upward,
-                                    onPressed: hasPending
-                                        ? () {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('Please wait for pending transactions to confirm'),
-                                          backgroundColor: Colors.orange,
-                                          duration: Duration(seconds: 2),
-                                        ),
-                                      );
-                                    }
-                                        : () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => const SendView(),
-                                        ),
-                                      );
-                                    },
-                                  ),
+                                child: ButtonWidget(
+                                  text: 'Send',
+                                  isPrimary: true,
+                                  icon: Icons.arrow_upward,
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => const SendView(),
+                                      ),
+                                    );
+                                  },
                                 ),
                               ),
                               const SizedBox(width: 12),

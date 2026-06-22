@@ -3,19 +3,20 @@ import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:s256_wallet/config.dart';
+import 'package:s256_wallet/services/wallet_service.dart';
 
 class BlockchainProvider with ChangeNotifier {
   String _timestamp = '';
   final List<dynamic> _transactions = [];
-  double _price = 0.0;
+  final WalletService _walletService = WalletService();
   bool _isLoading = false;
   bool _hasMore = true;
   int _startIndex = 0;
   final int _limit = 50;
+  int _txCount = 0;
 
   String get timestamp => _timestamp;
   List get transactions => _transactions;
-  double get price => _price;
   bool get isLoading => _isLoading;
   bool get hasMore => _hasMore;
 
@@ -27,42 +28,11 @@ class BlockchainProvider with ChangeNotifier {
     _transactions.clear();
     _startIndex = 0;
     _hasMore = true;
+    _txCount = 0;
 
     await fetchTransactions(address);
     _timestamp = formattedDate;
     notifyListeners();
-  }
-
-  Future<void> fetchPrice() async {
-    const url = Config.s256ExplorerUrl;
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw Exception('Price fetch request timed out after 10 seconds');
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['price'] != null) {
-          _price = (data['price'] as num).toDouble();
-          debugPrint('Price updated: $_price');
-        } else {
-          throw Exception('Price data not available in response');
-        }
-      } else {
-        throw Exception(
-            'Failed to load price, Status Code: ${response.statusCode}');
-      }
-    } catch (e) {
-      // Keep previous price if fetch fails
-      debugPrint('Error fetching price: $e');
-    } finally {
-      notifyListeners();
-    }
   }
 
   Future<void> fetchTransactions(String? address) async {
@@ -93,14 +63,54 @@ class BlockchainProvider with ChangeNotifier {
           _startIndex += _limit;
         }
       } else {
-        throw Exception('Failed to load transactions');
+        await _fetchTransactionsViaHelper(address);
       }
     } catch (e) {
       debugPrint('Error fetching transactions: $e');
+      await _fetchTransactionsViaHelper(address);
     } finally {
-      await fetchPrice();
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> _fetchTransactionsViaHelper(String address) async {
+    try {
+      final data = await _walletService.getTransactions(
+        address,
+        offset: _startIndex,
+        limit: _limit,
+      );
+
+      final rawList =
+          (data['transactions'] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().toList();
+      _txCount = data['txCount'] as int? ?? _txCount;
+
+      if (rawList.isEmpty) {
+        _hasMore = false;
+        return;
+      }
+
+      final mapped = rawList.map((tx) {
+        final amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
+        final direction = (tx['direction'] as String?) ?? 'received';
+        final timestamp = tx['timestamp'] as int? ??
+            (DateTime.now().millisecondsSinceEpoch ~/ 1000);
+
+        return {
+          'timestamp': timestamp,
+          'txid': tx['txid'],
+          'amount': direction == 'sent' ? -amount.abs() : amount.abs(),
+          'balance': tx['balance'],
+          'confirmations': tx['confirmations'],
+        };
+      }).toList();
+
+      _transactions.addAll(mapped);
+      _startIndex += _limit;
+      _hasMore = _txCount > 0 ? _transactions.length < _txCount : rawList.length == _limit;
+    } catch (e) {
+      debugPrint('Fallback history helper failed: $e');
     }
   }
 

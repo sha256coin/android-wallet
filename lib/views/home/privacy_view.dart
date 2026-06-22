@@ -193,10 +193,27 @@ class _PrivacyViewState extends State<PrivacyView>
             Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade400),
             const SizedBox(width: 6),
             Text(
-              'Last updated: January 19, 2026',
+              'Last updated: June 22, 2026',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.shade400,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: Colors.white24),
+              ),
+              child: Text(
+                'Revision 2026.06.22',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey.shade300,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -265,81 +282,86 @@ class _PrivacyViewState extends State<PrivacyView>
     );
   }
 
-  List<Widget> _buildSections() {
-    final sections = [
-      {
-        'icon': Icons.data_usage,
-        'title': 'Data Collection and Processing',
-        'color': Colors.orange,
-        'points': <String>[
-          'We do not collect personal data directly from you unless you voluntarily provide it to us.',
-          'The S256 Wallet is designed to operate without requiring registration, and we do not collect sensitive information such as names, addresses, or email addresses.',
-          'However, the following data may be automatically collected through the use of the app:',
-        ],
-        'subPoints': <String>[
-          'Device Information: Information about the device, operating system, and app version used.',
-          'Transaction Data: Public blockchain data, such as sending and receiving addresses, as well as transaction amounts.',
-        ],
-      },
-      {
-        'icon': Icons.analytics_outlined,
-        'title': 'Use of Collected Data',
-        'color': Colors.green,
-        'points': <String>[
-          'The data collected through the app is used solely to ensure the functionality of the wallet.',
-          'We do not collect or store personal data on our servers.',
-        ],
-        'subPoints': <String>[],
-      },
-      {
-        'icon': Icons.share_outlined,
-        'title': 'Sharing Data with Third Parties',
-        'color': Colors.purple,
-        'points': <String>[
-          'The S256 Wallet does not share personal data with third parties.',
-          'All transactions conducted through the wallet are publicly viewable on the blockchain, but we do not store or track this information.',
-        ],
-        'subPoints': <String>[],
-      },
-      {
-        'icon': Icons.security,
-        'title': 'Data Security',
-        'color': Colors.red,
-        'points': <String>[
-          'The security of your data is a top priority for us. Your private keys and sensitive information are stored only locally on your device and are never transmitted to us or third parties.',
-        ],
-        'subPoints': <String>[],
-      },
-      {
-        'icon': Icons.person_outline,
-        'title': 'User Rights',
-        'color': Colors.cyan,
-        'points': <String>[
-          'Since we do not collect or store personal data, you can delete the app at any time without us retaining any information about you.',
-          'If this changes in the future, you will be informed and have the right to view, modify, or delete your data.',
-        ],
-        'subPoints': <String>[],
-      },
-      {
-        'icon': Icons.update,
-        'title': 'Changes to the Privacy Policy',
-        'color': Colors.amber,
-        'points': <String>[
-          'We reserve the right to modify this privacy policy to reflect new legal requirements or changes to our app.',
-          'The current version of the privacy policy will always be available in the app and on our website.',
-        ],
-        'subPoints': <String>[],
-      },
-      {
-        'icon': Icons.mail_outline,
-        'title': 'Contact',
-        'color': Colors.teal,
-        'points': <String>[
-          'If you have any questions regarding this privacy policy, feel free to contact us at info@sha256coin.eu',
-        ],
-        'subPoints': <String>[],
-      },
-    ];
+List<Widget> _buildSections() {
+  final sections = [
+    {
+      'icon': Icons.data_usage,
+      'title': 'Data Collection and Processing',
+      'color': Colors.orange,
+      'points': <String>[
+        'We do not collect personal information unless you voluntarily provide it.',
+        'The S256 Wallet operates without requiring account registration.',
+        'Wallet creation and transaction signing are performed entirely on your device.',
+        'We do not store or have access to your recovery phrase or private keys.',
+        'However, certain data may be automatically collected during app usage:',
+      ],
+      'subPoints': <String>[
+        'Device Information: Includes device type, operating system, and app version for troubleshooting and compatibility purposes.',
+        'Push Notifications: If enabled, we collect your wallet address and device notification token to send transaction alerts.',
+        'Blockchain Data: Transaction addresses and amounts become publicly visible on the blockchain once broadcast. All signing is performed locally on your device — your private key never leaves it. Only the final signed transaction hex is transmitted to the network.',
+      ],
+    },
+    {
+      'icon': Icons.analytics_outlined,
+      'title': 'Use of Collected Data',
+      'color': Colors.green,
+      'points': <String>[
+        'The data collected through the app is used solely to ensure the functionality of the wallet.',
+        'We do not collect or store personal data on our servers.',
+      ],
+      'subPoints': <String>[],
+    },
+    {
+      'icon': Icons.share_outlined,
+      'title': 'Sharing Data with Third Parties',
+      'color': Colors.purple,
+      'points': <String>[
+        'The S256 Wallet does not share personal data with third parties.',
+        'All transactions conducted through the wallet are publicly viewable on the blockchain, but we do not store or track this information.',
+        'No private keys, recovery phrases, or signing material are ever transmitted to us or any third party under any circumstances.',
+      ],
+      'subPoints': <String>[],
+    },
+    {
+      'icon': Icons.security,
+      'title': 'Data Security',
+      'color': Colors.red,
+      'points': <String>[
+        'The security of your data is a top priority for us. Your private keys and sensitive information are stored only locally on your device and are never transmitted to us or third parties.',
+        'All cryptographic operations, including transaction signing, are performed entirely on your device. Only the resulting signed transaction hex is sent to the network — never your private key, seed phrase, or any intermediate signing material.',
+      ],
+      'subPoints': <String>[],
+    },
+    {
+      'icon': Icons.person_outline,
+      'title': 'User Rights',
+      'color': Colors.cyan,
+      'points': <String>[
+        'Since we do not collect or store personal data, you can delete the app at any time without us retaining any information about you.',
+        'If this changes in the future, you will be informed and have the right to view, modify, or delete your data.',
+      ],
+      'subPoints': <String>[],
+    },
+    {
+      'icon': Icons.update,
+      'title': 'Changes to the Privacy Policy',
+      'color': Colors.amber,
+      'points': <String>[
+        'We reserve the right to modify this privacy policy to reflect new legal requirements or changes to our app.',
+        'The current version of the privacy policy will always be available in the app and on our website.',
+      ],
+      'subPoints': <String>[],
+    },
+    {
+      'icon': Icons.mail_outline,
+      'title': 'Contact',
+      'color': Colors.teal,
+      'points': <String>[
+        'If you have any questions regarding this privacy policy, feel free to contact us at info@sha256coin.eu',
+      ],
+      'subPoints': <String>[],
+    },
+  ];
 
     return sections.asMap().entries.map((entry) {
       final index = entry.key;
