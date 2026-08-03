@@ -30,18 +30,37 @@
 - **Biometric Security**: Protect your wallet and recovery phrase with fingerprint or face recognition.
 - **Secure Storage**: Sensitive keys and mnemonics are stored in encrypted secure storage.
 
-## Release 1.5
+## Release 1.6
 
-Release date: 2026-06-22
+Release date: 2026-08-02
 
-- Fully non-custodial mobile transaction flow with local signing.
-- Advanced send mode with coin control (manual UTXO selection).
-- Send preview panel with selected inputs, amount, estimated fee, and expected change.
-- Address validation alignment for modern and legacy formats in send flow.
-- Improved pending-transaction handling for selected confirmed/free UTXOs.
-- Exchange view redesigned as informational/compliance-oriented surface.
-- Added in-app Regulatory Notice view and navigation from Settings/About.
-- Privacy policy metadata refreshed (updated date + revision tag).
+Send flow improvements:
+
+- Added batch-send candidate assessment and decision flow (batch vs normal send).
+- Added normal-send failure recovery path with retry-as-batch prompt.
+- Added unified post-send acknowledgements for both single tx and batch txid results.
+- Added compact confirmation labels (`K/M/B/T`) in advanced UTXO selection to improve readability.
+
+Migration safety improvements:
+
+- Migration sweep now uses provider send flow with batch support enabled.
+- Added partial-batch safety handling with backup-first guidance before next actions.
+- Added explicit manual remaining-funds instructions and optional retry sweep path.
+- Added recovery path when migration broadcast succeeds but wallet finalization fails, including TXID copy + backup continuation.
+
+Wallet state consistency:
+
+- Improved new-wallet load behavior after migration by resetting transient runtime send state.
+- Preserved clean coin-control and pending state transitions during wallet switch.
+- Removed unused provider-level migration entry point to keep a single active migration flow in Settings.
+
+Address book and receive UX:
+
+- Wired Address Book into bottom navigation for direct access.
+- Hardened address book file export path handling for reliable saved output.
+- Updated Receive QR to a static (non-animated) render and capped responsive sizing for tablet scan reliability.
+
+See [CHANGELOG.MD](CHANGELOG.MD) for full release history.
 
 ## Quick Start
 

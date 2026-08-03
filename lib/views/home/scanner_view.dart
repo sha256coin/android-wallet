@@ -65,9 +65,42 @@ class _ScannerViewState extends State<ScannerView> with WidgetsBindingObserver {
       // Haptic feedback for better UX
       HapticFeedback.mediumImpact();
 
-      // Return the scanned value
-      Navigator.pop(context, barcodes.first.rawValue);
+      // Parse payment URI formats to return a clean address for send flow.
+      final scannedValue = barcodes.first.rawValue!;
+      final cleanAddress = _parseAddressFromUri(scannedValue);
+
+      // Return normalized address value.
+      Navigator.pop(context, cleanAddress);
     }
+  }
+
+  /// Parse payment URI formats and extract just the destination address.
+  /// Supports schemes like sha256coin:, bitcoin:, and legacy bitcoinsilver:.
+  String _parseAddressFromUri(String value) {
+    String address = value.trim();
+
+    if (address.toLowerCase().startsWith('sha256coin:')) {
+      address = address.substring('sha256coin:'.length);
+    } else if (address.toLowerCase().startsWith('bitcoinsilver:')) {
+      address = address.substring('bitcoinsilver:'.length);
+    } else if (address.toLowerCase().startsWith('bitcoin:')) {
+      address = address.substring('bitcoin:'.length);
+    }
+
+    final queryIndex = address.indexOf('?');
+    if (queryIndex != -1) {
+      address = address.substring(0, queryIndex);
+    }
+
+    final normalized = address.trim();
+
+    // Bech32 addresses are case-insensitive and typically lowercase.
+    if (normalized.toLowerCase().startsWith('s21')) {
+      return normalized.toLowerCase();
+    }
+
+    // Legacy Base58 is case-sensitive and must be preserved.
+    return normalized;
   }
 
   @override

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:s256_wallet/providers/addressbook_provider.dart';
 import 'package:s256_wallet/providers/wallet_provider.dart';
 import 'package:s256_wallet/providers/blockchain_provider.dart';
 import 'package:s256_wallet/views/setup_view.dart';
@@ -142,6 +143,9 @@ Future<void> _runApp() async {
       providers: [
         ChangeNotifierProvider<WalletProvider>.value(value: wp),
         ChangeNotifierProvider<BlockchainProvider>.value(value: bp),
+        ChangeNotifierProvider<AddressbookProvider>(
+          create: (_) => AddressbookProvider(),
+        ),
       ],
       child: const MyApp(),
     ),

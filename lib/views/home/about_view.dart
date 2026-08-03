@@ -76,7 +76,7 @@ class AboutView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Text(
-                    'Version 1.5',
+                    'Version 1.6',
                     style: TextStyle(color: S256Colors.accent, fontSize: 14),
                   ),
                 ),
@@ -262,10 +262,10 @@ class AboutView extends StatelessWidget {
                   children: [
                     const Row(
                       children: [
-                        Icon(Icons.gavel_rounded, color: Colors.blue),
+                        Icon(Icons.policy_outlined, color: Colors.blue),
                         SizedBox(width: 10),
                         Text(
-                          'Regulatory Notice',
+                          'Disclaimer & Transparency',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,

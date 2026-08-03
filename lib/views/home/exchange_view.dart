@@ -63,8 +63,8 @@ class ExchangeView extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 _infoCard(
-                  icon: Icons.gavel_rounded,
-                  title: 'MiCA-Oriented Disclosures',
+                  icon: Icons.policy_outlined,
+                  title: 'Disclaimer',
                   body:
                       'This wallet is non-custodial software. You keep sole control of private keys and transactions. The app does not execute, route, or guarantee exchange trades. Any external platform access is user-initiated and outside wallet control.',
                   color: Colors.blue,
@@ -101,12 +101,14 @@ class ExchangeView extends StatelessWidget {
                   note: 'Third-party venue. Opens outside the wallet.',
                   imageIcon: 'assets/images/RR_Logo.png',
                 ),
+                /*
                 _platformTile(
                   name: 'KlingEx',
                   link: 'https://klingex.io/trade/S256-USDT',
                   note: 'Third-party venue. Opens outside the wallet.',
                   imageIcon: 'assets/images/klingex.png',
                 ),
+                */
                 const SizedBox(height: 16),
                 SilverCard(
                   padding: const EdgeInsets.all(14),

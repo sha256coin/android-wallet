@@ -1,9 +1,10 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:s256_wallet/widgets/app_background.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
+import 'package:s256_wallet/models/addressbook_entry.dart';
 import 'package:s256_wallet/providers/wallet_provider.dart';
+import 'package:s256_wallet/views/home/addressbook_view.dart';
 import 'package:s256_wallet/views/home/scanner_view.dart';
 import 'package:s256_wallet/widgets/button_widget.dart';
 
@@ -15,33 +16,102 @@ class SendView extends StatefulWidget {
 }
 
 class _SendViewState extends State<SendView> {
+  static const int _satsPerS256 = 100000000;
+
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _manualFeeController = TextEditingController();
 
   bool _isChecked = false;
   bool _advancedSend = false;
+  String _errorMessage = '';
+  bool _isSending = false;
   bool? _addressValid;
   bool _isValidatingAddress = false;
   Timer? _addressDebounce;
-  String _errorMessage = '';
-  bool _isSending = false;
-  final double _estimatedFee = 0.00001; // Default fee estimate
+
+  int _s256ToSats(double amount) => (amount * _satsPerS256).round();
+  double _satsToS256(int sats) => sats / _satsPerS256;
+  double _s256KvBToSatVb(double s256KvB) => s256KvB / 0.00001;
+
+  String _formatDecimal(double value, {int maxDecimals = 8}) {
+    final fixed = value.toStringAsFixed(maxDecimals);
+    final trimmed = fixed.replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+    return trimmed.isEmpty ? '0' : trimmed;
+  }
+
+    String _formatSatVb(double s256KvB) =>
+      _formatDecimal(_s256KvBToSatVb(s256KvB), maxDecimals: 6);
+
+  String _feeSourceLabel(WalletProvider provider) {
+    switch (provider.feeRateSource) {
+      case 'manual':
+        return 'Manual';
+      case 'clamped':
+        return 'Clamped to Baseline';
+      case 'baseline':
+        return 'Node Baseline';
+      case 'estimated':
+        return 'Node Estimate';
+      default:
+        return 'Not Ready';
+    }
+  }
+
+  String _formatConfirmationsLabel(int confirmations) {
+    if (confirmations <= 1) {
+      return '$confirmations conf';
+    }
+    return '${_formatCompactConfirmationCount(confirmations)} conf';
+  }
+
+  String _formatCompactConfirmationCount(int confirmations) {
+    if (confirmations < 1000) {
+      return '$confirmations';
+    }
+
+    const suffixes = ['K', 'M', 'B', 'T'];
+    double value = confirmations.toDouble();
+    var suffixIndex = -1;
+
+    while (value >= 1000 && suffixIndex < suffixes.length - 1) {
+      value /= 1000;
+      suffixIndex++;
+    }
+
+    var compact = value.toStringAsPrecision(3);
+    if (compact.contains('.')) {
+      compact = compact.replaceFirst(RegExp(r'0+$'), '');
+      compact = compact.replaceFirst(RegExp(r'\.$'), '');
+    }
+
+    return '$compact${suffixes[suffixIndex]}';
+  }
+
+  int _selectedUtxoTotalSats(WalletProvider provider) {
+    return provider.selectedUtxoList.fold(
+      0,
+      (sum, u) => sum + _s256ToSats((u['amount'] as num).toDouble()),
+    );
+  }
 
   @override
   void initState() {
     super.initState();
     // Fetch fresh balance on init
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _refreshBalance();
-      Provider.of<WalletProvider>(context, listen: false).fetchFeeRate();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _refreshBalance();
+      if (!mounted) return;
+      await Provider.of<WalletProvider>(context, listen: false).fetchFeeRate();
     });
   }
 
   @override
   void dispose() {
+    _addressDebounce?.cancel();
     _addressController.dispose();
     _amountController.dispose();
-    _addressDebounce?.cancel();
+    _manualFeeController.dispose();
     super.dispose();
   }
 
@@ -50,77 +120,73 @@ class _SendViewState extends State<SendView> {
     await walletProvider.fetchUtxos(force: true);
   }
 
+  void _scheduleAddressValidation(String rawValue) {
+    _addressDebounce?.cancel();
+    final value = rawValue.trim();
+
+    setState(() {
+      _addressValid = null;
+      _isValidatingAddress = value.isNotEmpty;
+      _errorMessage = '';
+    });
+
+    if (value.isEmpty) {
+      return;
+    }
+
+    final walletProvider = Provider.of<WalletProvider>(context, listen: false);
+    _addressDebounce = Timer(const Duration(milliseconds: 700), () async {
+      final valid = await walletProvider.validateAddress(value);
+      if (!mounted) return;
+      setState(() {
+        _addressValid = valid;
+        _isValidatingAddress = false;
+      });
+    });
+  }
+
+  Future<void> _pickAddressFromAddressbook() async {
+    if (_isSending) return;
+
+    final selected = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AddressbookView(selectionMode: true),
+      ),
+    );
+
+    if (!mounted || selected == null || selected is! AddressbookEntry) {
+      return;
+    }
+
+    setState(() {
+      _addressController.text = selected.address;
+      _errorMessage = '';
+    });
+    _scheduleAddressValidation(selected.address);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Selected ${selected.label}'),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF2A2A2A),
+      ),
+    );
+  }
+
   void _setMaxAmount() {
     final walletProvider = Provider.of<WalletProvider>(context, listen: false);
-    final balance = _advancedSend && walletProvider.selectedUtxoCount > 0
-        ? walletProvider.selectedUtxoTotal
-        : (walletProvider.balance ?? 0.0);
-
-    // Leave some for fees (rough estimate)
-    final maxAmount = balance > _estimatedFee ? balance - _estimatedFee : 0.0;
+    // Use full spendable amount in satoshis so the send service enters sweep
+    // mode and computes the exact final sendable value after fee.
+    final maxSats = _advancedSend && walletProvider.selectedUtxoCount > 0
+        ? _selectedUtxoTotalSats(walletProvider)
+        : _s256ToSats(walletProvider.balance ?? 0.0);
+      final maxAmount = _satsToS256(maxSats > 0 ? maxSats : 0);
 
     setState(() {
       _amountController.text = maxAmount.toStringAsFixed(8);
       _errorMessage = '';
     });
-  }
-
-  /// Parses a BIP21-style URI (e.g., sha256coin:ADDRESS?amount=X&label=Y)
-  /// Returns a map with 'address', 'amount', and 'label' fields
-  Map<String, String?> _parsePaymentUri(String input) {
-    String address = input.trim();
-    String? amount;
-    String? label;
-
-    // Check if it's a BIP21-style URI
-    if (address.toLowerCase().startsWith('sha256coin:')) {
-      // Remove the protocol prefix
-      address = address.substring('sha256coin:'.length);
-
-      // Split address from query parameters
-      final questionMarkIndex = address.indexOf('?');
-      if (questionMarkIndex != -1) {
-        final queryString = address.substring(questionMarkIndex + 1);
-        address = address.substring(0, questionMarkIndex);
-
-        // Parse query parameters
-        final params = Uri.splitQueryString(queryString);
-        amount = params['amount'];
-        label = params['label'] ?? params['message'];
-      }
-    }
-
-    return {
-      'address': address,
-      'amount': amount,
-      'label': label,
-    };
-  }
-
-  bool _isValidS256Address(String address) {
-    final trimmed = address.trim();
-
-    // Bech32 (native segwit)
-    if (trimmed.toLowerCase().startsWith('s21')) {
-      if (trimmed.length < 42 || trimmed.length > 62) {
-        return false;
-      }
-      final validBech32 = RegExp(r'^s21[ac-hj-np-z02-9]+$');
-      return validBech32.hasMatch(trimmed.toLowerCase());
-    }
-
-    // Legacy Base58 (S... P2PKH / 8... P2SH)
-    if (trimmed.startsWith('S') || trimmed.startsWith('8')) {
-      if (trimmed.length < 26 || trimmed.length > 50) {
-        return false;
-      }
-          final validBase58Chars = RegExp(r'^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]+');
-          final hasInvalidChar = RegExp(r'[^123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]')
-            .hasMatch(trimmed);
-          return validBase58Chars.hasMatch(trimmed) && !hasInvalidChar;
-    }
-
-    return false;
   }
 
   bool _validateInputs() {
@@ -135,52 +201,19 @@ class _SendViewState extends State<SendView> {
       return false;
     }
 
-    final validatedByRpc = _addressValid == true;
-    if (!validatedByRpc && !_isValidS256Address(address)) {
+    // Address validation from RPC checker
+    if (_addressValid == false) {
       setState(() {
-        _errorMessage =
-            'Invalid address format. Use s21... or legacy S.../8... addresses.';
+        _errorMessage = 'Invalid address.';
       });
       return false;
     }
 
-    // Check amount
-    final amount = double.tryParse(_amountController.text);
-    if (amount == null || amount <= 0) {
+    // Use the same amount rules shown in the inline amount validator.
+    final amountError = _amountError(walletProvider);
+    if (amountError != null) {
       setState(() {
-        _errorMessage = 'Please enter a valid amount.';
-      });
-      return false;
-    }
-
-    // Check balance
-    final balance = _advancedSend && walletProvider.selectedUtxoCount > 0
-        ? walletProvider.selectedUtxoTotal
-        : (walletProvider.balance ?? 0.0);
-    if (amount > balance) {
-      setState(() {
-        _errorMessage = 'Insufficient balance. Available: ${balance.toStringAsFixed(8)} S256';
-      });
-      return false;
-    }
-
-    // Check for minimum amount (dust threshold)
-    if (amount < 0.00000546) {
-      setState(() {
-        _errorMessage = 'Amount is below minimum (0.00000546 S256).';
-      });
-      return false;
-    }
-
-    // Allow spending explicitly selected confirmed UTXOs in advanced mode,
-    // even if other transactions are pending in mempool.
-    final bypassPendingGate =
-        _advancedSend && walletProvider.selectedUtxoCount > 0;
-
-    // Check if there are pending transactions
-    if (walletProvider.hasPendingTransactions && !bypassPendingGate) {
-      setState(() {
-        _errorMessage = 'Please wait for pending transactions to confirm.';
+        _errorMessage = amountError;
       });
       return false;
     }
@@ -189,16 +222,6 @@ class _SendViewState extends State<SendView> {
     if (walletProvider.utxos == null || walletProvider.utxos!.isEmpty) {
       setState(() {
         _errorMessage = 'No confirmed UTXOs available. Please wait for confirmations.';
-      });
-      return false;
-    }
-
-    if (_advancedSend &&
-        walletProvider.selectedUtxoCount > 0 &&
-        amount > walletProvider.selectedUtxoTotal) {
-      setState(() {
-        _errorMessage =
-            'Exceeds selected inputs (${walletProvider.selectedUtxoTotal.toStringAsFixed(8)} S256).';
       });
       return false;
     }
@@ -228,54 +251,188 @@ class _SendViewState extends State<SendView> {
     });
 
     final walletProvider = Provider.of<WalletProvider>(context, listen: false);
+    walletProvider.clearMessage();
     final address = _addressController.text.trim();
     final amount = double.parse(_amountController.text);
     final selectedUtxos = _advancedSend && walletProvider.selectedUtxoCount > 0
       ? walletProvider.selectedUtxoList
       : null;
 
+    double? sendFeeRate;
+
+    if (walletProvider.feeRateReady) {
+      sendFeeRate = walletProvider.feeRate;
+    } else {
+      await walletProvider.fetchFeeRate();
+      if (walletProvider.feeRateReady) {
+        sendFeeRate = walletProvider.feeRate;
+      }
+    }
+
+    if (sendFeeRate == null) {
+      final manualFeeRate = await _showManualFeeDialog(walletProvider);
+      if (manualFeeRate == null) {
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'Transaction cancelled. A valid fee rate is required.';
+            _isSending = false;
+          });
+        }
+        return;
+      }
+      walletProvider.setManualFeeRate(manualFeeRate);
+      sendFeeRate = manualFeeRate;
+    }
+
+    var preferBatchSend = true;
+    while (mounted) {
+      final batchPreview = await walletProvider.assessBatchSendCandidate(
+        address,
+        amount,
+        manualFeeRateCoinPerKb: sendFeeRate,
+        preSelectedUtxos: selectedUtxos,
+      );
+      if (batchPreview['isCandidate'] != true) {
+        break;
+      }
+
+      final decision = await _showBatchDecisionDialog(
+        provider: walletProvider,
+        amount: amount,
+        preview: batchPreview,
+      );
+      if (decision == null || decision == 'cancel') {
+        if (mounted) {
+          setState(() {
+            _isSending = false;
+            _errorMessage = 'Transaction cancelled.';
+          });
+        }
+        return;
+      }
+
+      if (decision == 'manual-fee') {
+        final manualFeeRate = await _showManualFeeDialog(walletProvider);
+        if (manualFeeRate == null) {
+          if (mounted) {
+            setState(() {
+              _isSending = false;
+              _errorMessage = 'Transaction cancelled. A valid fee rate is required.';
+            });
+          }
+          return;
+        }
+        walletProvider.setManualFeeRate(manualFeeRate);
+        sendFeeRate = manualFeeRate;
+        continue;
+      }
+
+      preferBatchSend = decision == 'batch';
+      break;
+    }
+
+    final agreed = await _showPreSendConfirmDialog(
+      provider: walletProvider,
+      toAddress: address,
+      amount: amount,
+    );
+    if (!agreed) {
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+          _errorMessage = 'Transaction cancelled.';
+        });
+      }
+      return;
+    }
+
     try {
-      // First attempt to send
       final result = await walletProvider.sendTransaction(
         address,
         amount,
+        feeRate: sendFeeRate,
         preSelectedUtxos: selectedUtxos,
+        preferBatchSend: preferBatchSend,
       );
 
-      if (result['success'] == true) {
-        // Success!
-        if (mounted) {
-          _showSuccessDialog(result['txid'] ?? '', result['fee'] ?? 0.0);
-        }
-
-        // Clear form
-        setState(() {
-          _addressController.clear();
-          _amountController.clear();
-          _isChecked = false;
-          _errorMessage = '';
-        });
-
-        // Refresh balance after a delay
-        Future.delayed(const Duration(seconds: 3), () {
-          if (mounted) {
-            _refreshBalance();
+      if (result['success'] != true && result['requiresManualFee'] == true && mounted) {
+        final manualFeeRate = await _showManualFeeDialog(walletProvider);
+        if (manualFeeRate != null) {
+          walletProvider.setManualFeeRate(manualFeeRate);
+          final retryResult = await walletProvider.sendTransaction(
+            address,
+            amount,
+            feeRate: manualFeeRate,
+            preSelectedUtxos: selectedUtxos,
+            preferBatchSend: preferBatchSend,
+          );
+          if (retryResult['success'] == true) {
+            _resetSendForm(walletProvider);
+            if (mounted) {
+              await _showSendAckFromResult(retryResult, requestedAmount: amount);
+            }
+          } else if (mounted) {
+            setState(() {
+              _errorMessage = (retryResult['message'] as String?) ?? 'Transaction failed';
+            });
           }
-        });
+        } else if (mounted) {
+          setState(() {
+            _errorMessage = 'Transaction cancelled. A valid fee rate is required.';
+          });
+        }
+        return;
+      }
+
+      if (result['success'] != true && !preferBatchSend && mounted) {
+        final message = (result['message'] as String?) ?? 'Transaction failed.';
+        if (_isLikelyBatchFailureMessage(message)) {
+          final retryAsBatch = await _showRetryBatchDialog(message: message);
+          if (retryAsBatch == true) {
+            final retryResult = await walletProvider.sendTransaction(
+              address,
+              amount,
+              feeRate: sendFeeRate,
+              preSelectedUtxos: selectedUtxos,
+              preferBatchSend: true,
+            );
+            if (retryResult['success'] == true) {
+              _resetSendForm(walletProvider);
+              if (mounted) {
+                await _showSendAckFromResult(retryResult, requestedAmount: amount);
+              }
+              return;
+            }
+
+            if (mounted) {
+              setState(() {
+                _errorMessage = (retryResult['message'] as String?) ??
+                    'Batch retry failed.';
+              });
+            }
+            return;
+          }
+        }
+      }
+
+      if (result['success'] == true) {
+        _resetSendForm(walletProvider);
+        if (mounted) {
+          await _showSendAckFromResult(result, requestedAmount: amount);
+        }
 
         return;
       }
 
       // Handle insufficient fee error
       if (result['suggestedFeeRate'] != null) {
-        final suggestedFeeRate = result['suggestedFeeRate'] as double;
-        final currentFeeRate = result['currentFeeRate'] ?? 0.00001;
+        final suggestedFeeRate = (result['suggestedFeeRate'] as num).toDouble();
+        final currentFeeRate = (result['currentFeeRate'] as num?)?.toDouble() ?? 0.00001;
 
         if (mounted) {
           final shouldRetry = await _showFeeDialog(currentFeeRate, suggestedFeeRate);
 
           if (shouldRetry) {
-            // Retry with suggested fee rate
             setState(() {
               _errorMessage = 'Retrying with higher fee...';
             });
@@ -283,56 +440,1213 @@ class _SendViewState extends State<SendView> {
             final retryResult = await walletProvider.sendTransaction(
               address,
               amount,
-              feeRate: suggestedFeeRate + 0.00000001, // Add small bump to ensure acceptance
+              feeRate: suggestedFeeRate + 0.00000001,
+              preSelectedUtxos: selectedUtxos,
+              preferBatchSend: preferBatchSend,
             );
 
             if (retryResult['success'] == true) {
+              _resetSendForm(walletProvider);
               if (mounted) {
-                _showSuccessDialog(retryResult['txid'] ?? '', retryResult['fee'] ?? 0.0);
+                await _showSendAckFromResult(retryResult, requestedAmount: amount);
               }
 
-              // Clear form
-              setState(() {
-                _addressController.clear();
-                _amountController.clear();
-                _isChecked = false;
-                _advancedSend = false;
-                _addressValid = null;
-                _errorMessage = '';
-              });
-
-              walletProvider.resetCoinControl();
-
               return;
-            } else {
-              // Retry failed
+            }
+
+            if (mounted) {
               setState(() {
                 _errorMessage = retryResult['message'] ?? 'Transaction failed';
               });
             }
           } else {
-            // User declined to retry
-            setState(() {
-              _errorMessage = 'Transaction cancelled. The network requires a higher fee.';
-            });
+            if (mounted) {
+              setState(() {
+                _errorMessage = 'Transaction cancelled. The network requires a higher fee.';
+              });
+            }
           }
         }
       } else {
         // Other error
-        setState(() {
-          _errorMessage = result['message'] ?? 'Transaction failed';
-        });
+        if (mounted) {
+          setState(() {
+            _errorMessage = result['message'] ?? 'Transaction failed';
+          });
+        }
       }
 
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Error: ${e.toString()}';
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error: ${e.toString()}';
+        });
+      }
     } finally {
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+        });
+      }
+    }
+  }
+
+  void _resetSendForm(WalletProvider provider) {
+    if (mounted) {
       setState(() {
-        _isSending = false;
+        _addressController.clear();
+        _amountController.clear();
+        _isChecked = false;
+        _addressValid = null;
+        _errorMessage = '';
+        _advancedSend = false;
       });
     }
+
+    provider.resetCoinControl();
+
+    Future.delayed(const Duration(seconds: 3), () async {
+      if (mounted) {
+        await provider.fetchUtxos(force: true);
+      }
+    });
+  }
+
+  Future<String?> _showBatchDecisionDialog({
+    required WalletProvider provider,
+    required double amount,
+    required Map<String, dynamic> preview,
+  }) async {
+    String reasonLabel(String reason) {
+      switch (reason) {
+        case 'sweep-too-large':
+          return 'Large sweep detected';
+        case 'input-count':
+          return 'High input count detected';
+        case 'tx-size':
+          return 'Large transaction size detected';
+        default:
+          return 'Batch candidate detected';
+      }
+    }
+
+    final reason = (preview['reason'] as String?) ?? 'none';
+    final predictedInputs = (preview['predictedInputCount'] as int?) ?? 0;
+    final predictedVbytes = (preview['predictedVbytes'] as int?) ?? 0;
+    final estimatedBatchCount = (preview['estimatedBatchCount'] as int?) ?? 1;
+    final estimatedSingleFee = (preview['estimatedSingleFee'] as num?)?.toDouble() ?? 0.0;
+    final estimatedTotalBatchFee =
+        (preview['estimatedTotalBatchFee'] as num?)?.toDouble() ?? 0.0;
+    final estimatedNetDelivered =
+        (preview['estimatedNetDelivered'] as num?)?.toDouble() ??
+            (amount - estimatedTotalBatchFee);
+    final usingManualFee = provider.feeRateSource == 'manual';
+
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color.fromARGB(255, 25, 25, 25),
+          title: const Row(
+            children: [
+              Icon(Icons.layers_rounded, color: Colors.orangeAccent),
+              SizedBox(width: 8),
+              Text('Batch Send Suggested', style: TextStyle(color: Colors.white)),
+            ],
+          ),
+          content: SizedBox(
+            width: 520,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  reasonLabel(reason),
+                  style: const TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'This transfer may exceed safe single-transaction limits. '
+                  'You can batch it into multiple broadcasts or continue with normal send.',
+                  style: TextStyle(color: Colors.white70),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Requested amount', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                    Text('${amount.toStringAsFixed(8)} S256'),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Predicted inputs', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                    Text('$predictedInputs'),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Predicted tx size', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                    Text('$predictedVbytes vB'),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Estimated batch count', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                    Text('$estimatedBatchCount'),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Est. single fee', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                    Text('${estimatedSingleFee.toStringAsFixed(8)} S256'),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Est. total batch fee', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                    Text('${estimatedTotalBatchFee.toStringAsFixed(8)} S256'),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Est. net delivered', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                    Text('${estimatedNetDelivered.toStringAsFixed(8)} S256'),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Estimates may vary depending on final input selection and mempool conditions.',
+                  style: TextStyle(color: Colors.white38, fontSize: 11),
+                ),
+                if (!usingManualFee) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    'You are currently using node-estimated fee. For batch sends, consider setting a manual fee first for more predictable total cost.',
+                    style: TextStyle(color: Colors.orangeAccent, fontSize: 11),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, 'cancel'),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            ),
+            if (!usingManualFee)
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, 'manual-fee'),
+                child: const Text('Set Manual Fee'),
+              ),
+            OutlinedButton(
+              onPressed: () => Navigator.pop(dialogContext, 'normal'),
+              child: const Text('Normal Send'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogContext, 'batch'),
+              child: const Text('Batch Send'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  bool _isLikelyBatchFailureMessage(String message) {
+    final normalized = message.toLowerCase();
+    return normalized.contains('too many') ||
+        normalized.contains('tx-size') ||
+        normalized.contains('tx size') ||
+        normalized.contains('oversize') ||
+        normalized.contains('too large') ||
+        normalized.contains('too-long-mempool-chain') ||
+        normalized.contains('mempool chain') ||
+        normalized.contains('non-bip68-final') ||
+        normalized.contains('insufficient fee') ||
+        normalized.contains('rejecting replacement');
+  }
+
+  Future<bool?> _showRetryBatchDialog({required String message}) async {
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color.fromARGB(255, 25, 25, 25),
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orangeAccent),
+              SizedBox(width: 8),
+              Text('Normal Send Failed', style: TextStyle(color: Colors.white)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'This failure may be caused by single-transaction size or mempool constraints.',
+                style: TextStyle(color: Colors.white70),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.white24),
+                ),
+                child: Text(message, style: const TextStyle(color: Colors.white, fontSize: 12)),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Retry now using Batch Send?',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Retry as Batch'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showSendAckFromResult(
+    Map<String, dynamic> result, {
+    required double requestedAmount,
+  }) async {
+    final batchTxids = (result['batchTxids'] as List<dynamic>? ?? [])
+        .map((e) => e.toString())
+        .where((txid) => txid.isNotEmpty)
+        .toList();
+    final batched = (result['batched'] == true) || batchTxids.isNotEmpty;
+
+    if (batched) {
+      await _showBatchSendAckDialog(
+        txids: batchTxids,
+        requestedAmount: requestedAmount,
+        grossAmount: (result['grossAmount'] as num?)?.toDouble(),
+        totalFee: (result['fee'] as num?)?.toDouble() ?? 0.0,
+        netAmount: (result['netAmount'] as num?)?.toDouble(),
+      );
+      return;
+    }
+
+    await _showPostSendAckDialog(
+      txid: (result['txid'] as String?) ?? '',
+      amount: requestedAmount,
+      fee: (result['fee'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+
+  Future<void> _showBatchSendAckDialog({
+    required List<String> txids,
+    required double requestedAmount,
+    required double totalFee,
+    double? grossAmount,
+    double? netAmount,
+  }) async {
+    final displayedGross = grossAmount ?? requestedAmount;
+    final displayedNet = netAmount ?? (displayedGross - totalFee);
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color.fromARGB(255, 25, 25, 25),
+          title: const Row(
+            children: [
+              Icon(Icons.fact_check_rounded, color: Colors.greenAccent, size: 24),
+              SizedBox(width: 8),
+              Text('Batch Send Complete', style: TextStyle(color: Colors.white)),
+            ],
+          ),
+          content: SizedBox(
+            width: 520,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Broadcasted ${txids.length} transaction${txids.length == 1 ? '' : 's'}.',
+                  style: const TextStyle(
+                    color: Colors.greenAccent,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Requested Amount', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                    Text('${requestedAmount.toStringAsFixed(8)} S256', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Gross Sent', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                    Text('${displayedGross.toStringAsFixed(8)} S256', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Total Fee Paid', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                    Text('${totalFee.toStringAsFixed(8)} S256', style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Estimated Net Delivered', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                    Text('${displayedNet.toStringAsFixed(8)} S256', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+                if (txids.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  const Text('Batch TXIDs', style: TextStyle(color: Colors.white60, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  Container(
+                    width: double.infinity,
+                    constraints: const BoxConstraints(maxHeight: 180),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: SingleChildScrollView(
+                      child: SelectableText(
+                        txids.join('\n'),
+                        style: const TextStyle(fontSize: 12, fontFamily: 'monospace', color: Colors.cyanAccent),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () async {
+                        await Clipboard.setData(ClipboardData(text: txids.join('\n')));
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                          const SnackBar(content: Text('Batch TXIDs copied')),
+                        );
+                      },
+                      icon: const Icon(Icons.copy, size: 16),
+                      label: const Text('Copy TXIDs'),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Acknowledge'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  double _satVbToS256KvB(double satVb) {
+    return satVb * 0.00001;
+  }
+
+  Future<double?> _showManualFeeDialog(WalletProvider provider) async {
+    bool useSatVb = true;
+
+    const lowS256KvB = 0.00000226;
+    const highS256KvB = 0.0004;
+    final lowSatVb = lowS256KvB / 0.00001;
+    final highSatVb = highS256KvB / 0.00001;
+
+    _manualFeeController.text = _formatDecimal(lowSatVb, maxDecimals: 4);
+
+    final feeRate = await showDialog<double>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        String? validationError;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: const Color.fromARGB(255, 25, 25, 25),
+              title: const Text('Manual Network Fee', style: TextStyle(color: Colors.white)),
+              content: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.65,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: Colors.amberAccent),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          provider.feeEstimateError ??
+                              'A too low fee may result in the transaction being rejected by the network.',
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Choose based on network conditions:',
+                    style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Low traffic: ${_formatDecimal(lowSatVb, maxDecimals: 4)} sat/vB (${lowS256KvB.toStringAsFixed(8)} S256/kvB), slower confirmation',
+                          style: const TextStyle(color: Colors.white60, fontSize: 12),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'High traffic: ${_formatDecimal(highSatVb, maxDecimals: 4)} sat/vB (${highS256KvB.toStringAsFixed(8)} S256/kvB), faster confirmation',
+                          style: const TextStyle(color: Colors.white60, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SegmentedButton<bool>(
+                    segments: const [
+                      ButtonSegment<bool>(value: true, label: Text('sat/vB')),
+                      ButtonSegment<bool>(value: false, label: Text('S256/kvB')),
+                    ],
+                    selected: {useSatVb},
+                    onSelectionChanged: (selection) {
+                      if (selection.isEmpty) return;
+                      final next = selection.first;
+                      if (next == useSatVb) return;
+
+                      final parsed = double.tryParse(_manualFeeController.text.trim());
+                      if (parsed != null && parsed > 0) {
+                        final converted = next
+                            ? parsed / 0.00001
+                            : _satVbToS256KvB(parsed);
+                        _manualFeeController.text = next
+                          ? _formatDecimal(converted, maxDecimals: 4)
+                          : converted.toStringAsFixed(8);
+                      }
+
+                      setDialogState(() {
+                        useSatVb = next;
+                        validationError = null;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _manualFeeController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: useSatVb ? 'Fee rate (sat/vB)' : 'Fee rate (S256/kvB)',
+                      labelStyle: const TextStyle(color: Colors.white70),
+                      filled: true,
+                      fillColor: Colors.black,
+                      errorText: validationError,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                        borderSide: const BorderSide(color: Colors.white24),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                        borderSide: const BorderSide(color: Colors.cyanAccent),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          _manualFeeController.text = useSatVb
+                              ? _formatDecimal(lowSatVb, maxDecimals: 4)
+                              : lowS256KvB.toStringAsFixed(8);
+                          setDialogState(() {
+                            validationError = null;
+                          });
+                        },
+                        child: const Text('Use Low'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          _manualFeeController.text = useSatVb
+                              ? _formatDecimal(highSatVb, maxDecimals: 4)
+                              : highS256KvB.toStringAsFixed(8);
+                          setDialogState(() {
+                            validationError = null;
+                          });
+                        },
+                        child: const Text('Use High'),
+                      ),
+                    ],
+                  ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(null),
+                  child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final parsed = double.tryParse(_manualFeeController.text.trim());
+                    if (parsed == null || parsed <= 0) {
+                      setDialogState(() {
+                        validationError = 'Enter a valid positive fee rate.';
+                      });
+                      return;
+                    }
+
+                    final s256KvB = useSatVb ? _satVbToS256KvB(parsed) : parsed;
+                    if (s256KvB <= 0) {
+                      setDialogState(() {
+                        validationError = 'Fee rate must be greater than zero.';
+                      });
+                      return;
+                    }
+
+                    Navigator.of(context).pop(s256KvB);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.cyanAccent,
+                    foregroundColor: Colors.black,
+                  ),
+                  child: const Text('Use This Fee'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    return feeRate;
+  }
+
+  String? _amountError(WalletProvider provider) {
+    final text = _amountController.text.trim();
+    if (text.isEmpty) return null;
+
+    final value = double.tryParse(text);
+    if (value == null) return 'Invalid number';
+    if (value <= 0) return 'Amount must be greater than zero';
+    if (value < 0.00000546) return 'Amount below dust threshold (0.00000546 S256)';
+
+    final valueSats = _s256ToSats(value);
+    final spendableSats = _advancedSend && provider.selectedUtxoCount > 0
+        ? _selectedUtxoTotalSats(provider)
+      : _s256ToSats(provider.balance ?? 0.0);
+
+    if (valueSats > spendableSats) {
+      if (_advancedSend && provider.selectedUtxoCount > 0) {
+        return 'Exceeds selected inputs (${_satsToS256(spendableSats).toStringAsFixed(8)} S256)';
+      }
+      return 'Exceeds available balance';
+    }
+
+    return null;
+  }
+
+  void _syncAmountToSelection(WalletProvider provider) {
+    if (!_advancedSend) return;
+    final total = _satsToS256(_selectedUtxoTotalSats(provider));
+    _amountController.text = total > 0 ? total.toStringAsFixed(8) : '';
+  }
+
+  ({double fee, int? inputCount, bool amountAware}) _estimateSimpleModeFee(
+    WalletProvider provider,
+  ) {
+    final feeRate = provider.feeRate;
+    if (feeRate <= 0) {
+      return (fee: 0.0, inputCount: null, amountAware: false);
+    }
+
+    final confirmedUtxos = (provider.utxos ?? const [])
+        .whereType<Map>()
+        .where((u) {
+          final txid = u['txid'];
+          final confirmations = u['confirmations'] as int? ?? 0;
+          return txid != 'pending_marker' && confirmations > 0;
+        })
+        .map((u) => (u['amount'] as num?)?.toDouble() ?? 0.0)
+        .where((a) => a > 0)
+        .toList()
+      ..sort((a, b) => b.compareTo(a));
+
+    final enteredAmount = double.tryParse(_amountController.text.trim());
+    final hasAmount = enteredAmount != null && enteredAmount > 0;
+
+    int txSizeForInputs(int inputs) => 11 + (inputs * 68) + 31 + 31;
+    double feeForInputs(int inputs) =>
+        double.parse((feeRate * txSizeForInputs(inputs) / 1000).toStringAsFixed(8));
+
+    if (!hasAmount || confirmedUtxos.isEmpty) {
+      final fallbackInputs = confirmedUtxos.isEmpty
+          ? 2
+          : (confirmedUtxos.length >= 2 ? 2 : 1);
+      return (
+        fee: feeForInputs(fallbackInputs),
+        inputCount: fallbackInputs,
+        amountAware: false,
+      );
+    }
+
+    int inputsNeededFor(double requiredTotal) {
+      double total = 0.0;
+      int used = 0;
+      for (final amount in confirmedUtxos) {
+        total += amount;
+        used += 1;
+        if (total >= requiredTotal) {
+          return used;
+        }
+      }
+      return -1;
+    }
+
+    var guessInputs = 1;
+    for (var i = 0; i < 8; i++) {
+      final fee = feeForInputs(guessInputs);
+      final needed = inputsNeededFor(enteredAmount + fee);
+
+      if (needed <= 0) {
+        final fallbackInputs = confirmedUtxos.length >= 2 ? 2 : 1;
+        return (
+          fee: feeForInputs(fallbackInputs),
+          inputCount: fallbackInputs,
+          amountAware: false,
+        );
+      }
+
+      if (needed == guessInputs) {
+        return (fee: fee, inputCount: guessInputs, amountAware: true);
+      }
+
+      guessInputs = needed;
+    }
+
+    return (
+      fee: feeForInputs(guessInputs),
+      inputCount: guessInputs,
+      amountAware: true,
+    );
+  }
+
+  ({double fee, bool hasExactCoinControlFee, ({double fee, int? inputCount, bool amountAware}) simpleEstimate})
+      _currentDisplayedFee(WalletProvider provider) {
+    final hasExactCoinControlFee = _advancedSend && provider.selectedUtxoCount > 0;
+    final simpleEstimate = _estimateSimpleModeFee(provider);
+    final fee = hasExactCoinControlFee ? provider.estimatedFee : simpleEstimate.fee;
+    return (
+      fee: fee,
+      hasExactCoinControlFee: hasExactCoinControlFee,
+      simpleEstimate: simpleEstimate,
+    );
+  }
+
+  Widget _buildUtxoSelector(WalletProvider provider) {
+    if (provider.isLoadingUtxos) {
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: Center(
+          child: CircularProgressIndicator(color: Colors.cyanAccent),
+        ),
+      );
+    }
+
+    if (provider.availableUtxos.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: Text('No confirmed UTXOs found.', style: TextStyle(color: Colors.white54)),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Select Inputs (${provider.availableUtxos.length} total)',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+              Row(
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      provider.selectAllUtxos();
+                      _syncAmountToSelection(provider);
+                    },
+                    child: const Text('All'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      provider.clearUtxoSelection();
+                      _syncAmountToSelection(provider);
+                    },
+                    child: const Text('None'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (provider.selectedUtxoCount > 0)
+            Text(
+              '${provider.selectedUtxoCount} selected, total ${_satsToS256(_selectedUtxoTotalSats(provider)).toStringAsFixed(8)} S256',
+              style: const TextStyle(color: Colors.amber, fontSize: 12),
+            ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 240,
+            child: ListView.builder(
+              itemCount: provider.currentPageUtxos.length,
+              itemBuilder: (context, index) {
+                final globalIndex = (provider.utxoPage * 15) + index;
+                final utxo = provider.currentPageUtxos[index];
+                final key = '${utxo['txid']}:${utxo['vout']}';
+                final isSelected = provider.selectedUtxoKeys.contains(key);
+                final txid = utxo['txid'] as String;
+                final confirmations = (utxo['confirmations'] as num?)?.toInt() ?? 0;
+                final short = '${txid.substring(0, 8)}...${txid.substring(txid.length - 6)}:${utxo['vout']}';
+
+                return Material(
+                  type: MaterialType.transparency,
+                  child: CheckboxListTile(
+                    dense: true,
+                    value: isSelected,
+                    onChanged: (_) {
+                      provider.toggleUtxo(key);
+                      _syncAmountToSelection(provider);
+                    },
+                    title: Text(short, style: const TextStyle(color: Colors.white, fontFamily: 'monospace', fontSize: 12)),
+                    subtitle: Text(
+                      '#${globalIndex + 1} | Amount: ${(utxo['amount'] as num).toStringAsFixed(8)} S256 | ${_formatConfirmationsLabel(confirmations)}',
+                      style: const TextStyle(color: Colors.white60, fontSize: 11),
+                    ),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    activeColor: Colors.cyanAccent,
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (provider.utxoPageCount > 1)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                TextButton(
+                  onPressed: provider.utxoPage > 0
+                      ? () => provider.setUtxoPage(provider.utxoPage - 1)
+                      : null,
+                  child: const Text('Prev'),
+                ),
+                Text(
+                  'Page ${provider.utxoPage + 1} / ${provider.utxoPageCount}',
+                  style: const TextStyle(color: Colors.white60, fontSize: 12),
+                ),
+                TextButton(
+                  onPressed: provider.utxoPage < provider.utxoPageCount - 1
+                      ? () => provider.setUtxoPage(provider.utxoPage + 1)
+                      : null,
+                  child: const Text('Next'),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeeEstimate(
+    WalletProvider provider,
+    ({double fee, bool hasExactCoinControlFee, ({double fee, int? inputCount, bool amountAware}) simpleEstimate})
+        feeSnapshot,
+  ) {
+    final hasExactCoinControlFee = feeSnapshot.hasExactCoinControlFee;
+    final simpleEstimate = feeSnapshot.simpleEstimate;
+    final fee = feeSnapshot.fee;
+    final detailsLabel = hasExactCoinControlFee
+        ? 'Size-aware estimate for ${provider.selectedUtxoCount} selected input(s)'
+        : _advancedSend
+            ? 'Typical fee fallback until inputs are selected'
+        : simpleEstimate.amountAware
+          ? 'Amount-aware estimate using ~${simpleEstimate.inputCount ?? 1} input(s)'
+          : 'Simple mode estimate using ~${simpleEstimate.inputCount ?? 2} input(s)';
+    final detailsColor = hasExactCoinControlFee
+      ? Colors.greenAccent
+      : _advancedSend
+        ? Colors.amberAccent
+      : simpleEstimate.amountAware
+        ? Colors.white70
+        : Colors.white54;
+    if (fee <= 0) return const SizedBox.shrink();
+
+    final sourceText = _feeSourceLabel(provider);
+    final sourceColor = _feeSourceColor(provider);
+    final rateColor = sourceColor.withValues(alpha: 0.85);
+    final rateText =
+        '${provider.feeRate.toStringAsFixed(8)} S256/kvB (${_formatSatVb(provider.feeRate)} sat/vB)';
+    final netAfterFeeText = provider.estimatedNetSend > 0
+        ? '${provider.estimatedNetSend.toStringAsFixed(8)} S256'
+        : '-';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Estimated Network Fee',
+            style: TextStyle(color: Colors.white70, fontSize: 11),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '${fee.toStringAsFixed(8)} S256',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Divider(height: 1, color: Colors.white12),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Fee Source',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+              Text(
+                sourceText,
+                style: TextStyle(
+                  color: sourceColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Fee Rate',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+              Expanded(
+                child: Text(
+                  rateText,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(color: rateColor, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+          if (hasExactCoinControlFee) ...[
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Net Send After Fee',
+                  style: TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+                Text(
+                  netAfterFeeText,
+                  style: const TextStyle(color: Colors.greenAccent, fontSize: 12),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 8),
+          const Divider(height: 1, color: Colors.white12),
+          const SizedBox(height: 8),
+          Text(
+            detailsLabel,
+            style: TextStyle(color: detailsColor, fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _isNodeFeeSource(WalletProvider provider) {
+    return provider.feeRateReady &&
+        (provider.feeRateSource == 'estimated' ||
+            provider.feeRateSource == 'baseline' ||
+            provider.feeRateSource == 'clamped');
+  }
+
+  Color _feeSourceColor(WalletProvider provider) {
+    if (provider.feeRateSource == 'manual') {
+      return Colors.cyanAccent;
+    }
+    if (_isNodeFeeSource(provider)) {
+      return Colors.greenAccent;
+    }
+    return Colors.amberAccent;
+  }
+
+  Widget _buildFeeSourceSelector(WalletProvider provider) {
+    final manualSelected = provider.feeRateSource == 'manual';
+    final nodeSelected = _isNodeFeeSource(provider);
+    final currentColor = _feeSourceColor(provider);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Fee Source',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              ),
+              Text(
+                _feeSourceLabel(provider),
+                style: TextStyle(color: currentColor, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _isSending
+                      ? null
+                      : () async {
+                          final manualFeeRate = await _showManualFeeDialog(provider);
+                          if (manualFeeRate != null) {
+                            provider.setManualFeeRate(manualFeeRate);
+                          }
+                        },
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                      color: manualSelected ? Colors.cyanAccent : Colors.white30,
+                      width: manualSelected ? 1.6 : 1.0,
+                    ),
+                    backgroundColor: manualSelected
+                        ? Colors.cyanAccent.withValues(alpha: 0.16)
+                        : Colors.transparent,
+                    foregroundColor: manualSelected ? Colors.cyanAccent : Colors.white70,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text('Manual'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _isSending || provider.isFeeEstimateLoading
+                      ? null
+                      : () => provider.fetchFeeRate(),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                      color: nodeSelected ? Colors.greenAccent : Colors.white30,
+                      width: nodeSelected ? 1.6 : 1.0,
+                    ),
+                    backgroundColor: nodeSelected
+                        ? Colors.greenAccent.withValues(alpha: 0.14)
+                        : Colors.transparent,
+                    foregroundColor: nodeSelected ? Colors.greenAccent : Colors.white70,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text('Auto (Node Fee)'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSendPreview(
+    WalletProvider provider,
+    ({double fee, bool hasExactCoinControlFee, ({double fee, int? inputCount, bool amountAware}) simpleEstimate})
+        feeSnapshot,
+  ) {
+    final amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
+    if (amount <= 0) return const SizedBox.shrink();
+
+    final hasSelectedInputs = feeSnapshot.hasExactCoinControlFee;
+    final fee = feeSnapshot.fee;
+
+    final selectedInputsSats = hasSelectedInputs ? _selectedUtxoTotalSats(provider) : 0;
+    final autoSpendableSats = _s256ToSats(provider.balance ?? 0.0);
+    final amountSats = _s256ToSats(amount);
+    final feeSats = _s256ToSats(fee);
+    final expectedChangeSats = hasSelectedInputs
+      ? (selectedInputsSats - amountSats - feeSats)
+      : (autoSpendableSats - amountSats - feeSats);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Transaction Preview',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Selected Inputs', style: TextStyle(color: Colors.white60, fontSize: 12)),
+              Text(
+                hasSelectedInputs
+                    ? '${_satsToS256(selectedInputsSats).toStringAsFixed(8)} S256'
+                    : 'Auto',
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Send Amount', style: TextStyle(color: Colors.white60, fontSize: 12)),
+              Text(
+                '${_satsToS256(amountSats).toStringAsFixed(8)} S256',
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Estimated Fee', style: TextStyle(color: Colors.white60, fontSize: 12)),
+              Text(
+                '${fee.toStringAsFixed(8)} S256',
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Fee Source', style: TextStyle(color: Colors.white60, fontSize: 12)),
+              Text(
+                _feeSourceLabel(provider),
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Fee Rate', style: TextStyle(color: Colors.white60, fontSize: 12)),
+              Text(
+                '${provider.feeRate.toStringAsFixed(8)} S256/kvB (${_formatSatVb(provider.feeRate)} sat/vB)',
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Expected Change', style: TextStyle(color: Colors.white60, fontSize: 12)),
+              Text(
+                '${_satsToS256(expectedChangeSats > 0 ? expectedChangeSats : 0).toStringAsFixed(8)} S256',
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   Future<bool> _showFeeDialog(double currentFee, double suggestedFee) async {
@@ -382,7 +1696,7 @@ class _SendViewState extends State<SendView> {
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: S256Colors.accent,
+                backgroundColor: Colors.cyanAccent,
                 foregroundColor: Colors.black,
               ),
               child: const Text('Retry with Higher Fee'),
@@ -393,383 +1707,160 @@ class _SendViewState extends State<SendView> {
     ) ?? false;
   }
 
-  void _showSuccessDialog(String txid, double fee) {
-    showDialog(
+  Future<bool> _showPreSendConfirmDialog({
+    required WalletProvider provider,
+    required String toAddress,
+    required double amount,
+  }) async {
+    final hasSelectedInputs = _advancedSend && provider.selectedUtxoCount > 0;
+    final simpleEstimate = _estimateSimpleModeFee(provider);
+    final estimatedFee = hasSelectedInputs ? provider.estimatedFee : simpleEstimate.fee;
+
+    final agreed = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color.fromARGB(255, 25, 25, 25),
+          title: const Text('Confirm Transaction', style: TextStyle(color: Colors.white)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('To: $toAddress', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+              const SizedBox(height: 8),
+              Text('Amount: ${amount.toStringAsFixed(8)} S256', style: const TextStyle(color: Colors.white70)),
+              const SizedBox(height: 4),
+              Text('Estimated fee: ${estimatedFee.toStringAsFixed(8)} S256', style: const TextStyle(color: Colors.white70)),
+              const SizedBox(height: 4),
+              Text('Fee source: ${_feeSourceLabel(provider)}', style: const TextStyle(color: Colors.white70)),
+              const SizedBox(height: 4),
+              Text(
+                'Fee rate: ${provider.feeRate.toStringAsFixed(8)} S256/kvB (${_formatSatVb(provider.feeRate)} sat/vB)',
+                style: const TextStyle(color: Colors.white70),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Agree & Send'),
+            ),
+          ],
+        );
+      },
+    );
+
+    return agreed ?? false;
+  }
+
+  Future<void> _showPostSendAckDialog({
+    required String txid,
+    required double amount,
+    required double fee,
+  }) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: const Color.fromARGB(255, 25, 25, 25),
           title: const Row(
             children: [
-              Icon(Icons.check_circle, color: Colors.green, size: 28),
+              Icon(Icons.check_circle, color: Colors.greenAccent, size: 24),
               SizedBox(width: 8),
-              Text('Transaction Sent!', style: TextStyle(color: Colors.white)),
+              Text('Transaction Sent', style: TextStyle(color: Colors.white)),
             ],
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Your transaction has been broadcast to the network.',
-                style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              if (txid.isNotEmpty) ...[
-                const Text('Transaction ID:', style: TextStyle(color: Colors.white60, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                SelectableText(
-                  txid,
-                  style: const TextStyle(fontSize: 12, fontFamily: 'monospace', color: S256Colors.accent),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.withValues(alpha: 0.35)),
                 ),
-                const SizedBox(height: 16),
-              ],
-              Text('Network fee: ${fee.toStringAsFixed(8)} S256', style: const TextStyle(color: Colors.white60)),
-              const SizedBox(height: 8),
-              const Text(
-                'Please wait for network confirmations.',
-                style: TextStyle(fontStyle: FontStyle.italic, color: Colors.white54),
+                child: const Text(
+                  'Broadcasted to network',
+                  style: TextStyle(
+                    color: Colors.greenAccent,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Amount Sent', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                  Text(
+                    '${amount.toStringAsFixed(8)} S256',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Network Fee Paid', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                  Text(
+                    '${fee.toStringAsFixed(8)} S256',
+                    style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+              if (txid.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Text('TXID', style: TextStyle(color: Colors.white60, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 4),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: SelectableText(
+                    txid,
+                    style: const TextStyle(fontSize: 12, fontFamily: 'monospace', color: Colors.cyanAccent),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () async {
+                      await Clipboard.setData(ClipboardData(text: txid));
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        const SnackBar(content: Text('TXID copied')),
+                      );
+                    },
+                    icon: const Icon(Icons.copy, size: 16),
+                    label: const Text('Copy TXID'),
+                  ),
+                ),
+              ],
             ],
           ),
           actions: [
             ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).pop(); // Go back to home
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: S256Colors.accent,
-                foregroundColor: Colors.black,
-              ),
-              child: const Text('OK'),
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Acknowledge'),
             ),
           ],
         );
       },
-    );
-  }
-
-  void _setAdvancedMode(bool enabled) {
-    final provider = Provider.of<WalletProvider>(context, listen: false);
-    setState(() {
-      _advancedSend = enabled;
-      _errorMessage = '';
-    });
-    if (enabled) {
-      provider.fetchUtxosForCoinControl();
-    } else {
-      provider.resetCoinControl();
-    }
-  }
-
-  void _syncAmountToSelection(WalletProvider provider) {
-    if (!_advancedSend) return;
-    final total = provider.selectedUtxoTotal;
-    setState(() {
-      _amountController.text = total > 0 ? total.toStringAsFixed(8) : '';
-    });
-  }
-
-  String? _amountError(WalletProvider provider) {
-    final text = _amountController.text.trim();
-    if (text.isEmpty) return null;
-    final value = double.tryParse(text);
-    if (value == null) return 'Invalid number';
-    if (value <= 0) return 'Amount must be greater than zero';
-    if (value < 0.00000546) {
-      return 'Amount below dust threshold (0.00000546 S256)';
-    }
-    if (_advancedSend &&
-        provider.selectedUtxoCount > 0 &&
-        value > provider.selectedUtxoTotal) {
-      return 'Exceeds selected inputs (${provider.selectedUtxoTotal.toStringAsFixed(8)} S256)';
-    }
-    if (!_advancedSend && value > (provider.balance ?? 0)) {
-      return 'Exceeds available balance';
-    }
-    return null;
-  }
-
-  Future<void> _validateAddressFromRpc(String value) async {
-    _addressDebounce?.cancel();
-    setState(() {
-      _addressValid = null;
-      _isValidatingAddress = value.trim().isNotEmpty;
-    });
-
-    if (value.trim().isEmpty) {
-      setState(() {
-        _isValidatingAddress = false;
-      });
-      return;
-    }
-
-    _addressDebounce = Timer(const Duration(milliseconds: 700), () async {
-      final provider = Provider.of<WalletProvider>(context, listen: false);
-      final rpcValid = await provider.validateAddress(value.trim());
-      final localValid = _isValidS256Address(value.trim());
-      final valid = rpcValid || localValid;
-      if (!mounted) return;
-      setState(() {
-        _addressValid = valid;
-        _isValidatingAddress = false;
-      });
-    });
-  }
-
-  Widget _buildUtxoSelector(WalletProvider provider) {
-    if (provider.isLoadingUtxos) {
-      return const Padding(
-        padding: EdgeInsets.all(24),
-        child: Column(
-          children: [
-            CircularProgressIndicator(color: S256Colors.accent),
-            SizedBox(height: 12),
-            Text('Scanning UTXOs...', style: TextStyle(color: Colors.white54)),
-          ],
-        ),
-      );
-    }
-
-    if (provider.availableUtxos.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.white10),
-        ),
-        child: const Text(
-          'No confirmed UTXOs found.',
-          style: TextStyle(color: Colors.white54),
-          textAlign: TextAlign.center,
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Select Inputs (${provider.availableUtxos.length})',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-            Row(
-              children: [
-                TextButton(
-                  onPressed: () {
-                    provider.selectAllUtxos();
-                    _syncAmountToSelection(provider);
-                  },
-                  child: const Text('All'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    provider.clearUtxoSelection();
-                    _syncAmountToSelection(provider);
-                  },
-                  child: const Text('None'),
-                ),
-              ],
-            )
-          ],
-        ),
-        const SizedBox(height: 8),
-        Container(
-          height: 260,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.03),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.white10),
-          ),
-          child: ListView.builder(
-            itemCount: provider.availableUtxos.length,
-            itemBuilder: (context, index) {
-              final utxo = provider.availableUtxos[index];
-              final key = '${utxo['txid']}:${utxo['vout']}';
-              final isSelected = provider.selectedUtxoKeys.contains(key);
-              final txid = utxo['txid'] as String;
-              final txidShort =
-                  '${txid.substring(0, 8)}...${txid.substring(txid.length - 6)}:${utxo['vout']}';
-
-              return InkWell(
-                onTap: () {
-                  provider.toggleUtxo(key);
-                  _syncAmountToSelection(provider);
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? Colors.amber.withValues(alpha: 0.08)
-                        : Colors.transparent,
-                    border: Border(
-                      bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: Text(
-                          txidShort,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.white60,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          (utxo['amount'] as num).toStringAsFixed(8),
-                          style: const TextStyle(fontSize: 12, color: Colors.white),
-                          textAlign: TextAlign.right,
-                        ),
-                      ),
-                      SizedBox(
-                        width: 48,
-                        child: Text(
-                          '${utxo['confirmations']}',
-                          style: const TextStyle(fontSize: 12, color: Colors.white54),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      SizedBox(
-                        width: 36,
-                        child: Checkbox(
-                          value: isSelected,
-                          onChanged: (_) {
-                            provider.toggleUtxo(key);
-                            _syncAmountToSelection(provider);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        )
-      ],
-    );
-  }
-
-  Widget _buildFeeEstimate(WalletProvider provider) {
-    final fee = _advancedSend && provider.selectedUtxoCount > 0
-        ? provider.estimatedFee
-        : provider.estimatedSimpleFee;
-    final net = provider.estimatedNetSend;
-    if (fee <= 0) return const SizedBox.shrink();
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'Estimated fee: ${fee.toStringAsFixed(8)} S256',
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
-          ),
-          if (_advancedSend && provider.selectedUtxoCount > 0)
-            Text(
-              net > 0 ? 'Net: ${net.toStringAsFixed(8)}' : 'Net: -',
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSendPreview(WalletProvider provider) {
-    final amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
-    final fee = _advancedSend && provider.selectedUtxoCount > 0
-        ? provider.estimatedFee
-        : provider.estimatedSimpleFee;
-
-    final hasSelectedInputs = _advancedSend && provider.selectedUtxoCount > 0;
-    final selectedInputs = hasSelectedInputs ? provider.selectedUtxoTotal : 0.0;
-    final expectedChange = hasSelectedInputs
-        ? (selectedInputs - amount - fee) > 0
-            ? (selectedInputs - amount - fee)
-            : 0.0
-        : null;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Transaction Preview',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Selected Inputs', style: TextStyle(color: Colors.white60, fontSize: 12)),
-              Text(
-                hasSelectedInputs
-                    ? '${selectedInputs.toStringAsFixed(8)} S256'
-                    : 'Auto',
-                style: const TextStyle(color: Colors.white, fontSize: 12),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Send Amount', style: TextStyle(color: Colors.white60, fontSize: 12)),
-              Text(
-                '${amount.toStringAsFixed(8)} S256',
-                style: const TextStyle(color: Colors.white, fontSize: 12),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Estimated Fee', style: TextStyle(color: Colors.white60, fontSize: 12)),
-              Text(
-                '${fee.toStringAsFixed(8)} S256',
-                style: const TextStyle(color: Colors.white, fontSize: 12),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Expected Change', style: TextStyle(color: Colors.white60, fontSize: 12)),
-              Text(
-                expectedChange == null
-                    ? 'Auto'
-                    : '${expectedChange.toStringAsFixed(8)} S256',
-                style: const TextStyle(color: Colors.white, fontSize: 12),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 
@@ -798,17 +1889,27 @@ class _SendViewState extends State<SendView> {
           ),
         ],
       ),
-      body: Container(
-        color: Colors.black,
-        constraints: const BoxConstraints.expand(),
-        child: Consumer<WalletProvider>(
+      body: SafeArea(
+        top: false,
+        bottom: true,
+        minimum: const EdgeInsets.only(bottom: 8),
+        child: Container(
+          color: Colors.black,
+          constraints: const BoxConstraints.expand(),
+          child: Consumer<WalletProvider>(
           builder: (context, walletProvider, child) {
             final amountErr = _amountError(walletProvider);
+            final feeSnapshot = _currentDisplayedFee(walletProvider);
             return Stack(
               children: [
                 SingleChildScrollView(
                   child: Padding(
-                    padding: const EdgeInsets.only(top: 32.0, left: 16.0, right: 16.0),
+                    padding: EdgeInsets.only(
+                      top: 32.0,
+                      left: 16.0,
+                      right: 16.0,
+                      bottom: 24.0 + MediaQuery.of(context).viewPadding.bottom,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -862,100 +1963,55 @@ class _SendViewState extends State<SendView> {
                         ),
                         const SizedBox(height: 24),
 
-                        // Recipient Address Field
-                        TextField(
-                          controller: _addressController,
-                          onChanged: _validateAddressFromRpc,
-                          enabled: !_isSending,
-                          decoration: InputDecoration(
-                            labelText: 'Recipient Address (s21...)',
-                            labelStyle: const TextStyle(color: Colors.white70),
-                            hintText: 's21q...',
-                            hintStyle: const TextStyle(color: Colors.white30),
-                            errorText: _addressValid == false ? 'Invalid address' : null,
-                            filled: true,
-                            fillColor: Colors.black,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.0),
-                              borderSide: BorderSide.none,
+                        if (walletProvider.message.isNotEmpty) ...[
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: walletProvider.message.contains('❌')
+                                  ? Colors.red.withValues(alpha: 0.12)
+                                  : walletProvider.message.contains('⚠️')
+                                      ? Colors.orange.withValues(alpha: 0.12)
+                                      : Colors.green.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: walletProvider.message.contains('❌')
+                                    ? Colors.red.withValues(alpha: 0.35)
+                                    : walletProvider.message.contains('⚠️')
+                                        ? Colors.orange.withValues(alpha: 0.35)
+                                        : Colors.green.withValues(alpha: 0.35),
+                              ),
                             ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.0),
-                              borderSide: const BorderSide(color: Colors.white, width: 1.0),
+                            child: Text(
+                              walletProvider.message,
+                              style: const TextStyle(color: Colors.white),
+                              textAlign: TextAlign.center,
                             ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.0),
-                              borderSide: const BorderSide(color: S256Colors.accent, width: 1.0),
-                            ),
-                            disabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.0),
-                              borderSide: const BorderSide(color: Colors.white24, width: 1.0),
-                            ),
-                            suffixIcon: _isValidatingAddress
-                                ? const Padding(
-                                    padding: EdgeInsets.all(12),
-                                    child: SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
-                                    ),
-                                  )
-                                : Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      if (_addressValid != null)
-                                        Icon(
-                                          _addressValid! ? Icons.check_circle : Icons.cancel,
-                                          color: _addressValid! ? Colors.green : Colors.red,
-                                        ),
-                                      IconButton(
-                                        icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
-                                        onPressed: _isSending
-                                            ? null
-                                            : () async {
-                                                final scannedValue = await Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (context) => const ScannerView(),
-                                                  ),
-                                                );
-                                                if (scannedValue != null) {
-                                                  final parsed = _parsePaymentUri(scannedValue);
-                                                  setState(() {
-                                                    _addressController.text = parsed['address'] ?? '';
-                                                    if (parsed['amount'] != null &&
-                                                        parsed['amount']!.isNotEmpty) {
-                                                      _amountController.text = parsed['amount']!;
-                                                    }
-                                                    _errorMessage = '';
-                                                  });
-                                                  _validateAddressFromRpc(_addressController.text);
-                                                }
-                                              },
-                                      ),
-                                    ],
-                                  ),
                           ),
-                          style: const TextStyle(color: Colors.white, fontFamily: 'monospace'),
-                        ),
-                        const SizedBox(height: 12),
+                          const SizedBox(height: 16),
+                        ],
 
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'Mode',
-                              style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
-                            ),
+                            const Text('Send Mode', style: TextStyle(color: Colors.white70)),
                             ToggleButtons(
                               isSelected: [!_advancedSend, _advancedSend],
                               onPressed: _isSending
                                   ? null
-                                  : (index) => _setAdvancedMode(index == 1),
+                                  : (index) async {
+                                      final goAdvanced = index == 1;
+                                      setState(() {
+                                        _advancedSend = goAdvanced;
+                                        _errorMessage = '';
+                                      });
+
+                                      if (goAdvanced) {
+                                        await walletProvider.fetchUtxosForCoinControl();
+                                      } else {
+                                        walletProvider.resetCoinControl();
+                                      }
+                                    },
                               borderRadius: BorderRadius.circular(8),
-                              selectedColor: Colors.black,
-                              fillColor: S256Colors.accent,
-                              color: Colors.white70,
                               children: const [
                                 Padding(
                                   padding: EdgeInsets.symmetric(horizontal: 12),
@@ -970,12 +2026,90 @@ class _SendViewState extends State<SendView> {
                           ],
                         ),
 
-                        if (_advancedSend) ...[
-                          const SizedBox(height: 16),
-                          _buildUtxoSelector(walletProvider),
-                        ],
-
                         const SizedBox(height: 16),
+
+                        // Recipient Address Field
+                        TextField(
+                          controller: _addressController,
+                          onChanged: _scheduleAddressValidation,
+                          enabled: !_isSending,
+                          keyboardType: TextInputType.text,
+                          textInputAction: TextInputAction.done,
+                          decoration: InputDecoration(
+                            labelText: 'Recipient Address (s21...)',
+                            errorText: _addressValid == false ? 'Invalid address' : null,
+                            labelStyle: const TextStyle(color: Colors.white70),
+                            hintText: 's21q...',
+                            hintStyle: const TextStyle(color: Colors.white30),
+                            filled: true,
+                            fillColor: Colors.black,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                              borderSide: BorderSide.none,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                              borderSide: const BorderSide(color: Colors.white, width: 1.0),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                              borderSide: const BorderSide(color: Colors.cyanAccent, width: 1.0),
+                            ),
+                            disabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                              borderSide: const BorderSide(color: Colors.white24, width: 1.0),
+                            ),
+                            suffixIcon: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.contact_page_rounded,
+                                    color: Colors.cyanAccent,
+                                  ),
+                                  tooltip: 'Choose from Address Book',
+                                  onPressed: _isSending ? null : _pickAddressFromAddressbook,
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
+                                  onPressed: _isSending ? null : () async {
+                                    final scannedAddress = await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => const ScannerView(),
+                                      ),
+                                    );
+                                    if (scannedAddress != null) {
+                                      setState(() {
+                                        _addressController.text = scannedAddress;
+                                      });
+                                      _scheduleAddressValidation(scannedAddress);
+                                    }
+                                  },
+                                ),
+                                if (_isValidatingAddress)
+                                  const Padding(
+                                    padding: EdgeInsets.only(right: 12),
+                                    child: SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                  )
+                                else if (_addressValid != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: Icon(
+                                      _addressValid! ? Icons.check_circle : Icons.cancel,
+                                      color: _addressValid! ? Colors.green : Colors.red,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          style: const TextStyle(color: Colors.white, fontFamily: 'monospace'),
+                        ),
+                        const SizedBox(height: 20),
 
                         // Amount Field
                         Row(
@@ -984,12 +2118,20 @@ class _SendViewState extends State<SendView> {
                             Expanded(
                               child: TextField(
                                 controller: _amountController,
+                                onChanged: (_) {
+                                  setState(() {
+                                    _errorMessage = '';
+                                  });
+                                },
                                 enabled: !_isSending,
                                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,8}$')),
+                                ],
                                 decoration: InputDecoration(
                                   labelText: 'Amount (S256)',
-                                  labelStyle: const TextStyle(color: Colors.white70),
                                   errorText: amountErr,
+                                  labelStyle: const TextStyle(color: Colors.white70),
                                   filled: true,
                                   fillColor: Colors.black,
                                   border: OutlineInputBorder(
@@ -1002,7 +2144,7 @@ class _SendViewState extends State<SendView> {
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8.0),
-                                    borderSide: const BorderSide(color: S256Colors.accent, width: 1.0),
+                                    borderSide: const BorderSide(color: Colors.cyanAccent, width: 1.0),
                                   ),
                                   disabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8.0),
@@ -1022,7 +2164,62 @@ class _SendViewState extends State<SendView> {
                         ),
 
                         const SizedBox(height: 10),
-                        _buildFeeEstimate(walletProvider),
+                        _buildFeeSourceSelector(walletProvider),
+
+                        const SizedBox(height: 10),
+                        _buildFeeEstimate(walletProvider, feeSnapshot),
+
+                        const SizedBox(height: 8),
+                        if (walletProvider.isFeeEstimateLoading)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 4, left: 4),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 12,
+                                  height: 12,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white38,
+                                  ),
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Checking network fee estimate...',
+                                  style: TextStyle(fontSize: 11, color: Colors.white54),
+                                ),
+                              ],
+                            ),
+                          ),
+                        if (!walletProvider.isFeeEstimateLoading &&
+                            !walletProvider.feeEstimateAvailable)
+                          Padding(
+                            padding: EdgeInsets.only(top: 4, left: 4),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.warning_amber_rounded,
+                                  color: Colors.amberAccent,
+                                  size: 14,
+                                ),
+                                SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    walletProvider.feeRateStatusMessage,
+                                    style: TextStyle(fontSize: 11, color: Colors.amberAccent),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                        if (_advancedSend) ...[
+                          const SizedBox(height: 16),
+                          _buildUtxoSelector(walletProvider),
+                        ],
+
+                        const SizedBox(height: 12),
+                        _buildSendPreview(walletProvider, feeSnapshot),
 
                         // Error Message
                         if (_errorMessage.isNotEmpty) ...[
@@ -1049,19 +2246,15 @@ class _SendViewState extends State<SendView> {
                           ),
                         ],
 
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 20),
 
                         // Information Text
                         const Text(
-                          'To send S256, enter the recipient\'s s21 address and the amount. Ensure you have enough balance to cover the transaction fee.',
+                          'To send S256, enter the recipient\'s s21 or legacy address and the amount. Ensure you have enough balance to cover the transaction fee.',
                           style: TextStyle(color: Colors.white54),
                         ),
 
-                        const SizedBox(height: 12),
-
-                        _buildSendPreview(walletProvider),
-
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 20),
 
                         // Confirmation Checkbox
                         Row(
@@ -1089,47 +2282,15 @@ class _SendViewState extends State<SendView> {
                           ],
                         ),
 
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 20),
 
                         // Send Button
                         ButtonWidget(
                           text: _isSending ? 'Sending...' : 'Send Transaction',
                           isPrimary: true,
-                          onPressed: _isSending ||
-                                  amountErr != null ||
-                                  _isValidatingAddress ||
-                                  _addressController.text.trim().isEmpty ||
-                                (_addressValid == false &&
-                                  !_isValidS256Address(_addressController.text.trim()))
+                          onPressed: _isSending || amountErr != null || _isValidatingAddress || _addressController.text.trim().isEmpty || _addressValid == false
                               ? null
                               : _send,
-                        ),
-
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.blue.withValues(alpha: 0.25)),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(Icons.gavel_rounded, color: Colors.blue, size: 16),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Regulatory notice: This non-custodial wallet does not provide financial advice. You are fully responsible for address verification and transaction decisions.',
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.78),
-                                    fontSize: 11,
-                                    height: 1.35,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
                         ),
 
                         const SizedBox(height: 32),
@@ -1146,7 +2307,7 @@ class _SendViewState extends State<SendView> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          CircularProgressIndicator(color: S256Colors.accent),
+                          CircularProgressIndicator(color: Colors.cyanAccent),
                           SizedBox(height: 16),
                           Text(
                             'Processing...',
@@ -1159,6 +2320,7 @@ class _SendViewState extends State<SendView> {
               ],
             );
           },
+          ),
         ),
       ),
     );

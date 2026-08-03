@@ -38,11 +38,11 @@ class RegulatoryNoticeView extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.gavel_rounded, color: Colors.blue),
+                        Icon(Icons.policy_outlined, color: Colors.blue),
                         SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'MiCA-Oriented Information',
+                            'Disclaimer & Transparency',
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,

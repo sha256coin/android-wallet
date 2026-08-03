@@ -6,6 +6,9 @@ import 'package:s256_wallet/services/wallet_service.dart';
 import 'package:s256_wallet/services/rpc_config_service.dart';
 
 class WalletProvider with ChangeNotifier {
+  static const int _maxMigrationSweepInputs = 120;
+  static const int _maxMigrationSweepVbytes = 90000;
+
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   final WalletService _ws = WalletService();
   final RpcConfigService _rpcConfig = RpcConfigService();
@@ -16,6 +19,7 @@ class WalletProvider with ChangeNotifier {
   DateTime? _lastFetch;
   bool _isCurrentlySending = false;
   DateTime? _lastSendAttempt;
+  String _message = '';
 
   // Pending transaction tracking (kept for UI compatibility)
   final Set<String> _pendingTxids = {};
@@ -26,7 +30,18 @@ class WalletProvider with ChangeNotifier {
   List<Map<String, dynamic>> _availableUtxos = [];
   Set<String> _selectedUtxoKeys = {};
   bool _isLoadingUtxos = false;
+  int _utxoPage = 0;
+  static const int _utxosPerPage = 15;
   double _feeRate = 0.00001;
+  bool _isFetchingFeeRate = false;
+  bool _feeRateReady = false;
+  bool _usingManualFeeRate = false;
+  String _feeRateSource = 'unavailable';
+  double? _feeBaselineRate;
+  double? _feeEstimatedRate;
+  double? _feeSanityCeiling;
+  String _feeRateStatusMessage = 'Fee estimate not requested yet.';
+  String? _feeEstimateError;
 
   // Getters
   WalletModel? get wallet => _wallet;
@@ -42,6 +57,27 @@ class WalletProvider with ChangeNotifier {
   List<Map<String, dynamic>> get availableUtxos => _availableUtxos;
   Set<String> get selectedUtxoKeys => _selectedUtxoKeys;
   bool get isLoadingUtxos => _isLoadingUtxos;
+  int get utxoPage => _utxoPage;
+  int get utxoPageCount =>
+      _availableUtxos.isEmpty ? 1 : (_availableUtxos.length / _utxosPerPage).ceil();
+  List<Map<String, dynamic>> get currentPageUtxos {
+    final start = _utxoPage * _utxosPerPage;
+    final end = (start + _utxosPerPage).clamp(0, _availableUtxos.length);
+    return _availableUtxos.sublist(start, end);
+  }
+  String get message => _message;
+  double get feeRate => _feeRate;
+  bool get isFetchingFeeRate => _isFetchingFeeRate;
+  bool get feeRateReady => _feeRateReady;
+  bool get usingManualFeeRate => _usingManualFeeRate;
+  String get feeRateSource => _feeRateSource;
+  double? get feeBaselineRate => _feeBaselineRate;
+  double? get feeEstimatedRate => _feeEstimatedRate;
+  double? get feeSanityCeiling => _feeSanityCeiling;
+  String get feeRateStatusMessage => _feeRateStatusMessage;
+  bool get feeEstimateAvailable => _feeRateReady;
+  bool get isFeeEstimateLoading => _isFetchingFeeRate;
+  String? get feeEstimateError => _feeRateReady ? null : _feeEstimateError;
 
   double get selectedUtxoTotal => _availableUtxos
       .where((u) => _selectedUtxoKeys.contains('${u['txid']}:${u['vout']}'))
@@ -158,6 +194,33 @@ class WalletProvider with ChangeNotifier {
 
   Future<void> saveWallet(String address, String privateKey,
       {String? mnemonic, WalletType type = WalletType.wif}) async {
+    // Switching wallet identity must reset transient runtime state so old
+    // wallet activity does not leak into the new wallet UI.
+    _pendingTxids.clear();
+    _pendingTimestamps.clear();
+    _pendingTransactions.clear();
+    _availableUtxos = [];
+    _selectedUtxoKeys = {};
+    _isLoadingUtxos = false;
+    _utxoPage = 0;
+    _lastUtxos = null;
+    _lastFetch = null;
+    _isCurrentlySending = false;
+    _lastSendAttempt = null;
+    _message = '';
+    _lastError = null;
+
+    _feeRate = 0.00001;
+    _isFetchingFeeRate = false;
+    _feeRateReady = false;
+    _usingManualFeeRate = false;
+    _feeRateSource = 'unavailable';
+    _feeBaselineRate = null;
+    _feeEstimatedRate = null;
+    _feeSanityCeiling = null;
+    _feeRateStatusMessage = 'Fee estimate not requested yet.';
+    _feeEstimateError = null;
+
     _wallet = WalletModel(
       address: address,
       privateKey: privateKey,
@@ -207,25 +270,103 @@ class WalletProvider with ChangeNotifier {
     }
   }
 
-  Future<void> fetchFeeRate() async {
+  void clearMessage() {
+    _message = '';
+    notifyListeners();
+  }
+
+  Future<bool> fetchFeeRate() async {
+    _isFetchingFeeRate = true;
+    _feeRateReady = false;
+    _usingManualFeeRate = false;
+    _feeRateSource = 'fetching';
+    _feeBaselineRate = null;
+    _feeEstimatedRate = null;
+    _feeSanityCeiling = null;
+    _feeRateStatusMessage = 'Fetching fee estimate from node...';
+    _feeEstimateError = null;
+    notifyListeners();
+
     try {
       final rpcUrl = await _rpcConfig.getRpcUrl();
       final rpcUser = await _rpcConfig.getRpcUser();
       final rpcPassword = await _rpcConfig.getRpcPassword();
-      final feeResult = await _ws.rpcRequest(
+
+      final feeResult = await _ws.resolveFeeRate(
         rpcUrl,
         rpcUser,
         rpcPassword,
-        'estimatesmartfee',
-        [6],
       );
-      if (feeResult != null &&
-          feeResult['result'] != null &&
-          feeResult['result']['feerate'] != null) {
-        _feeRate = (feeResult['result']['feerate'] as num).toDouble();
-        notifyListeners();
+
+      if (feeResult['success'] == true) {
+        _feeRate = (feeResult['feeRate'] as num).toDouble();
+        _feeRateReady = true;
+        _feeRateSource = (feeResult['source'] as String?) ?? 'estimated';
+        _feeBaselineRate = (feeResult['baselineFeeRate'] as num?)?.toDouble();
+        _feeEstimatedRate = (feeResult['estimatedFeeRate'] as num?)?.toDouble();
+        _feeSanityCeiling = (feeResult['sanityCeiling'] as num?)?.toDouble();
+
+        switch (_feeRateSource) {
+          case 'clamped':
+            _feeRateStatusMessage =
+                (feeResult['message'] as String?) ?? 'Smart fee outlier detected. Using node baseline fee.';
+            break;
+          case 'baseline':
+            _feeRateStatusMessage =
+                (feeResult['message'] as String?) ?? 'Using node baseline fee.';
+            break;
+          case 'manual':
+            _feeRateStatusMessage =
+                'Using manual fee rate (${_feeRate.toStringAsFixed(8)} S256/kvB).';
+            break;
+          case 'estimated':
+          default:
+            _feeRateStatusMessage = 'Fee estimate ready from node.';
+            break;
+        }
+
+        _feeEstimateError = null;
+        return true;
       }
-    } catch (_) {}
+
+      _feeRate = 0.0;
+      _feeRateReady = false;
+      _feeRateSource = 'unavailable';
+      _feeBaselineRate = null;
+      _feeEstimatedRate = null;
+      _feeSanityCeiling = null;
+      _feeRateStatusMessage =
+          (feeResult['message'] as String?) ?? 'Fee estimation unavailable. Manual fee required.';
+      _feeEstimateError = _feeRateStatusMessage;
+      return false;
+    } catch (_) {
+      _feeRate = 0.0;
+      _feeRateReady = false;
+      _feeRateSource = 'unavailable';
+      _feeBaselineRate = null;
+      _feeEstimatedRate = null;
+      _feeSanityCeiling = null;
+      _feeRateStatusMessage = 'Fee estimation unavailable. Enter a manual fee when sending.';
+      _feeEstimateError = _feeRateStatusMessage;
+      return false;
+    } finally {
+      _isFetchingFeeRate = false;
+      notifyListeners();
+    }
+  }
+
+  void setManualFeeRate(double feeRateCoinPerKb) {
+    _feeRate = feeRateCoinPerKb;
+    _feeRateReady = true;
+    _usingManualFeeRate = true;
+    _feeRateSource = 'manual';
+    _feeBaselineRate = null;
+    _feeEstimatedRate = null;
+    _feeSanityCeiling = null;
+    _feeRateStatusMessage =
+        'Using manual fee rate (${feeRateCoinPerKb.toStringAsFixed(8)} S256/kvB).';
+    _feeEstimateError = null;
+    notifyListeners();
   }
 
   Future<void> fetchUtxosForCoinControl() async {
@@ -233,6 +374,7 @@ class WalletProvider with ChangeNotifier {
     _isLoadingUtxos = true;
     _availableUtxos = [];
     _selectedUtxoKeys = {};
+    _utxoPage = 0;
     notifyListeners();
 
     try {
@@ -279,6 +421,13 @@ class WalletProvider with ChangeNotifier {
     _availableUtxos = [];
     _selectedUtxoKeys = {};
     _isLoadingUtxos = false;
+    _utxoPage = 0;
+    notifyListeners();
+  }
+
+  void setUtxoPage(int page) {
+    if (page < 0 || page >= utxoPageCount) return;
+    _utxoPage = page;
     notifyListeners();
   }
 
@@ -384,6 +533,9 @@ class WalletProvider with ChangeNotifier {
       String address,
       double amount,
       {double? feeRate,
+      double? manualFeeRateCoinPerKb,
+      bool preferBatchSend = true,
+      bool isSweep = false,
       List<Map<String, dynamic>>? preSelectedUtxos}
       ) async {
 
@@ -413,12 +565,65 @@ class WalletProvider with ChangeNotifier {
 
     _isCurrentlySending = true;
     _lastSendAttempt = DateTime.now();
+    _message = '⏳ Sending transaction...';
     notifyListeners();
 
     try {
       final rpcUrl = await _rpcConfig.getRpcUrl();
       final rpcUser = await _rpcConfig.getRpcUser();
       final rpcPassword = await _rpcConfig.getRpcPassword();
+
+      final effectiveFeeRate = feeRate ?? manualFeeRateCoinPerKb;
+
+      final batchPreview = await assessBatchSendCandidate(
+        address,
+        amount,
+        manualFeeRateCoinPerKb: effectiveFeeRate,
+        preSelectedUtxos: preSelectedUtxos,
+      );
+
+      final nearSweepCandidate = batchPreview['nearSweep'] == true;
+      if (preferBatchSend &&
+          batchPreview['isCandidate'] == true &&
+          nearSweepCandidate) {
+        final confirmedUtxos =
+            await _getConfirmedUtxosForSend(preSelectedUtxos: preSelectedUtxos);
+        if (confirmedUtxos.isNotEmpty) {
+          final batchResult = await _sendSweepInBatches(
+            rpcUrl: rpcUrl,
+            rpcUser: rpcUser,
+            rpcPassword: rpcPassword,
+            toAddress: address,
+            confirmedUtxos: confirmedUtxos,
+            feeRate: effectiveFeeRate,
+          );
+
+          if (batchResult['success'] == true) {
+            final txids = (batchResult['batchTxids'] as List<dynamic>? ?? [])
+                .map((e) => e.toString())
+                .where((txid) => txid.isNotEmpty)
+                .toList();
+
+            _message =
+                '✅ Batch send complete: ${txids.length} transaction${txids.length == 1 ? '' : 's'} broadcasted.';
+            await fetchUtxos(force: true, silent: true);
+            notifyListeners();
+
+            Future.delayed(const Duration(seconds: 5), () {
+              if (_message.contains('✅')) {
+                _message = '';
+                notifyListeners();
+              }
+            });
+
+            return batchResult;
+          }
+
+          _message = '❌ ${batchResult['message'] ?? 'Batch send failed'}';
+          notifyListeners();
+          return batchResult;
+        }
+      }
 
       // We need to estimate change for our optimistic display balance
       // We'll call the service logic to create the transaction but we'll use its internal steps
@@ -431,7 +636,8 @@ class WalletProvider with ChangeNotifier {
         _wallet!.address,
         address,
         amount,
-        feeRate: feeRate,
+        feeRate: effectiveFeeRate,
+        isSweep: isSweep,
         preSelectedUtxos: preSelectedUtxos,
       );
 
@@ -453,6 +659,14 @@ class WalletProvider with ChangeNotifier {
 
         _startSmartConfirmationChecking(txid);
         await fetchUtxos(force: true, silent: true);
+
+        _message = '✅ Sent! TXID: $txid';
+        Future.delayed(const Duration(seconds: 5), () {
+          if (_message.contains('✅')) {
+            _message = '';
+            notifyListeners();
+          }
+        });
         
         return {
           'success': true,
@@ -460,9 +674,11 @@ class WalletProvider with ChangeNotifier {
           'fee': fee,
         };
       } else {
+        _message = '❌ ${result['message'] ?? 'Transaction failed'}';
         return result;
       }
     } catch (e) {
+      _message = '❌ ${e.toString()}';
       return {
         'success': false,
         'message': 'Error: ${e.toString()}',
@@ -471,6 +687,264 @@ class WalletProvider with ChangeNotifier {
       _isCurrentlySending = false;
       notifyListeners();
     }
+  }
+
+  Future<Map<String, dynamic>> assessBatchSendCandidate(
+    String toAddress,
+    double amount, {
+    double? manualFeeRateCoinPerKb,
+    List<Map<String, dynamic>>? preSelectedUtxos,
+  }) async {
+    if (_wallet == null || amount <= 0) {
+      return {
+        'isCandidate': false,
+        'reason': 'invalid-state',
+      };
+    }
+
+    final confirmedUtxos =
+        await _getConfirmedUtxosForSend(preSelectedUtxos: preSelectedUtxos);
+
+    if (confirmedUtxos.isEmpty) {
+      return {
+        'isCandidate': false,
+        'reason': 'no-utxos',
+      };
+    }
+
+    final confirmedTotal = confirmedUtxos.fold<double>(
+      0.0,
+      (sum, u) => sum + (u['amount'] as num).toDouble(),
+    );
+    final nearSweep = amount >= (confirmedTotal - 0.00001);
+
+    final sortedAmounts = confirmedUtxos
+        .map((u) => (u['amount'] as num).toDouble())
+        .toList()
+      ..sort((a, b) => b.compareTo(a));
+
+    int toSats(double v) => (v * 1e8).round();
+    int estimateFeeSats(double feeRate, int vbytes) =>
+        (feeRate * vbytes / 1000 * 1e8).round();
+
+    final feeRate =
+        manualFeeRateCoinPerKb ?? (_feeRate > 0 ? _feeRate : 0.00001);
+    final isDestLegacy = !toAddress.toLowerCase().startsWith('s2');
+    final destOutputSize = isDestLegacy ? 34 : 31;
+    const changeOutputSize = 31;
+
+    int predictedInputCount;
+    int predictedVbytes;
+
+    if (nearSweep) {
+      predictedInputCount = sortedAmounts.length;
+      predictedVbytes = 11 + (predictedInputCount * 68) + destOutputSize;
+    } else {
+      final targetSats = toSats(amount);
+      var used = 0;
+      var inputSumSats = 0;
+      while (used < sortedAmounts.length) {
+        inputSumSats += toSats(sortedAmounts[used]);
+        used += 1;
+        final txSize = 11 + (used * 68) + destOutputSize + changeOutputSize;
+        final feeSats = estimateFeeSats(feeRate, txSize);
+        if (inputSumSats >= targetSats + feeSats) {
+          break;
+        }
+      }
+      predictedInputCount = used;
+      predictedVbytes =
+          11 + (predictedInputCount * 68) + destOutputSize + changeOutputSize;
+    }
+
+    final exceedsInputs = predictedInputCount > _maxMigrationSweepInputs;
+    final exceedsVbytes = predictedVbytes > _maxMigrationSweepVbytes;
+    final sweepTrigger = nearSweep &&
+        (sortedAmounts.length > _maxMigrationSweepInputs ||
+            (11 + (sortedAmounts.length * 68) + 31) >
+                _maxMigrationSweepVbytes);
+    // Current batch implementation broadcasts full-chunk sweeps, so only offer
+    // batch for near-sweep scenarios where full-balance movement is expected.
+    final isCandidate = nearSweep && (sweepTrigger || exceedsInputs || exceedsVbytes);
+
+    final chunkSize = _maxSweepInputsPerBatchTx();
+    final estimatedBatchCount = predictedInputCount <= 0
+        ? 1
+        : ((predictedInputCount + chunkSize - 1) ~/ chunkSize);
+    final singleFee = feeRate * predictedVbytes / 1000;
+    final estimatedTotalBatchFee = singleFee * estimatedBatchCount;
+
+    final reason = sweepTrigger
+        ? 'sweep-too-large'
+        : exceedsInputs
+            ? 'input-count'
+            : exceedsVbytes
+                ? 'tx-size'
+                : 'none';
+
+    return {
+      'isCandidate': isCandidate,
+      'reason': reason,
+      'nearSweep': nearSweep,
+      'predictedInputCount': predictedInputCount,
+      'predictedVbytes': predictedVbytes,
+      'estimatedBatchCount': estimatedBatchCount,
+      'estimatedSingleFee': double.parse(singleFee.toStringAsFixed(8)),
+      'estimatedTotalBatchFee':
+          double.parse(estimatedTotalBatchFee.toStringAsFixed(8)),
+      'estimatedNetDelivered':
+          double.parse((amount - estimatedTotalBatchFee).toStringAsFixed(8)),
+      'confirmedUtxoCount': confirmedUtxos.length,
+      'confirmedTotal': double.parse(confirmedTotal.toStringAsFixed(8)),
+    };
+  }
+
+  int _maxSweepInputsPerBatchTx() {
+    final maxByVbytes = ((_maxMigrationSweepVbytes - 42) ~/ 68);
+    if (maxByVbytes <= 0) return 1;
+    return maxByVbytes < _maxMigrationSweepInputs
+        ? maxByVbytes
+        : _maxMigrationSweepInputs;
+  }
+
+  List<List<Map<String, dynamic>>> _chunkUtxosForSweep(
+    List<Map<String, dynamic>> confirmedUtxos,
+  ) {
+    final chunkSize = _maxSweepInputsPerBatchTx();
+    final sorted = List<Map<String, dynamic>>.from(confirmedUtxos)
+      ..sort((a, b) => ((b['amount'] as num).toDouble())
+          .compareTo((a['amount'] as num).toDouble()));
+
+    final chunks = <List<Map<String, dynamic>>>[];
+    for (var i = 0; i < sorted.length; i += chunkSize) {
+      final end = (i + chunkSize < sorted.length) ? i + chunkSize : sorted.length;
+      chunks.add(sorted.sublist(i, end));
+    }
+    return chunks;
+  }
+
+  Future<List<Map<String, dynamic>>> _getConfirmedUtxosForSend({
+    List<Map<String, dynamic>>? preSelectedUtxos,
+  }) async {
+    if (preSelectedUtxos != null && preSelectedUtxos.isNotEmpty) {
+      return preSelectedUtxos
+          .where((u) =>
+              u['txid'] != 'pending_marker' &&
+              ((u['confirmations'] as int?) ?? 0) > 0)
+          .map((u) => Map<String, dynamic>.from(u))
+          .toList();
+    }
+
+    if (_wallet == null) {
+      return [];
+    }
+
+    final rpcUrl = await _rpcConfig.getRpcUrl();
+    final rpcUser = await _rpcConfig.getRpcUser();
+    final rpcPassword = await _rpcConfig.getRpcPassword();
+    final all = await _ws.getUtxos(rpcUrl, rpcUser, rpcPassword, _wallet!.address);
+    return all
+        .where((u) =>
+            u['txid'] != 'pending_marker' &&
+            ((u['confirmations'] as int?) ?? 0) > 0)
+        .map((u) => Map<String, dynamic>.from(u))
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> _sendSweepInBatches({
+    required String rpcUrl,
+    required String rpcUser,
+    required String rpcPassword,
+    required String toAddress,
+    required List<Map<String, dynamic>> confirmedUtxos,
+    double? feeRate,
+  }) async {
+    if (_wallet == null) {
+      return {
+        'success': false,
+        'message': 'Wallet not initialized',
+      };
+    }
+
+    final chunks = _chunkUtxosForSweep(confirmedUtxos);
+    if (chunks.isEmpty) {
+      return {
+        'success': false,
+        'message': 'No confirmed UTXOs available for batch send.',
+      };
+    }
+
+    final txids = <String>[];
+    double totalFee = 0.0;
+    double grossSent = 0.0;
+
+    for (var i = 0; i < chunks.length; i++) {
+      final chunk = chunks[i];
+      final chunkAmount = chunk.fold<double>(
+        0.0,
+        (sum, u) => sum + (u['amount'] as num).toDouble(),
+      );
+
+      _message = '⏳ Broadcasting batch ${i + 1}/${chunks.length}...';
+      notifyListeners();
+
+      final result = await _ws.sendTransaction(
+        rpcUrl,
+        rpcUser,
+        rpcPassword,
+        _wallet!.privateKey,
+        _wallet!.address,
+        toAddress,
+        chunkAmount,
+        feeRate: feeRate,
+        preSelectedUtxos: chunk,
+      );
+
+      if (result['success'] != true) {
+        final baseMessage = (result['message'] as String?) ??
+            'Unknown error while broadcasting batch ${i + 1}.';
+        return {
+          'success': false,
+          'batched': true,
+          'batchTxids': txids,
+          'completedBatches': txids.length,
+          'totalBatches': chunks.length,
+          'requiresManualFee': result['requiresManualFee'] == true,
+          'feeEstimationFailed': result['feeEstimationFailed'] == true,
+          'message': 'Batch ${i + 1}/${chunks.length} failed after '
+              '${txids.length} successful batch(es). $baseMessage',
+        };
+      }
+
+      final txid = (result['txid'] as String?) ?? '';
+      if (txid.isNotEmpty) {
+        txids.add(txid);
+        _pendingTxids.add(txid);
+        _pendingTimestamps[txid] = DateTime.now();
+        _pendingTransactions[txid] = PendingTransaction(
+          txid: txid,
+          amount: chunkAmount,
+          fee: (result['fee'] as num?)?.toDouble() ?? 0.0,
+          toAddress: toAddress,
+          timestamp: DateTime.now(),
+          changeAmount: 0.0,
+        );
+      }
+
+      final fee = (result['fee'] as num?)?.toDouble() ?? 0.0;
+      totalFee += fee;
+      grossSent += chunkAmount;
+    }
+
+    return {
+      'success': true,
+      'batched': true,
+      'batchTxids': txids,
+      'batchCount': chunks.length,
+      'grossAmount': grossSent,
+      'fee': totalFee,
+      'netAmount': grossSent - totalFee,
+    };
   }
 
   void _startSmartConfirmationChecking(String txid) async {
@@ -557,71 +1031,20 @@ class WalletProvider with ChangeNotifier {
     return await _ws.getNetworkInfo(rpcUrl, rpcUser, rpcPassword);
   }
 
-  // New function from web-wallet: Migrate from WIF to Seed
-  Future<bool> migrateToSeed({int words = 12, bool skipSweep = false}) async {
-    if (_wallet == null || _wallet!.type != WalletType.wif) return false;
-
-    _isLoading = true;
-    notifyListeners();
-
+  Future<bool> runMigrationStoragePreflight() async {
     try {
-      final oldWif = _wallet!.privateKey;
-      final oldAddress = _wallet!.address;
-
-      await refreshBalance();
-      final currentBalance = _wallet!.balance;
-      
-      final walletData = await _ws.generateNewSeedWallet(words: words);
-      final mnemonic = walletData['mnemonic']!;
-      final newAddress = walletData['address']!;
-      final newWif = walletData['privateKey']!;
-
-      if (currentBalance > 0.00001 && !skipSweep) {
-        final rpcUrl = await _rpcConfig.getRpcUrl();
-        final rpcUser = await _rpcConfig.getRpcUser();
-        final rpcPassword = await _rpcConfig.getRpcPassword();
-
-        final result = await _ws.sendTransaction(
-          rpcUrl,
-          rpcUser,
-          rpcPassword,
-          oldWif,
-          oldAddress,
-          newAddress,
-          currentBalance,
-        );
-
-        if (!result['success']) {
-          _lastError = 'Migration failed: ${result['message']}';
-          _isLoading = false;
-          notifyListeners();
-          return false;
-        }
-        
-        _pendingTxids.add(result['txid'] as String);
-        _pendingTimestamps[result['txid'] as String] = DateTime.now();
-        _pendingTransactions[result['txid'] as String] = PendingTransaction(
-          txid: result['txid'] as String,
-          amount: currentBalance,
-          fee: result['fee'] ?? 0.0,
-          toAddress: newAddress,
-          timestamp: DateTime.now(),
-          changeAmount: 0.0,
-        );
-      }
-
-      await saveWallet(newAddress, newWif, mnemonic: mnemonic, type: WalletType.seed);
-      
-      _isLoading = false;
-      notifyListeners();
+      await _storage.write(
+        key: 'migration_preflight',
+        value: DateTime.now().toIso8601String(),
+      );
+      await _storage.delete(key: 'migration_preflight');
       return true;
     } catch (e) {
-      _lastError = 'Migration error: $e';
-      _isLoading = false;
-      notifyListeners();
+      _lastError = 'Migration failed: secure storage is unavailable. $e';
       return false;
     }
   }
+
 }
 
 class PendingTransaction {

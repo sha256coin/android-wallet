@@ -393,6 +393,124 @@ class WalletService {
     return finalUtxos;
   }
 
+  double? _parsePositiveFeeRate(dynamic raw) {
+    final num? parsed = raw is num ? raw : num.tryParse(raw?.toString() ?? '');
+    final value = parsed?.toDouble();
+    if (value == null || value <= 0) return null;
+    return value;
+  }
+
+  Future<double> _resolveNodeBaselineFee(
+    String rpcUrl,
+    String rpcUser,
+    String rpcPassword,
+  ) async {
+    const hardFloor = 0.00001;
+    double relayFee = hardFloor;
+    double incrementalFee = hardFloor;
+    double mempoolMinFee = hardFloor;
+
+    try {
+      final netInfo = await rpcRequest(rpcUrl, rpcUser, rpcPassword, 'getnetworkinfo');
+      final relay = _parsePositiveFeeRate(netInfo?['result']?['relayfee']);
+      final incremental = _parsePositiveFeeRate(netInfo?['result']?['incrementalfee']);
+      if (relay != null) relayFee = relay;
+      if (incremental != null) incrementalFee = incremental;
+    } catch (_) {}
+
+    try {
+      final mempoolInfo = await rpcRequest(rpcUrl, rpcUser, rpcPassword, 'getmempoolinfo');
+      final mempoolMin = _parsePositiveFeeRate(mempoolInfo?['result']?['mempoolminfee']);
+      if (mempoolMin != null) mempoolMinFee = mempoolMin;
+    } catch (_) {}
+
+    return max(hardFloor, max(relayFee, max(incrementalFee, mempoolMinFee)));
+  }
+
+  Future<Map<String, dynamic>> resolveFeeRate(
+    String rpcUrl,
+    String rpcUser,
+    String rpcPassword, {
+    double? manualFeeRateCoinPerKb,
+  }) async {
+    if (manualFeeRateCoinPerKb != null) {
+      if (manualFeeRateCoinPerKb <= 0) {
+        return {
+          'success': false,
+          'message': 'Manual fee rate must be greater than zero.',
+          'reason': 'invalid-manual-fee',
+        };
+      }
+      return {
+        'success': true,
+        'feeRate': manualFeeRateCoinPerKb,
+        'source': 'manual',
+      };
+    }
+
+    try {
+      final baselineFeeRate = await _resolveNodeBaselineFee(rpcUrl, rpcUser, rpcPassword);
+      final response = await rpcRequest(
+        rpcUrl,
+        rpcUser,
+        rpcPassword,
+        'estimatesmartfee',
+        [6],
+      );
+
+      if (response?['error'] != null) {
+        return {
+          'success': true,
+          'feeRate': baselineFeeRate,
+          'baselineFeeRate': baselineFeeRate,
+          'source': 'baseline',
+          'message': 'Smart fee unavailable. Using node baseline fee.',
+        };
+      }
+
+      final double? feeRate = _parsePositiveFeeRate(response?['result']?['feerate']);
+      if (feeRate == null || feeRate <= 0) {
+        return {
+          'success': true,
+          'feeRate': baselineFeeRate,
+          'baselineFeeRate': baselineFeeRate,
+          'source': 'baseline',
+          'message': 'Estimator returned no usable value. Using node baseline fee.',
+        };
+      }
+
+      final sanityCeiling = baselineFeeRate * 50;
+      if (feeRate > sanityCeiling) {
+        return {
+          'success': true,
+          'feeRate': baselineFeeRate,
+          'baselineFeeRate': baselineFeeRate,
+          'estimatedFeeRate': feeRate,
+          'sanityCeiling': sanityCeiling,
+          'source': 'clamped',
+          'message':
+              'Estimator outlier (${feeRate.toStringAsFixed(8)} S256/kvB). Using baseline ${baselineFeeRate.toStringAsFixed(8)} S256/kvB.',
+        };
+      }
+
+      return {
+        'success': true,
+        'feeRate': feeRate,
+        'baselineFeeRate': baselineFeeRate,
+        'source': 'estimated',
+      };
+    } catch (_) {
+      final baselineFeeRate = await _resolveNodeBaselineFee(rpcUrl, rpcUser, rpcPassword);
+      return {
+        'success': true,
+        'feeRate': baselineFeeRate,
+        'baselineFeeRate': baselineFeeRate,
+        'source': 'baseline',
+        'message': 'Fee estimation request failed. Using node baseline fee.',
+      };
+    }
+  }
+
   // Send transaction
   Future<Map<String, dynamic>> sendTransaction(
     String rpcUrl,
@@ -403,6 +521,7 @@ class WalletService {
     String toAddress,
     double amount, {
     double? feeRate,
+    bool isSweep = false,
     List<Map<String, dynamic>>? preSelectedUtxos,
   }) async {
     final allUtxos = await getUtxos(rpcUrl, rpcUser, rpcPassword, fromAddress);
@@ -457,7 +576,7 @@ class WalletService {
       0.0,
       (sum, utxo) => sum + (utxo['amount'] as num).toDouble(),
     );
-    final bool isSweep = (amount >= totalAvailable - 0.00001);
+    final bool shouldSweep = isSweep || (amount >= totalAvailable - 0.00001);
 
     utxos.sort((a, b) => ((b['amount'] as num).toDouble())
         .compareTo((a['amount'] as num).toDouble()));
@@ -488,7 +607,7 @@ class WalletService {
       final utxo = utxos[i];
       inputSum += (utxo['amount'] as num).toDouble();
 
-      if (isSweep && i < utxos.length - 1) continue;
+      if (shouldSweep && i < utxos.length - 1) continue;
 
       final inputCount = selectedUtxos.length;
       final bool isDestLegacy = !toAddress.toLowerCase().startsWith('s2');
@@ -496,7 +615,7 @@ class WalletService {
       const int changeOutputSize = 31;
 
       int txSize = 11 + (inputCount * 68);
-      if (isSweep) {
+      if (shouldSweep) {
         txSize += destOutputSize;
       } else {
         txSize += destOutputSize + changeOutputSize;
@@ -505,7 +624,7 @@ class WalletService {
       final fee = currentFeeRate * txSize / 1000;
       final actualFee = double.parse(fee.toStringAsFixed(8));
 
-      if (inputSum >= (isSweep ? actualFee : amount + actualFee)) {
+      if (inputSum >= (shouldSweep ? actualFee : amount + actualFee)) {
         final inputs = selectedUtxos.map((u) {
           String? scriptHex = u['scriptPubKey'] as String?;
           if (scriptHex == null || scriptHex.isEmpty) {
@@ -521,7 +640,7 @@ class WalletService {
 
         final outputs = <S256TxOutput>[];
         try {
-          if (isSweep) {
+          if (shouldSweep) {
             final sweepSats = ((inputSum - actualFee) * 1e8).round();
             if (sweepSats <= 546) {
               return {
@@ -576,7 +695,7 @@ class WalletService {
         );
 
         if (sendResult != null && sendResult['result'] != null) {
-          final changeAmount = isSweep
+            final changeAmount = shouldSweep
               ? 0.0
               : double.parse((inputSum - amount - actualFee).toStringAsFixed(8));
           return {

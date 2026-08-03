@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:s256_wallet/widgets/app_background.dart';
+import 'package:s256_wallet/views/home/addressbook_view.dart';
 import 'package:s256_wallet/views/home/exchange_view.dart';
 import 'package:s256_wallet/views/home/wallet_view.dart';
 import 'package:s256_wallet/views/home/settings_view.dart';
@@ -42,6 +43,7 @@ class _HomeViewState extends State<HomeView> {
         children: const [
           WalletView(),
           ExchangeView(),
+          AddressbookView(),
           SettingsView(),
         ],
       ),
@@ -73,6 +75,10 @@ class _HomeViewState extends State<HomeView> {
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.sync, size: 28),
+                label: '',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.contact_page_rounded, size: 28),
                 label: '',
               ),
               BottomNavigationBarItem(

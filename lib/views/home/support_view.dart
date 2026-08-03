@@ -148,7 +148,7 @@ class SupportView extends StatelessWidget {
                 color: const Color(0xFF24292e),
                 iconColor: Colors.white,
               ),
-
+/*
               _buildContactCard(
                 icon: Icons.savings,
                 title: 'MiningPoolStat.app',
@@ -156,7 +156,7 @@ class SupportView extends StatelessWidget {
                 url: 'https://miningpoolstats.app/coins/S256',
                 color: Colors.green,
               ),
-
+*/
               const SizedBox(height: 32),
 
               // Help Message
