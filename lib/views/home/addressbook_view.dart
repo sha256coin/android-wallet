@@ -142,14 +142,6 @@ class _AddressbookViewState extends State<AddressbookView> {
         return;
       }
 
-      var normalizedPath = outputPath.trim();
-      if (!normalizedPath.toLowerCase().endsWith('.s256')) {
-        normalizedPath = '$normalizedPath.s256';
-      }
-
-      final outFile = File(normalizedPath);
-      await outFile.writeAsString(jsonString, flush: true);
-
       if (mounted) {
         _showSnack('Address book exported.');
       }

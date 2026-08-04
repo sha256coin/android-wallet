@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:s256_wallet/widgets/app_background.dart';
 
@@ -80,6 +81,7 @@ class SupportView extends StatelessWidget {
               const SizedBox(height: 16),
 
               _buildContactCard(
+                context: context,
                 icon: Icons.language,
                 title: 'Website',
                 subtitle: 'sha256coin.eu',
@@ -87,12 +89,9 @@ class SupportView extends StatelessWidget {
                 color: Colors.blue,
               ),
 
-              _buildContactCard(
-                icon: Icons.email,
-                title: 'Email',
-                subtitle: 'info@sha256coin.eu',
-                url: 'mailto:info@sha256coin.eu',
-                color: Colors.red,
+              _buildEmailCard(
+                context: context,
+                email: 'info@sha256coin.eu',
               ),
 
               const SizedBox(height: 32),
@@ -102,6 +101,7 @@ class SupportView extends StatelessWidget {
               const SizedBox(height: 16),
 
               _buildContactCard(
+                context: context,
                 icon: Icons.chat,
                 title: 'Discord',
                 subtitle: 'Join our Discord server',
@@ -110,14 +110,16 @@ class SupportView extends StatelessWidget {
               ),
 
               _buildContactCard(
+                context: context,
                 icon: Icons.send,
                 title: 'Telegram',
                 subtitle: 'Follow us on Telegram',
-                url: 'https://t.me/+Ecf4ApES37NjZTBk',
+                url: 'https://t.me/s256coin',
                 color: const Color(0xFF0088CC),
               ),
 
               _buildContactCard(
+                context: context,
                 icon: Icons.tag,
                 title: 'X (Twitter)',
                 subtitle: 'Follow S256 coin on X',
@@ -127,6 +129,7 @@ class SupportView extends StatelessWidget {
               ),
 
               _buildContactCard(
+                context: context,
                 icon: Icons.forum,
                 title: 'Bitcointalk',
                 subtitle: 'Join the discussion',
@@ -141,10 +144,11 @@ class SupportView extends StatelessWidget {
               const SizedBox(height: 16),
 
               _buildContactCard(
+                context: context,
                 icon: Icons.code,
                 title: 'Developers',
                 subtitle: 'View our GitHub repository',
-                url: 'https://github.com/sha256coin',
+                url: 'https://github.com/sha256coin/android-wallet',
                 color: const Color(0xFF24292e),
                 iconColor: Colors.white,
               ),
@@ -222,18 +226,232 @@ class SupportView extends StatelessWidget {
     required String url,
     required Color color,
     Color? iconColor,
+    BuildContext? context,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Builder(
+        builder: (BuildContext builderContext) {
+          return InkWell(
+            onTap: () => _openUrl(context ?? builderContext, url, title),
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      icon,
+                      color: iconColor ?? Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.white.withValues(alpha: 0.3),
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _openUrl(BuildContext context, String url, String title) async {
+    final uri = Uri.parse(url);
+
+    try {
+      var launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
+      if (!launched) {
+        launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+      if (!launched) {
+        launched = await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+      }
+
+      if (!launched) {
+        if (!context.mounted) return;
+        _showLinkDialog(context, url, title);
+      }
+    } catch (_) {
+      try {
+        final fallbackLaunched = await launchUrl(uri);
+        if (!fallbackLaunched && context.mounted) {
+          _showLinkDialog(context, url, title);
+        }
+      } catch (_) {
+        if (context.mounted) {
+          _showLinkDialog(context, url, title);
+        }
+      }
+    }
+  }
+
+  void _showLinkDialog(BuildContext context, String url, String title) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1A1A1A),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(
+              color: S256Colors.accent.withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.link, color: S256Colors.accent, size: 28),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Open $title',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Unable to open this link automatically. Copy the URL below:',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: S256Colors.accent.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        url,
+                        style: TextStyle(
+                          color: S256Colors.accent,
+                          fontSize: 12,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.copy, color: S256Colors.accent, size: 20),
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: url));
+                        Navigator.pop(dialogContext);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text('Link copied to clipboard'),
+                            backgroundColor: Colors.green,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(
+                'Close',
+                style: TextStyle(
+                  color: S256Colors.accent,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildEmailCard({
+    required BuildContext context,
+    required String email,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () async {
-          final uri = Uri.parse(url);
+          final uri = Uri(scheme: 'mailto', path: email);
           try {
-            if (await canLaunchUrl(uri)) {
-              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            final launched = await launchUrl(
+              uri,
+              mode: LaunchMode.externalApplication,
+            );
+
+            if (!launched) {
+              if (!context.mounted) return;
+              _showEmailDialog(context, email);
             }
-          } catch (e) {
-            // Silently handle - no app available to open this link
+          } catch (_) {
+            if (!context.mounted) return;
+            _showEmailDialog(context, email);
           }
         },
         borderRadius: BorderRadius.circular(16),
@@ -252,12 +470,12 @@ class SupportView extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color,
+                  color: Colors.red,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  color: iconColor ?? Colors.white,
+                child: const Icon(
+                  Icons.email,
+                  color: Colors.white,
                   size: 24,
                 ),
               ),
@@ -266,9 +484,9 @@ class SupportView extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
+                    const Text(
+                      'Email',
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -276,7 +494,7 @@ class SupportView extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      subtitle,
+                      email,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.6),
                         fontSize: 14,
@@ -294,6 +512,106 @@ class SupportView extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  void _showEmailDialog(BuildContext context, String email) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1A1A1A),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(
+              color: S256Colors.accent.withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.email, color: S256Colors.accent, size: 28),
+              const SizedBox(width: 12),
+              const Text(
+                'Contact Email',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Copy the email address below:',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: S256Colors.accent.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        email,
+                        style: TextStyle(
+                          color: S256Colors.accent,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.copy, color: S256Colors.accent, size: 20),
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: email));
+                        Navigator.pop(dialogContext);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text('Email copied to clipboard'),
+                            backgroundColor: Colors.green,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(
+                'Close',
+                style: TextStyle(
+                  color: S256Colors.accent,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

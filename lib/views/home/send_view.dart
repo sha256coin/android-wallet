@@ -1352,9 +1352,13 @@ class _SendViewState extends State<SendView> {
     final rateColor = sourceColor.withValues(alpha: 0.85);
     final rateText =
         '${provider.feeRate.toStringAsFixed(8)} S256/kvB (${_formatSatVb(provider.feeRate)} sat/vB)';
-    final netAfterFeeText = provider.estimatedNetSend > 0
-        ? '${provider.estimatedNetSend.toStringAsFixed(8)} S256'
-        : '-';
+    final enteredAmount = double.tryParse(_amountController.text.trim());
+    final displayNetAfterFee = (hasExactCoinControlFee && enteredAmount != null && enteredAmount > 0)
+      ? enteredAmount - fee
+      : provider.estimatedNetSend;
+    final netAfterFeeText = displayNetAfterFee > 0
+      ? '${displayNetAfterFee.toStringAsFixed(8)} S256'
+      : '-';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
