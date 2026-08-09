@@ -24,6 +24,7 @@ class _SendViewState extends State<SendView> {
 
   bool _isChecked = false;
   bool _advancedSend = false;
+  bool _subtractFeeFromAmount = false;
   String _errorMessage = '';
   bool _isSending = false;
   bool? _addressValid;
@@ -253,7 +254,22 @@ class _SendViewState extends State<SendView> {
     final walletProvider = Provider.of<WalletProvider>(context, listen: false);
     walletProvider.clearMessage();
     final address = _addressController.text.trim();
-    final amount = double.parse(_amountController.text);
+    final enteredAmount = double.parse(_amountController.text);
+    final liveFeeSnapshot = _currentDisplayedFee(walletProvider);
+    final amount = _effectiveSendAmount(
+      provider: walletProvider,
+      feeSnapshot: liveFeeSnapshot,
+      enteredAmount: enteredAmount,
+    );
+    if (amount <= 0) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Amount must be greater than estimated fee.';
+          _isSending = false;
+        });
+      }
+      return;
+    }
     final selectedUtxos = _advancedSend && walletProvider.selectedUtxoCount > 0
       ? walletProvider.selectedUtxoList
       : null;
@@ -334,7 +350,9 @@ class _SendViewState extends State<SendView> {
     final agreed = await _showPreSendConfirmDialog(
       provider: walletProvider,
       toAddress: address,
+      enteredAmount: enteredAmount,
       amount: amount,
+      subtractFeeFromAmount: _subtractFeeFromAmount,
     );
     if (!agreed) {
       if (mounted) {
@@ -500,6 +518,7 @@ class _SendViewState extends State<SendView> {
         _addressValid = null;
         _errorMessage = '';
         _advancedSend = false;
+        _subtractFeeFromAmount = false;
       });
     }
 
@@ -1083,17 +1102,36 @@ class _SendViewState extends State<SendView> {
     final text = _amountController.text.trim();
     if (text.isEmpty) return null;
 
-    final value = double.tryParse(text);
-    if (value == null) return 'Invalid number';
-    if (value <= 0) return 'Amount must be greater than zero';
-    if (value < 0.00000546) return 'Amount below dust threshold (0.00000546 S256)';
+    final enteredAmount = double.tryParse(text);
+    if (enteredAmount == null) return 'Invalid number';
+    if (enteredAmount <= 0) return 'Amount must be greater than zero';
 
-    final valueSats = _s256ToSats(value);
+    final feeSnapshot = _currentDisplayedFee(provider);
+    if (_subtractFeeFromAmount && feeSnapshot.fee <= 0) {
+      return 'Fee estimate required for subtract-fee mode';
+    }
+
+    final effectiveSendAmount = _effectiveSendAmount(
+      provider: provider,
+      feeSnapshot: feeSnapshot,
+      enteredAmount: enteredAmount,
+    );
+
+    if (_subtractFeeFromAmount && effectiveSendAmount <= 0) {
+      return 'Amount must be greater than estimated fee';
+    }
+    if (effectiveSendAmount < 0.00000546) {
+      return _subtractFeeFromAmount
+          ? 'Recipient amount after fee is below dust threshold (0.00000546 S256)'
+          : 'Amount below dust threshold (0.00000546 S256)';
+    }
+
+    final enteredAmountSats = _s256ToSats(enteredAmount);
     final spendableSats = _advancedSend && provider.selectedUtxoCount > 0
         ? _selectedUtxoTotalSats(provider)
       : _s256ToSats(provider.balance ?? 0.0);
 
-    if (valueSats > spendableSats) {
+    if (enteredAmountSats > spendableSats) {
       if (_advancedSend && provider.selectedUtxoCount > 0) {
         return 'Exceeds selected inputs (${_satsToS256(spendableSats).toStringAsFixed(8)} S256)';
       }
@@ -1101,6 +1139,30 @@ class _SendViewState extends State<SendView> {
     }
 
     return null;
+  }
+
+  double _effectiveSendAmount({
+    required WalletProvider provider,
+    required ({double fee, bool hasExactCoinControlFee, ({double fee, int? inputCount, bool amountAware}) simpleEstimate})
+        feeSnapshot,
+    required double enteredAmount,
+  }) {
+    final value = _subtractFeeFromAmount ? (enteredAmount - feeSnapshot.fee) : enteredAmount;
+    if (value <= 0) return 0.0;
+    return double.parse(value.toStringAsFixed(8));
+  }
+
+  double _estimatedTotalSpendAmount({
+    required WalletProvider provider,
+    required ({double fee, bool hasExactCoinControlFee, ({double fee, int? inputCount, bool amountAware}) simpleEstimate})
+        feeSnapshot,
+    required double enteredAmount,
+  }) {
+    if (_subtractFeeFromAmount) {
+      return double.parse(enteredAmount.toStringAsFixed(8));
+    }
+    final total = enteredAmount + feeSnapshot.fee;
+    return double.parse(total.toStringAsFixed(8));
   }
 
   void _syncAmountToSelection(WalletProvider provider) {
@@ -1255,6 +1317,14 @@ class _SendViewState extends State<SendView> {
             ],
           ),
           const SizedBox(height: 8),
+          if (provider.coinControlTruncatedCount > 0)
+            Text(
+              'Showing top ${provider.availableUtxos.length} inputs by amount. '
+              '${provider.coinControlTruncatedCount} smaller input(s) are hidden for performance.',
+              style: const TextStyle(color: Colors.orangeAccent, fontSize: 11),
+            ),
+          if (provider.coinControlTruncatedCount > 0)
+            const SizedBox(height: 8),
           if (provider.selectedUtxoCount > 0)
             Text(
               '${provider.selectedUtxoCount} selected, total ${_satsToS256(_selectedUtxoTotalSats(provider)).toStringAsFixed(8)} S256',
@@ -1354,8 +1424,13 @@ class _SendViewState extends State<SendView> {
         '${provider.feeRate.toStringAsFixed(8)} S256/kvB (${_formatSatVb(provider.feeRate)} sat/vB)';
     final enteredAmount = double.tryParse(_amountController.text.trim());
     final displayNetAfterFee = (hasExactCoinControlFee && enteredAmount != null && enteredAmount > 0)
-      ? enteredAmount - fee
+      ? _effectiveSendAmount(
+          provider: provider,
+          feeSnapshot: feeSnapshot,
+          enteredAmount: enteredAmount,
+        )
       : provider.estimatedNetSend;
+    final netRowLabel = _subtractFeeFromAmount ? 'Recipient After Fee' : 'Max Send After Fee';
     final netAfterFeeText = displayNetAfterFee > 0
       ? '${displayNetAfterFee.toStringAsFixed(8)} S256'
       : '-';
@@ -1425,8 +1500,8 @@ class _SendViewState extends State<SendView> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Net Send After Fee',
+                Text(
+                  netRowLabel,
                   style: TextStyle(color: Colors.white54, fontSize: 12),
                 ),
                 Text(
@@ -1552,19 +1627,30 @@ class _SendViewState extends State<SendView> {
     ({double fee, bool hasExactCoinControlFee, ({double fee, int? inputCount, bool amountAware}) simpleEstimate})
         feeSnapshot,
   ) {
-    final amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
-    if (amount <= 0) return const SizedBox.shrink();
+    final enteredAmount = double.tryParse(_amountController.text.trim()) ?? 0.0;
+    if (enteredAmount <= 0) return const SizedBox.shrink();
 
     final hasSelectedInputs = feeSnapshot.hasExactCoinControlFee;
     final fee = feeSnapshot.fee;
+    final sendAmount = _effectiveSendAmount(
+      provider: provider,
+      feeSnapshot: feeSnapshot,
+      enteredAmount: enteredAmount,
+    );
+    final totalSpend = _estimatedTotalSpendAmount(
+      provider: provider,
+      feeSnapshot: feeSnapshot,
+      enteredAmount: enteredAmount,
+    );
+    if (sendAmount <= 0) return const SizedBox.shrink();
 
     final selectedInputsSats = hasSelectedInputs ? _selectedUtxoTotalSats(provider) : 0;
     final autoSpendableSats = _s256ToSats(provider.balance ?? 0.0);
-    final amountSats = _s256ToSats(amount);
-    final feeSats = _s256ToSats(fee);
+    final sendAmountSats = _s256ToSats(sendAmount);
+    final totalSpendSats = _s256ToSats(totalSpend);
     final expectedChangeSats = hasSelectedInputs
-      ? (selectedInputsSats - amountSats - feeSats)
-      : (autoSpendableSats - amountSats - feeSats);
+      ? (selectedInputsSats - totalSpendSats)
+      : (autoSpendableSats - totalSpendSats);
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1597,9 +1683,33 @@ class _SendViewState extends State<SendView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Send Amount', style: TextStyle(color: Colors.white60, fontSize: 12)),
+              const Text('Recipient Amount', style: TextStyle(color: Colors.white60, fontSize: 12)),
               Text(
-                '${_satsToS256(amountSats).toStringAsFixed(8)} S256',
+                '${_satsToS256(sendAmountSats).toStringAsFixed(8)} S256',
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ],
+          ),
+          if (_subtractFeeFromAmount) ...[
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Entered Total (includes fee)', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                Text(
+                  '${enteredAmount.toStringAsFixed(8)} S256',
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Estimated Fee', style: TextStyle(color: Colors.white60, fontSize: 12)),
+              Text(
+                '${fee.toStringAsFixed(8)} S256',
                 style: const TextStyle(color: Colors.white, fontSize: 12),
               ),
             ],
@@ -1608,9 +1718,9 @@ class _SendViewState extends State<SendView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Estimated Fee', style: TextStyle(color: Colors.white60, fontSize: 12)),
+              const Text('Total Spend (est.)', style: TextStyle(color: Colors.white60, fontSize: 12)),
               Text(
-                '${fee.toStringAsFixed(8)} S256',
+                '${_satsToS256(totalSpendSats).toStringAsFixed(8)} S256',
                 style: const TextStyle(color: Colors.white, fontSize: 12),
               ),
             ],
@@ -1648,6 +1758,66 @@ class _SendViewState extends State<SendView> {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubtractFeeTicker(
+    WalletProvider provider,
+    ({double fee, bool hasExactCoinControlFee, ({double fee, int? inputCount, bool amountAware}) simpleEstimate})
+        feeSnapshot,
+  ) {
+    final enteredAmount = double.tryParse(_amountController.text.trim()) ?? 0.0;
+    final effectiveAmount = enteredAmount > 0
+        ? _effectiveSendAmount(
+            provider: provider,
+            feeSnapshot: feeSnapshot,
+            enteredAmount: enteredAmount,
+          )
+        : 0.0;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Subtract Fee From Amount',
+                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'ON: entered amount is total spend cap. OFF: recipient gets full entered amount.',
+                  style: TextStyle(color: Colors.white54, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Switch(
+            value: _subtractFeeFromAmount,
+            onChanged: _isSending ? null : (value) => setState(() => _subtractFeeFromAmount = value),
+          ),
+          if (_subtractFeeFromAmount && enteredAmount > 0) ...[
+            const SizedBox(width: 8),
+            Text(
+              'Net ${effectiveAmount > 0 ? effectiveAmount.toStringAsFixed(8) : '-'}',
+              style: TextStyle(
+                color: effectiveAmount > 0 ? Colors.greenAccent : Colors.redAccent,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1714,11 +1884,17 @@ class _SendViewState extends State<SendView> {
   Future<bool> _showPreSendConfirmDialog({
     required WalletProvider provider,
     required String toAddress,
+    required double enteredAmount,
     required double amount,
+    required bool subtractFeeFromAmount,
   }) async {
     final hasSelectedInputs = _advancedSend && provider.selectedUtxoCount > 0;
     final simpleEstimate = _estimateSimpleModeFee(provider);
     final estimatedFee = hasSelectedInputs ? provider.estimatedFee : simpleEstimate.fee;
+    final amountModeLabel = subtractFeeFromAmount
+        ? 'Fee included in entered amount'
+        : 'Fee added on top of entered amount';
+    final totalSpend = subtractFeeFromAmount ? enteredAmount : enteredAmount + estimatedFee;
 
     final agreed = await showDialog<bool>(
       context: context,
@@ -1733,9 +1909,28 @@ class _SendViewState extends State<SendView> {
             children: [
               Text('To: $toAddress', style: const TextStyle(color: Colors.white70, fontSize: 12)),
               const SizedBox(height: 8),
-              Text('Amount: ${amount.toStringAsFixed(8)} S256', style: const TextStyle(color: Colors.white70)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Amount Mode', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                  Text(
+                    amountModeLabel,
+                    style: TextStyle(
+                      color: subtractFeeFromAmount ? Colors.amberAccent : Colors.greenAccent,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text('Entered amount: ${enteredAmount.toStringAsFixed(8)} S256', style: const TextStyle(color: Colors.white70)),
+              const SizedBox(height: 4),
+              Text('Recipient amount: ${amount.toStringAsFixed(8)} S256', style: const TextStyle(color: Colors.white70)),
               const SizedBox(height: 4),
               Text('Estimated fee: ${estimatedFee.toStringAsFixed(8)} S256', style: const TextStyle(color: Colors.white70)),
+              const SizedBox(height: 4),
+              Text('Total spend (est.): ${totalSpend.toStringAsFixed(8)} S256', style: const TextStyle(color: Colors.white70)),
               const SizedBox(height: 4),
               Text('Fee source: ${_feeSourceLabel(provider)}', style: const TextStyle(color: Colors.white70)),
               const SizedBox(height: 4),
@@ -2166,6 +2361,9 @@ class _SendViewState extends State<SendView> {
                             ),
                           ],
                         ),
+
+                        const SizedBox(height: 12),
+                        _buildSubtractFeeTicker(walletProvider, feeSnapshot),
 
                         const SizedBox(height: 10),
                         _buildFeeSourceSelector(walletProvider),

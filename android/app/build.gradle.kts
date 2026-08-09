@@ -29,8 +29,8 @@ extensions.configure<ApplicationExtension> {
         applicationId = "eu.sha256coin.s256_wallet"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = 2
-        versionName = "S256-W-1.6.1"
+        versionCode = 3
+        versionName = "S256-W-1.6.2"
     }
 
     signingConfigs {

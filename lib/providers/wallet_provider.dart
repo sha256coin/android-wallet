@@ -8,6 +8,7 @@ import 'package:s256_wallet/services/rpc_config_service.dart';
 class WalletProvider with ChangeNotifier {
   static const int _maxMigrationSweepInputs = 120;
   static const int _maxMigrationSweepVbytes = 90000;
+  static const int _maxCoinControlUtxos = 1500;
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   final WalletService _ws = WalletService();
@@ -31,6 +32,7 @@ class WalletProvider with ChangeNotifier {
   Set<String> _selectedUtxoKeys = {};
   bool _isLoadingUtxos = false;
   int _utxoPage = 0;
+  int _coinControlTruncatedCount = 0;
   static const int _utxosPerPage = 15;
   double _feeRate = 0.00001;
   bool _isFetchingFeeRate = false;
@@ -58,6 +60,7 @@ class WalletProvider with ChangeNotifier {
   Set<String> get selectedUtxoKeys => _selectedUtxoKeys;
   bool get isLoadingUtxos => _isLoadingUtxos;
   int get utxoPage => _utxoPage;
+  int get coinControlTruncatedCount => _coinControlTruncatedCount;
   int get utxoPageCount =>
       _availableUtxos.isEmpty ? 1 : (_availableUtxos.length / _utxosPerPage).ceil();
   List<Map<String, dynamic>> get currentPageUtxos {
@@ -375,6 +378,7 @@ class WalletProvider with ChangeNotifier {
     _availableUtxos = [];
     _selectedUtxoKeys = {};
     _utxoPage = 0;
+    _coinControlTruncatedCount = 0;
     notifyListeners();
 
     try {
@@ -389,6 +393,11 @@ class WalletProvider with ChangeNotifier {
           .toList();
       _availableUtxos.sort((a, b) =>
           (b['amount'] as num).toDouble().compareTo((a['amount'] as num).toDouble()));
+
+      if (_availableUtxos.length > _maxCoinControlUtxos) {
+        _coinControlTruncatedCount = _availableUtxos.length - _maxCoinControlUtxos;
+        _availableUtxos = _availableUtxos.sublist(0, _maxCoinControlUtxos);
+      }
 
       await fetchFeeRate();
     } catch (_) {
@@ -422,6 +431,7 @@ class WalletProvider with ChangeNotifier {
     _selectedUtxoKeys = {};
     _isLoadingUtxos = false;
     _utxoPage = 0;
+    _coinControlTruncatedCount = 0;
     notifyListeners();
   }
 

@@ -880,7 +880,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                                     child: SizedBox(
                                       width: double.infinity,
                                       child: ButtonWidget(
-                                        text: 'View All Transactions',
+                                        text: 'View more Transactions',
                                         isPrimary: false,
                                         onPressed: () {
                                           Navigator.push(
