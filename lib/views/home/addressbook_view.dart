@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import 'package:s256_wallet/models/addressbook_entry.dart';
 import 'package:s256_wallet/providers/addressbook_provider.dart';
+import 'package:s256_wallet/views/home/scanner_view.dart';
 import 'package:s256_wallet/widgets/app_background.dart';
 
 class AddressbookView extends StatefulWidget {
@@ -95,6 +96,21 @@ class _AddressbookViewState extends State<AddressbookView> {
   void _copyAddress(String address) {
     Clipboard.setData(ClipboardData(text: address));
     _showSnack('Address copied to clipboard.');
+  }
+
+  Future<void> _scanAddress() async {
+    final scannedAddress = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ScannerView(),
+      ),
+    );
+
+    if (scannedAddress != null && mounted) {
+      setState(() {
+        _addressController.text = scannedAddress;
+      });
+    }
   }
 
   Future<void> _importContacts() async {
@@ -275,9 +291,14 @@ class _AddressbookViewState extends State<AddressbookView> {
             enabled: !_isBusy,
             keyboardType: TextInputType.text,
             textInputAction: TextInputAction.done,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Address',
               hintText: 's21...',
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.qr_code_scanner, color: Colors.cyanAccent),
+                tooltip: 'Scan QR code',
+                onPressed: _isBusy ? null : _scanAddress,
+              ),
             ),
           ),
           const SizedBox(height: 12),
