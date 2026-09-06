@@ -16,7 +16,7 @@ if (keystorePropertiesFile.exists()) {
 
 extensions.configure<ApplicationExtension> {
     namespace = "eu.sha256coin.s256_wallet"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -29,8 +29,8 @@ extensions.configure<ApplicationExtension> {
         applicationId = "eu.sha256coin.s256_wallet"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = 3
-        versionName = "S256-W-1.6.2"
+        versionCode = 5
+        versionName = "S256-W-1.6.4"
     }
 
     signingConfigs {
@@ -52,8 +52,8 @@ extensions.configure<ApplicationExtension> {
     }
 
     lint {
-        checkReleaseBuilds = false
-        abortOnError = false
+        checkReleaseBuilds = true
+        abortOnError = true
     }
 }
 

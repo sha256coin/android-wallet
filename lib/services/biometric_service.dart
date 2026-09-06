@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -65,8 +64,6 @@ class BiometricService {
   // Authenticate with biometrics
   Future<bool> authenticate({
     String localizedReason = 'Please authenticate to continue',
-    bool useErrorDialogs = true,
-    bool stickyAuth = true,
   }) async {
     try {
       debugPrint('DEBUG: Starting authentication...');
@@ -89,22 +86,25 @@ class BiometricService {
       debugPrint('DEBUG: Calling _localAuth.authenticate...');
       final result = await _localAuth.authenticate(
         localizedReason: localizedReason,
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: false,  // Allow PIN/password/pattern fallback
-          sensitiveTransaction: true,
-        ),
+        persistAcrossBackgrounding: true,
+        biometricOnly: false, // Allow PIN/password/pattern fallback
+        sensitiveTransaction: true,
       );
       debugPrint('DEBUG: Authentication result = $result');
       return result;
-    } on PlatformException catch (e) {
+    } on LocalAuthException catch (e) {
       // Handle specific errors
-      debugPrint('DEBUG: PlatformException: ${e.code} - ${e.message}');
-      if (e.code == 'NotAvailable' || e.code == 'NotEnrolled') {
-        // Biometric not available, allow access
-        return true;
+      debugPrint('DEBUG: LocalAuthException: ${e.code} - ${e.description}');
+      switch (e.code) {
+        case LocalAuthExceptionCode.noBiometricHardware:
+        case LocalAuthExceptionCode.biometricHardwareTemporarilyUnavailable:
+        case LocalAuthExceptionCode.noBiometricsEnrolled:
+        case LocalAuthExceptionCode.noCredentialsSet:
+          // Biometric not available, allow access
+          return true;
+        default:
+          return false;
       }
-      return false;
     } catch (e) {
       debugPrint('DEBUG: Unexpected error: $e');
       return false;

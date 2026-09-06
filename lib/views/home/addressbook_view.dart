@@ -101,12 +101,12 @@ class _AddressbookViewState extends State<AddressbookView> {
     final provider = context.read<AddressbookProvider>();
 
     try {
-      FilePickerResult? result = await FilePicker.pickFiles(
+      List<PlatformFile> result = await FilePicker.pickFiles(
         type: FileType.any,
       );
 
-      if (result != null && result.files.single.path != null) {
-        final file = File(result.files.single.path!);
+      if (result.isNotEmpty && result.first.path != null) {
+        final file = File(result.first.path!);
         final bytes = await file.readAsBytes();
         final content = utf8.decode(bytes, allowMalformed: false);
         final importResult = await provider.importFromBtcsJson(content);
@@ -132,13 +132,13 @@ class _AddressbookViewState extends State<AddressbookView> {
     try {
       final jsonString = provider.exportToBtcsJson();
       final bytes = Uint8List.fromList(utf8.encode(jsonString));
-      String? outputPath = await FilePicker.saveFile(
+      final outputUri = await FilePicker.saveFile(
         dialogTitle: 'Export Address Book',
         fileName: 'S256_contacts.s256',
         bytes: bytes,
       );
 
-      if (outputPath == null || outputPath.trim().isEmpty) {
+      if (outputUri == null) {
         return;
       }
 

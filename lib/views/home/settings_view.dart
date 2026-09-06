@@ -124,6 +124,7 @@ class _SettingsViewState extends State<SettingsView> {
   Future<void> _showMigrationDialog(BuildContext context, WalletProvider wp, BlockchainProvider bp) async {
     final acknowledged = await _showMigrationWarningDialog(context);
     if (acknowledged != true) return;
+    if (!context.mounted) return;
 
     int migrationSeedWords = 12;
     final confirmed = await showDialog<bool>(
@@ -290,6 +291,7 @@ class _SettingsViewState extends State<SettingsView> {
       final newAddress = walletData['address'] ?? '';
       final newPrivateKey = walletData['privateKey'] ?? '';
       final newMnemonic = walletData['mnemonic'] ?? '';
+      if (!context.mounted) return;
 
       final derived = wp.walletService.loadAddressFromKey(newPrivateKey);
       if (newAddress.isEmpty ||
@@ -504,6 +506,7 @@ class _SettingsViewState extends State<SettingsView> {
               completedBatches: completedBatches,
               totalBatches: (sweepResult['totalBatches'] as num?)?.toInt(),
             );
+            if (!context.mounted) return;
 
             if (action == 'retry') {
               final retrySucceeded = await _retryRemainingMigrationSweep(
@@ -517,6 +520,7 @@ class _SettingsViewState extends State<SettingsView> {
               if (retrySucceeded) {
                 return;
               }
+              if (!context.mounted) return;
               await _showMigrationFailedDialog(
                 context,
                 'Retrying remaining migration sweep failed. Please send the remaining funds manually to the new address.',
@@ -1428,6 +1432,7 @@ class _SettingsViewState extends State<SettingsView> {
           newAddress: newAddress,
           amount: 0.0,
         );
+        if (!context.mounted) return true;
         final backupConfirmed = await _showMigrationPostSuccessBackupDialog(
           context,
           newAddress: newAddress,
@@ -1484,6 +1489,7 @@ class _SettingsViewState extends State<SettingsView> {
         newAddress: newAddress,
         amount: remainingBalance,
       );
+      if (!context.mounted) return true;
 
       final backupConfirmed = await _showMigrationPostSuccessBackupDialog(
         context,
