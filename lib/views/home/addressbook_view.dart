@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import 'package:s256_wallet/models/addressbook_entry.dart';
 import 'package:s256_wallet/providers/addressbook_provider.dart';
+import 'package:s256_wallet/services/file_export_service.dart';
 import 'package:s256_wallet/views/home/scanner_view.dart';
 import 'package:s256_wallet/widgets/app_background.dart';
 
@@ -148,7 +149,9 @@ class _AddressbookViewState extends State<AddressbookView> {
     try {
       final jsonString = provider.exportToBtcsJson();
       final bytes = Uint8List.fromList(utf8.encode(jsonString));
-      final outputUri = await FilePicker.saveFile(
+      // Not FilePicker.saveFile: on Android it can leave the tail of an older
+      // file behind when overwriting it. See FileExportService.
+      final outputUri = await FileExportService.saveFile(
         dialogTitle: 'Export Address Book',
         fileName: 'S256_contacts.s256',
         bytes: bytes,
@@ -160,6 +163,10 @@ class _AddressbookViewState extends State<AddressbookView> {
 
       if (mounted) {
         _showSnack('Address book exported.');
+      }
+    } on PlatformException catch (e) {
+      if (mounted) {
+        _showSnack('Export failed: ${e.message ?? e.code}', isError: true);
       }
     } catch (e) {
       if (mounted) {

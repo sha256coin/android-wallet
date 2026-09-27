@@ -29,8 +29,10 @@ extensions.configure<ApplicationExtension> {
         applicationId = "eu.sha256coin.s256_wallet"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = 6
-        versionName = "S256-W-1.6.4"
+        // Set here, not from pubspec.yaml: Play Store versionCode must keep
+        // increasing. pubspec.yaml's version is what iOS uses.
+        versionCode = 7
+        versionName = "S256-W-1.6.5"
     }
 
     signingConfigs {

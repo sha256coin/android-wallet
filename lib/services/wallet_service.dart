@@ -727,6 +727,8 @@ class WalletService {
   }
 
   // Get transaction history for an address via explorer API with pagination.
+  // Throws when the explorer can't be reached, so a failed request is not
+  // mistaken for an address with no transactions.
   Future<Map<String, dynamic>> getTransactions(
     String address, {
     int offset = 0,
@@ -735,40 +737,37 @@ class WalletService {
     const String explorerBase = 'https://explorer.sha256coin.eu/api/address';
     final url = '$explorerBase/$address/txs?offset=$offset&limit=$limit';
 
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode != 200) {
-        return {'transactions': <Map<String, dynamic>>[], 'txCount': 0};
-      }
+    final response =
+        await http.get(Uri.parse(url)).timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200) {
+      throw Exception('Explorer history request failed: HTTP ${response.statusCode}');
+    }
 
-      final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-      final txList = decoded['transactions'] as List<dynamic>? ?? [];
-      final txCount = decoded['txCount'] as int? ?? 0;
+    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+    final txList = decoded['transactions'] as List<dynamic>? ?? [];
+    final txCount = decoded['txCount'] as int? ?? 0;
 
-      final parsedTransactions = txList.whereType<Map<String, dynamic>>().map((tx) {
-        final amt = tx['addressAmount'] as Map<String, dynamic>? ?? {};
-        final direction = (amt['direction'] as String?) ?? 'in';
-        final net = (amt['net'] as num?)?.toDouble() ?? 0.0;
-        final confirmations = (tx['confirmations'] as int?) ?? 0;
-        final blocktime = tx['blocktime'] as int? ?? tx['time'] as int?;
-
-        return {
-          'txid': tx['txid'] as String,
-          'amount': net.abs(),
-          'direction': direction == 'out' ? 'sent' : 'received',
-          'confirmations': confirmations,
-          'timestamp': blocktime,
-          'counterparty': null,
-        };
-      }).toList();
+    final parsedTransactions = txList.whereType<Map<String, dynamic>>().map((tx) {
+      final amt = tx['addressAmount'] as Map<String, dynamic>? ?? {};
+      final direction = (amt['direction'] as String?) ?? 'in';
+      final net = (amt['net'] as num?)?.toDouble() ?? 0.0;
+      final confirmations = (tx['confirmations'] as int?) ?? 0;
+      final blocktime = tx['blocktime'] as int? ?? tx['time'] as int?;
 
       return {
-        'transactions': parsedTransactions,
-        'txCount': txCount,
+        'txid': tx['txid'] as String,
+        'amount': net.abs(),
+        'direction': direction == 'out' ? 'sent' : 'received',
+        'confirmations': confirmations,
+        'timestamp': blocktime,
+        'counterparty': null,
       };
-    } catch (_) {
-      return {'transactions': <Map<String, dynamic>>[], 'txCount': 0};
-    }
+    }).toList();
+
+    return {
+      'transactions': parsedTransactions,
+      'txCount': txCount,
+    };
   }
 
   // Get network info

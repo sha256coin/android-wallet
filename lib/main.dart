@@ -1,4 +1,6 @@
 // main.dart - Fixed for Flutter 3.35.3
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -97,24 +99,20 @@ Future<void> _runApp() async {
   final wp = WalletProvider();
   final bp = BlockchainProvider();
 
+  // The start screen only waits for the wallet to load from secure storage
+  // (local and fast). UTXOs and explorer history used to load here too, one
+  // after the other, so the splash lasted as long as the slowest server. They
+  // now load in parallel in the background while the wallet screen shows its
+  // loading skeleton.
   try {
     if (kDebugMode) {
       print('💼 Loading wallet...');
     }
     await wp.loadWallet();
-    if (wp.address != null) {
-      if (kDebugMode) {
-        print('📥 Fetching UTXOs...');
-      }
-      await wp.fetchUtxos(force: true);
-      if (kDebugMode) {
-        print('⛓️  Loading blockchain...');
-      }
-      await bp.loadBlockchain(wp.address);
-    }
     if (kDebugMode) {
       print('✅ Providers initialized');
     }
+    unawaited(_initialNetworkSync(wp, bp));
   } catch (e) {
     if (kDebugMode) {
       print('❌ Provider initialization error: $e');
@@ -150,6 +148,20 @@ Future<void> _runApp() async {
       child: const MyApp(),
     ),
   );
+}
+
+Future<void> _initialNetworkSync(WalletProvider wp, BlockchainProvider bp) async {
+  if (wp.address == null) return;
+  try {
+    await Future.wait([
+      wp.fetchUtxos(force: true),
+      bp.loadBlockchain(wp.address),
+    ]);
+  } catch (e) {
+    if (kDebugMode) {
+      print('❌ Initial network sync failed: $e');
+    }
+  }
 }
 
 class MyApp extends StatelessWidget {

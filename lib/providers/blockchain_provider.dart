@@ -24,23 +24,28 @@ class BlockchainProvider with ChangeNotifier {
     final DateTime now = DateTime.now();
     final String formattedDate = DateFormat('HH:mm:ss').format(now);
 
-    // Clear existing transactions and reset pagination to fetch latest
-    _transactions.clear();
-    _startIndex = 0;
-    _hasMore = true;
-    _txCount = 0;
-
-    await fetchTransactions(address);
+    // A refresh (app resume, timer, pull-to-refresh) keeps the current list on
+    // screen and replaces it only once the newest page has arrived. Clearing
+    // it first made the wallet show "No Transactions Yet" until the explorer
+    // answered, and kept it empty if the request failed.
+    await _fetchPage(address, refresh: true);
     _timestamp = formattedDate;
     notifyListeners();
   }
 
-  Future<void> fetchTransactions(String? address) async {
+  /// Loads the next page (infinite scroll).
+  Future<void> fetchTransactions(String? address) =>
+      _fetchPage(address, refresh: false);
+
+  /// With [refresh], fetches the newest page and replaces the list in one step
+  /// when the request succeeds; on failure the list stays as it was.
+  Future<void> _fetchPage(String? address, {required bool refresh}) async {
     if (_isLoading || address == null) return;
     _isLoading = true;
 
+    final start = refresh ? 0 : _startIndex;
     final url =
-        '${Config.explorerUrl}${Config.getAddressTxsEndpoint}/$address/$_startIndex/$_limit';
+        '${Config.explorerUrl}${Config.getAddressTxsEndpoint}/$address/$start/$_limit';
 
     try {
       final response = await http.get(Uri.parse(url)).timeout(
@@ -52,6 +57,7 @@ class BlockchainProvider with ChangeNotifier {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
+        if (refresh) _resetList();
         if (data.isEmpty) {
           _hasMore = false;
         } else {
@@ -60,28 +66,40 @@ class BlockchainProvider with ChangeNotifier {
           List<Map<String, dynamic>> transactions =
               splitTransactions(castedData);
           _transactions.addAll(transactions);
-          _startIndex += _limit;
+          _startIndex = start + _limit;
         }
       } else {
-        await _fetchTransactionsViaHelper(address);
+        await _fetchTransactionsViaHelper(address, start: start, refresh: refresh);
       }
     } catch (e) {
       debugPrint('Error fetching transactions: $e');
-      await _fetchTransactionsViaHelper(address);
+      await _fetchTransactionsViaHelper(address, start: start, refresh: refresh);
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> _fetchTransactionsViaHelper(String address) async {
+  void _resetList() {
+    _transactions.clear();
+    _startIndex = 0;
+    _hasMore = true;
+    _txCount = 0;
+  }
+
+  Future<void> _fetchTransactionsViaHelper(
+    String address, {
+    required int start,
+    required bool refresh,
+  }) async {
     try {
       final data = await _walletService.getTransactions(
         address,
-        offset: _startIndex,
+        offset: start,
         limit: _limit,
       );
 
+      if (refresh) _resetList();
       final rawList =
           (data['transactions'] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().toList();
       _txCount = data['txCount'] as int? ?? _txCount;
@@ -107,7 +125,7 @@ class BlockchainProvider with ChangeNotifier {
       }).toList();
 
       _transactions.addAll(mapped);
-      _startIndex += _limit;
+      _startIndex = start + _limit;
       _hasMore = _txCount > 0 ? _transactions.length < _txCount : rawList.length == _limit;
     } catch (e) {
       debugPrint('Fallback history helper failed: $e');
