@@ -137,8 +137,12 @@ class _NetworkInfoViewState extends State<NetworkInfoView> {
 
   String _formatDifficulty(dynamic difficulty) {
     if (difficulty == null) return 'N/A';
-    final formatter = NumberFormat.compact();
-    return formatter.format(difficulty);
+    final d = (difficulty as num).toDouble();
+    if (d >= 1e12) return '${(d / 1e12).toStringAsFixed(2)} T';
+    if (d >= 1e9) return '${(d / 1e9).toStringAsFixed(2)} G';
+    if (d >= 1e6) return '${(d / 1e6).toStringAsFixed(2)} M';
+    if (d >= 1e3) return '${(d / 1e3).toStringAsFixed(2)} K';
+    return d.toStringAsFixed(2);
   }
 
   String _formatHashrate(dynamic hashrate) {

@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.6.6] - Play Store versionCode 8
+
+### Added
+
+- Payment requests are read in full. Scanning or pasting a `sha256coin:` payment request, or a link from the S256 web wallet (`https://sha256coin.eu/web-wallet/#pay=...`), fills in the address and the amount, and a card shows the requested amount, the name and the note. Same format and rules as web wallet 2.9.
+- The name and note in a request are written by whoever made it, so they are shown as "not verified". A saved contact is shown as verified when the address matches, and a request that uses a saved contact's name for a different address gets a red warning. Hidden and text-direction characters are removed.
+- Receive: sharing a payment request includes a web wallet pay link and the `sha256coin:` request itself, so it can be paid from the web wallet or pasted into this app.
+- Address book: a Send button on each contact opens Send with the address filled in.
+- Address book: scanning a QR with a name (for example `?label=miner-3`) fills in the name too, unless a contact already has that name.
+
+### Changed
+
+- Request Amount (Receive): the amount must be above 0 with at most 8 decimals, and is saved in a standard form (`01.50` becomes `1.5`). The note is limited to 200 characters.
+
 ## [1.6.5] - Play Store versionCode 7
 
 ### Security

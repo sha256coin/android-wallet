@@ -9,7 +9,9 @@ import 'package:provider/provider.dart';
 import 'package:s256_wallet/models/addressbook_entry.dart';
 import 'package:s256_wallet/providers/addressbook_provider.dart';
 import 'package:s256_wallet/services/file_export_service.dart';
+import 'package:s256_wallet/services/payment_request.dart';
 import 'package:s256_wallet/views/home/scanner_view.dart';
+import 'package:s256_wallet/views/home/send_view.dart';
 import 'package:s256_wallet/widgets/app_background.dart';
 
 class AddressbookView extends StatefulWidget {
@@ -94,22 +96,49 @@ class _AddressbookViewState extends State<AddressbookView> {
     _showSnack('Address removed.');
   }
 
+  void _sendTo(String address) {
+    HapticFeedback.lightImpact();
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => SendView(initialRecipient: address)),
+    );
+  }
+
   void _copyAddress(String address) {
     Clipboard.setData(ClipboardData(text: address));
     _showSnack('Address copied to clipboard.');
   }
 
   Future<void> _scanAddress() async {
-    final scannedAddress = await Navigator.push(
+    final scanned = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => const ScannerView(),
       ),
     );
 
-    if (scannedAddress != null && mounted) {
+    if (scanned is! String || !mounted) return;
+    try {
+      final request = PaymentRequest.fromText(scanned);
+      final label = request.label;
+      // A scanned name is untrusted: never suggest one that already belongs
+      // to another contact, which would create a look-alike entry.
+      final nameTaken = label != null &&
+          context.read<AddressbookProvider>().entries.any((e) =>
+              PaymentRequest.sanitizeText(e.label).toLowerCase() ==
+              PaymentRequest.sanitizeText(label).toLowerCase());
       setState(() {
-        _addressController.text = scannedAddress;
+        _addressController.text = request.address;
+        // e.g. a miner's QR "sha256coin:s21q...?label=miner-3"
+        if (_labelController.text.trim().isEmpty && label != null && !nameTaken) {
+          _labelController.text = label.length <= AddressbookProvider.maxLabelLength
+              ? label
+              : label.substring(0, AddressbookProvider.maxLabelLength);
+        }
+      });
+    } on FormatException {
+      setState(() {
+        _addressController.text = ScannerView.addressPart(scanned);
       });
     }
   }
@@ -243,9 +272,18 @@ class _AddressbookViewState extends State<AddressbookView> {
             : Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Same as the web wallet's Contacts tab: open Send with
+                  // this address filled in.
+                  IconButton(
+                    icon: const Icon(Icons.send_rounded, color: Colors.cyanAccent),
+                    tooltip: 'Send to this address',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: _isBusy ? null : () => _sendTo(entry.address),
+                  ),
                   IconButton(
                     icon: const Icon(Icons.edit, color: Colors.white70),
                     tooltip: 'Edit',
+                    visualDensity: VisualDensity.compact,
                     onPressed: _isBusy ? null : () => _startEdit(entry),
                   ),
                   IconButton(
@@ -254,6 +292,7 @@ class _AddressbookViewState extends State<AddressbookView> {
                       color: Colors.redAccent,
                     ),
                     tooltip: 'Delete',
+                    visualDensity: VisualDensity.compact,
                     onPressed: _isBusy ? null : () => _deleteEntry(entry.address),
                   ),
                 ],

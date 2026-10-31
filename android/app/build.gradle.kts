@@ -31,8 +31,8 @@ extensions.configure<ApplicationExtension> {
         targetSdk = flutter.targetSdkVersion
         // Set here, not from pubspec.yaml: Play Store versionCode must keep
         // increasing. pubspec.yaml's version is what iOS uses.
-        versionCode = 7
-        versionName = "S256-W-1.6.5"
+        versionCode = 8
+        versionName = "S256-W-1.6.6"
     }
 
     signingConfigs {

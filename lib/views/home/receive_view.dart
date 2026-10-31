@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:s256_wallet/providers/wallet_provider.dart';
+import 'package:s256_wallet/services/payment_request.dart';
 
 class ReceiveView extends StatefulWidget {
   const ReceiveView({super.key});
@@ -110,17 +111,27 @@ class _ReceiveViewState extends State<ReceiveView>
     });
   }
 
+  // The active payment request, or null when only the address is shown.
+  // Same format as the web wallet (see PaymentRequest).
+  PaymentRequest? _currentRequest(String? address) {
+    if (address == null || address.isEmpty) return null;
+    final amountSats = PaymentRequest.parseAmount(_requestedAmount ?? '');
+    if (amountSats == null) return null;
+    final message = _requestMessage?.trim() ?? '';
+    return PaymentRequest(
+      address: address,
+      amountSats: amountSats,
+      message: message.isEmpty ? null : message,
+    );
+  }
+
   void _shareAddress(String address) {
     HapticFeedback.lightImpact();
 
-    String shareText = 'My S256 wallet address:\n\n$address';
-
-    if (_requestedAmount != null && _requestedAmount!.isNotEmpty) {
-      shareText += '\n\nRequested amount: $_requestedAmount S256';
-      if (_requestMessage != null && _requestMessage!.isNotEmpty) {
-        shareText += '\nMessage: $_requestMessage';
-      }
-    }
+    // A request is shared with a web wallet link and the sha256coin: URI,
+    // so it can be paid from the web wallet or pasted into this app.
+    final shareText = _currentRequest(address)?.toShareText() ??
+        'My S256 wallet address:\n\n$address';
 
     SharePlus.instance.share(
       ShareParams(
@@ -220,11 +231,10 @@ class _ReceiveViewState extends State<ReceiveView>
                       ),
                     ),
                     validator: (value) {
-                      if (value != null && value.isNotEmpty) {
-                        final amount = double.tryParse(value);
-                        if (amount == null || amount <= 0) {
-                          return 'Please enter a valid amount';
-                        }
+                      // Up to 8 decimals, above 0, no exponents: the same
+                      // rule the scanner and the web wallet use.
+                      if (PaymentRequest.parseAmount(value ?? '') == null) {
+                        return 'Please enter a valid amount';
                       }
                       return null;
                     },
@@ -235,6 +245,7 @@ class _ReceiveViewState extends State<ReceiveView>
                   TextFormField(
                     controller: messageController,
                     maxLines: 3,
+                    maxLength: PaymentRequest.maxMessageLength,
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       labelText: 'Message (optional)',
@@ -299,8 +310,10 @@ class _ReceiveViewState extends State<ReceiveView>
                             if (formKey.currentState!.validate()) {
                               HapticFeedback.lightImpact();
                               Navigator.of(context).pop({
-                                'amount': amountController.text,
-                                'message': messageController.text,
+                                // Normalised, e.g. "01.50" -> "1.5"
+                                'amount': PaymentRequest.formatAmount(
+                                    PaymentRequest.parseAmount(amountController.text)!),
+                                'message': messageController.text.trim(),
                               });
                             }
                           },
@@ -366,15 +379,9 @@ class _ReceiveViewState extends State<ReceiveView>
     final screenWidth = MediaQuery.of(context).size.width;
     final qrSize = (screenWidth - 120).clamp(180.0, 340.0).toDouble();
 
-    // Generate QR data with amount if requested
-    String qrData = address ?? '';
-    if (_requestedAmount != null && _requestedAmount!.isNotEmpty) {
-      // BIP21 URI format: sha256coin:address?amount=value&message=text
-      qrData = 'sha256coin:$address?amount=$_requestedAmount';
-      if (_requestMessage != null && _requestMessage!.isNotEmpty) {
-        qrData += '&message=${Uri.encodeComponent(_requestMessage!)}';
-      }
-    }
+    // QR: the plain address, or sha256coin:<address>?amount=..&message=..
+    // when an amount is requested (readable by this app and the web wallet).
+    final String qrData = _currentRequest(address)?.toUri() ?? address ?? '';
 
     return Theme(
       data: ThemeData.dark().copyWith(
