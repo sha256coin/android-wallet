@@ -78,7 +78,7 @@ class ExchangeView extends StatelessWidget {
                   name: 'LiveCoinWatch',
                   host: 'livecoinwatch.com',
                   link: 'https://www.livecoinwatch.com/price/SHA256COIN-S256',
-                  monogram: 'LCW',
+                  logo: 'assets/images/livecoinwatch.png',
                 ),
                 const SizedBox(height: 10),
                 _fineprint(
