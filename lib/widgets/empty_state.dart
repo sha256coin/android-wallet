@@ -97,7 +97,7 @@ class EmptyState extends StatelessWidget {
               child: Text(
                 message,
                 style: const TextStyle(
-                  color: Colors.white54,
+                  color: S256Colors.textLight,
                   fontSize: 14,
                 ),
                 textAlign: TextAlign.center,
@@ -132,7 +132,7 @@ class EmptyState extends StatelessWidget {
                       vertical: 12,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),

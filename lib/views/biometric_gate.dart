@@ -188,7 +188,7 @@ class _LockScreenState extends State<_LockScreen> {
                 const SizedBox(height: 24),
                 const Text(
                   'Authenticating...',
-                  style: TextStyle(color: Colors.white54, fontSize: 16),
+                  style: TextStyle(color: S256Colors.textLight, fontSize: 16),
                 ),
               ],
             ),
@@ -216,7 +216,7 @@ class _LockScreenState extends State<_LockScreen> {
               const SizedBox(height: 12),
               const Text(
                 'Unable to authenticate',
-                style: TextStyle(color: Colors.white54, fontSize: 14),
+                style: TextStyle(color: S256Colors.textLight, fontSize: 14),
               ),
               const SizedBox(height: 32),
               ElevatedButton.icon(
@@ -236,7 +236,7 @@ class _LockScreenState extends State<_LockScreen> {
                 onPressed: () => SystemNavigator.pop(),
                 child: const Text(
                   'Exit App',
-                  style: TextStyle(color: Colors.white54),
+                  style: TextStyle(color: S256Colors.textLight),
                 ),
               ),
             ],

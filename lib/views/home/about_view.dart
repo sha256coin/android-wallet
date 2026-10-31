@@ -36,14 +36,7 @@ class AboutView extends StatelessWidget {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [
-                        S256Colors.accent.withValues(alpha: 0.3),
-                        S256Colors.accent.withValues(alpha: 0.1),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: S256Colors.cardBg,
                   ),
                   child: const Icon(
                     Icons.account_balance_wallet,
@@ -73,7 +66,7 @@ class AboutView extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: S256Colors.accent.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                   child: const Text(
                     'Version 1.6.6',
@@ -89,15 +82,8 @@ class AboutView extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      S256Colors.accent.withValues(alpha: 0.1),
-                      Colors.transparent,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
+                  color: S256Colors.cardBg,
+                  borderRadius: BorderRadius.circular(2),
                   border: Border.all(
                     color: S256Colors.accent.withValues(alpha: 0.3),
                     width: 1,
@@ -143,7 +129,7 @@ class AboutView extends StatelessWidget {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(2),
                   border: Border.all(
                     color: Colors.white.withValues(alpha: 0.1),
                   ),
@@ -166,7 +152,7 @@ class AboutView extends StatelessWidget {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(2),
                   border: Border.all(
                     color: Colors.white.withValues(alpha: 0.1),
                   ),
@@ -183,7 +169,7 @@ class AboutView extends StatelessWidget {
                         const Text(
                           'Contact: ',
                           style: TextStyle(
-                            color: Colors.white54,
+                            color: S256Colors.textLight,
                             fontSize: 15,
                           ),
                         ),
@@ -215,7 +201,7 @@ class AboutView extends StatelessWidget {
                         const Text(
                           'Website: ',
                           style: TextStyle(
-                            color: Colors.white54,
+                            color: S256Colors.textLight,
                             fontSize: 15,
                           ),
                         ),
@@ -251,10 +237,10 @@ class AboutView extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  color: S256Colors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(2),
                   border: Border.all(
-                    color: Colors.blue.withValues(alpha: 0.35),
+                    color: S256Colors.primary.withValues(alpha: 0.35),
                   ),
                 ),
                 child: Column(
@@ -262,7 +248,7 @@ class AboutView extends StatelessWidget {
                   children: [
                     const Row(
                       children: [
-                        Icon(Icons.policy_outlined, color: Colors.blue),
+                        Icon(Icons.policy_outlined, color: S256Colors.primary),
                         SizedBox(width: 10),
                         Text(
                           'Disclaimer & Transparency',
@@ -294,8 +280,8 @@ class AboutView extends StatelessWidget {
                         icon: const Icon(Icons.open_in_new_rounded),
                         label: const Text('Open Regulatory Notice'),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.blue,
-                          side: BorderSide(color: Colors.blue.withValues(alpha: 0.5)),
+                          foregroundColor: S256Colors.primary,
+                          side: BorderSide(color: S256Colors.primary.withValues(alpha: 0.5)),
                         ),
                       ),
                     ),
@@ -308,15 +294,8 @@ class AboutView extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      S256Colors.accent.withValues(alpha: 0.2),
-                      S256Colors.accent.withValues(alpha: 0.05),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
+                  color: S256Colors.cardBg,
+                  borderRadius: BorderRadius.circular(2),
                 ),
                 child: const Text(
                   'Experience crypto the way it was meant to be: decentralized, secure, and private.',
@@ -359,7 +338,7 @@ class AboutView extends StatelessWidget {
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: S256Colors.accent.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(2),
             ),
             child: Icon(
               icon,
@@ -393,7 +372,7 @@ class AboutView extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            color: Colors.white54,
+            color: S256Colors.textLight,
             fontSize: 15,
           ),
         ),

@@ -50,20 +50,10 @@ class _HomeViewState extends State<HomeView> {
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                const Color(0xFF1A1A1A),
-                const Color(0xFF0A0A0A),
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
+          decoration: const BoxDecoration(
+            color: S256Colors.cardBg,
             border: Border(
-              top: BorderSide(
-                color: S256Colors.primary.withValues(alpha: 0.2),
-                width: 1,
-              ),
+              top: BorderSide(color: S256Colors.line, width: 1),
             ),
           ),
           child: BottomNavigationBar(
@@ -89,7 +79,7 @@ class _HomeViewState extends State<HomeView> {
             currentIndex: _selectedIndex,
             onTap: _onItemTapped,
             selectedItemColor: S256Colors.primary,
-            unselectedItemColor: Colors.white.withValues(alpha: 0.5),
+            unselectedItemColor: S256Colors.textLight,
             backgroundColor: Colors.transparent,
             elevation: 0,
             showSelectedLabels: false,

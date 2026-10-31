@@ -9,6 +9,7 @@ import 'package:s256_wallet/services/payment_request.dart';
 import 'package:s256_wallet/views/home/addressbook_view.dart';
 import 'package:s256_wallet/views/home/scanner_view.dart';
 import 'package:s256_wallet/widgets/button_widget.dart';
+import 'package:s256_wallet/widgets/app_background.dart';
 
 class SendView extends StatefulWidget {
   /// Recipient to start with, e.g. when opened from an address book contact.
@@ -203,19 +204,19 @@ class _SendViewState extends State<SendView> {
     }
     final impersonates = nameTwin != null && _normalizeForMatch(nameTwin.address) != request.address;
     final showClaimedName = request.label != null && (savedContact == null || nameTwin != savedContact);
-    final accent = impersonates ? Colors.redAccent : Colors.cyanAccent;
+    final accent = impersonates ? Colors.redAccent : S256Colors.primary;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.fromLTRB(14, 12, 4, 12),
       decoration: BoxDecoration(
         color: accent.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(2),
         border: Border.all(color: accent.withValues(alpha: impersonates ? 0.8 : 0.4)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.request_quote, color: Colors.cyanAccent),
+          const Icon(Icons.request_quote, color: S256Colors.primary),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -266,14 +267,14 @@ class _SendViewState extends State<SendView> {
                           'before sending. The note is not sent.',
                   style: TextStyle(
                     fontSize: 12,
-                    color: amountChanged ? Colors.amberAccent : Colors.white54,
+                    color: amountChanged ? Colors.amberAccent : S256Colors.textLight,
                   ),
                 ),
               ],
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.close, size: 18, color: Colors.white54),
+            icon: const Icon(Icons.close, size: 18, color: S256Colors.textLight),
             tooltip: 'Dismiss request',
             onPressed: () => setState(() => _activeRequest = null),
           ),
@@ -335,7 +336,7 @@ class _SendViewState extends State<SendView> {
       SnackBar(
         content: Text('Selected ${selected.label}'),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: const Color(0xFF2A2A2A),
+        backgroundColor: S256Colors.surface2,
       ),
     );
   }
@@ -815,7 +816,7 @@ class _SendViewState extends State<SendView> {
                 const SizedBox(height: 8),
                 const Text(
                   'Estimates may vary depending on final input selection and mempool conditions.',
-                  style: TextStyle(color: Colors.white38, fontSize: 11),
+                  style: TextStyle(color: S256Colors.textLight, fontSize: 11),
                 ),
                 if (!usingManualFee) ...[
                   const SizedBox(height: 8),
@@ -830,7 +831,7 @@ class _SendViewState extends State<SendView> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, 'cancel'),
-              child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+              child: const Text('Cancel', style: TextStyle(color: S256Colors.textLight)),
             ),
             if (!usingManualFee)
               TextButton(
@@ -892,7 +893,7 @@ class _SendViewState extends State<SendView> {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(2),
                   border: Border.all(color: Colors.white24),
                 ),
                 child: Text(message, style: const TextStyle(color: Colors.white, fontSize: 12)),
@@ -907,7 +908,7 @@ class _SendViewState extends State<SendView> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+              child: const Text('Cancel', style: TextStyle(color: S256Colors.textLight)),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(dialogContext, true),
@@ -987,7 +988,7 @@ class _SendViewState extends State<SendView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Requested Amount', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                    const Text('Requested Amount', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
                     Text('${requestedAmount.toStringAsFixed(8)} S256', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                   ],
                 ),
@@ -995,7 +996,7 @@ class _SendViewState extends State<SendView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Gross Sent', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                    const Text('Gross Sent', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
                     Text('${displayedGross.toStringAsFixed(8)} S256', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                   ],
                 ),
@@ -1003,15 +1004,15 @@ class _SendViewState extends State<SendView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Total Fee Paid', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                    Text('${totalFee.toStringAsFixed(8)} S256', style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.w600)),
+                    const Text('Total Fee Paid', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
+                    Text('${totalFee.toStringAsFixed(8)} S256', style: const TextStyle(color: S256Colors.primary, fontWeight: FontWeight.w600)),
                   ],
                 ),
                 const SizedBox(height: 6),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Estimated Net Delivered', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                    const Text('Estimated Net Delivered', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
                     Text('${displayedNet.toStringAsFixed(8)} S256', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                   ],
                 ),
@@ -1025,13 +1026,13 @@ class _SendViewState extends State<SendView> {
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: Colors.black,
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(2),
                       border: Border.all(color: Colors.white24),
                     ),
                     child: SingleChildScrollView(
                       child: SelectableText(
                         txids.join('\n'),
-                        style: const TextStyle(fontSize: 12, fontFamily: 'monospace', color: Colors.cyanAccent),
+                        style: const TextStyle(fontSize: 12, fontFamily: 'monospace', color: S256Colors.primary),
                       ),
                     ),
                   ),
@@ -1122,7 +1123,7 @@ class _SendViewState extends State<SendView> {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.04),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(2),
                       border: Border.all(color: Colors.white24),
                     ),
                     child: Column(
@@ -1180,16 +1181,16 @@ class _SendViewState extends State<SendView> {
                       fillColor: Colors.black,
                       errorText: validationError,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
+                        borderRadius: BorderRadius.circular(2),
                         borderSide: BorderSide.none,
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
+                        borderRadius: BorderRadius.circular(2),
                         borderSide: const BorderSide(color: Colors.white24),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                        borderSide: const BorderSide(color: Colors.cyanAccent),
+                        borderRadius: BorderRadius.circular(2),
+                        borderSide: const BorderSide(color: S256Colors.primary),
                       ),
                     ),
                   ),
@@ -1227,7 +1228,7 @@ class _SendViewState extends State<SendView> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(null),
-                  child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+                  child: const Text('Cancel', style: TextStyle(color: S256Colors.textLight)),
                 ),
                 ElevatedButton(
                   onPressed: () {
@@ -1250,7 +1251,7 @@ class _SendViewState extends State<SendView> {
                     Navigator.of(context).pop(s256KvB);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.cyanAccent,
+                    backgroundColor: S256Colors.primary,
                     foregroundColor: Colors.black,
                   ),
                   child: const Text('Use This Fee'),
@@ -1433,7 +1434,7 @@ class _SendViewState extends State<SendView> {
       return const Padding(
         padding: EdgeInsets.all(16),
         child: Center(
-          child: CircularProgressIndicator(color: Colors.cyanAccent),
+          child: CircularProgressIndicator(color: S256Colors.primary),
         ),
       );
     }
@@ -1441,7 +1442,7 @@ class _SendViewState extends State<SendView> {
     if (provider.availableUtxos.isEmpty) {
       return const Padding(
         padding: EdgeInsets.all(16),
-        child: Text('No confirmed UTXOs found.', style: TextStyle(color: Colors.white54)),
+        child: Text('No confirmed UTXOs found.', style: TextStyle(color: S256Colors.textLight)),
       );
     }
 
@@ -1449,7 +1450,7 @@ class _SendViewState extends State<SendView> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(2),
         border: Border.all(color: Colors.white24),
       ),
       child: Column(
@@ -1525,7 +1526,7 @@ class _SendViewState extends State<SendView> {
                       style: const TextStyle(color: Colors.white60, fontSize: 11),
                     ),
                     controlAffinity: ListTileControlAffinity.leading,
-                    activeColor: Colors.cyanAccent,
+                    activeColor: S256Colors.primary,
                   ),
                 );
               },
@@ -1580,7 +1581,7 @@ class _SendViewState extends State<SendView> {
         ? Colors.amberAccent
       : simpleEstimate.amountAware
         ? Colors.white70
-        : Colors.white54;
+        : S256Colors.textLight;
     if (fee <= 0) return const SizedBox.shrink();
 
     final sourceText = _feeSourceLabel(provider);
@@ -1605,7 +1606,7 @@ class _SendViewState extends State<SendView> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(2),
         border: Border.all(color: Colors.white10),
       ),
       child: Column(
@@ -1632,7 +1633,7 @@ class _SendViewState extends State<SendView> {
             children: [
               const Text(
                 'Fee Source',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
+                style: TextStyle(color: S256Colors.textLight, fontSize: 12),
               ),
               Text(
                 sourceText,
@@ -1650,7 +1651,7 @@ class _SendViewState extends State<SendView> {
             children: [
               const Text(
                 'Fee Rate',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
+                style: TextStyle(color: S256Colors.textLight, fontSize: 12),
               ),
               Expanded(
                 child: Text(
@@ -1668,7 +1669,7 @@ class _SendViewState extends State<SendView> {
               children: [
                 Text(
                   netRowLabel,
-                  style: TextStyle(color: Colors.white54, fontSize: 12),
+                  style: TextStyle(color: S256Colors.textLight, fontSize: 12),
                 ),
                 Text(
                   netAfterFeeText,
@@ -1698,7 +1699,7 @@ class _SendViewState extends State<SendView> {
 
   Color _feeSourceColor(WalletProvider provider) {
     if (provider.feeRateSource == 'manual') {
-      return Colors.cyanAccent;
+      return S256Colors.primary;
     }
     if (_isNodeFeeSource(provider)) {
       return Colors.greenAccent;
@@ -1715,7 +1716,7 @@ class _SendViewState extends State<SendView> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(2),
         border: Border.all(color: Colors.white24),
       ),
       child: Column(
@@ -1749,13 +1750,13 @@ class _SendViewState extends State<SendView> {
                         },
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(
-                      color: manualSelected ? Colors.cyanAccent : Colors.white30,
+                      color: manualSelected ? S256Colors.primary : Colors.white30,
                       width: manualSelected ? 1.6 : 1.0,
                     ),
                     backgroundColor: manualSelected
-                        ? Colors.cyanAccent.withValues(alpha: 0.16)
+                        ? S256Colors.primary.withValues(alpha: 0.16)
                         : Colors.transparent,
-                    foregroundColor: manualSelected ? Colors.cyanAccent : Colors.white70,
+                    foregroundColor: manualSelected ? S256Colors.primary : Colors.white70,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                   child: const Text('Manual'),
@@ -1822,7 +1823,7 @@ class _SendViewState extends State<SendView> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(2),
         border: Border.all(color: Colors.white10),
       ),
       child: Column(
@@ -1947,7 +1948,7 @@ class _SendViewState extends State<SendView> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(2),
         border: Border.all(color: Colors.white12),
       ),
       child: Row(
@@ -1963,7 +1964,7 @@ class _SendViewState extends State<SendView> {
                 SizedBox(height: 2),
                 Text(
                   'ON: entered amount is total spend cap. OFF: recipient gets full entered amount.',
-                  style: TextStyle(color: Colors.white54, fontSize: 11),
+                  style: TextStyle(color: S256Colors.textLight, fontSize: 11),
                 ),
               ],
             ),
@@ -2031,12 +2032,12 @@ class _SendViewState extends State<SendView> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+              child: const Text('Cancel', style: TextStyle(color: S256Colors.textLight)),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.cyanAccent,
+                backgroundColor: S256Colors.primary,
                 foregroundColor: Colors.black,
               ),
               child: const Text('Retry with Higher Fee'),
@@ -2109,7 +2110,7 @@ class _SendViewState extends State<SendView> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+              child: const Text('Cancel', style: TextStyle(color: S256Colors.textLight)),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(dialogContext, true),
@@ -2150,7 +2151,7 @@ class _SendViewState extends State<SendView> {
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.green.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(2),
                   border: Border.all(color: Colors.green.withValues(alpha: 0.35)),
                 ),
                 child: const Text(
@@ -2165,7 +2166,7 @@ class _SendViewState extends State<SendView> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Amount Sent', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                  const Text('Amount Sent', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
                   Text(
                     '${amount.toStringAsFixed(8)} S256',
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
@@ -2176,10 +2177,10 @@ class _SendViewState extends State<SendView> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Network Fee Paid', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                  const Text('Network Fee Paid', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
                   Text(
                     '${fee.toStringAsFixed(8)} S256',
-                    style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.w600),
+                    style: const TextStyle(color: S256Colors.primary, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -2192,12 +2193,12 @@ class _SendViewState extends State<SendView> {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: Colors.black,
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(2),
                     border: Border.all(color: Colors.white24),
                   ),
                   child: SelectableText(
                     txid,
-                    style: const TextStyle(fontSize: 12, fontFamily: 'monospace', color: Colors.cyanAccent),
+                    style: const TextStyle(fontSize: 12, fontFamily: 'monospace', color: S256Colors.primary),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -2283,7 +2284,7 @@ class _SendViewState extends State<SendView> {
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(2),
                             border: Border.all(color: Colors.white24),
                           ),
                           child: Column(
@@ -2308,7 +2309,7 @@ class _SendViewState extends State<SendView> {
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: Colors.orange.withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(4),
+                                    borderRadius: BorderRadius.circular(2),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -2337,7 +2338,7 @@ class _SendViewState extends State<SendView> {
                                   : walletProvider.message.contains('⚠️')
                                       ? Colors.orange.withValues(alpha: 0.12)
                                       : Colors.green.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(2),
                               border: Border.all(
                                 color: walletProvider.message.contains('❌')
                                     ? Colors.red.withValues(alpha: 0.35)
@@ -2376,7 +2377,7 @@ class _SendViewState extends State<SendView> {
                                         walletProvider.resetCoinControl();
                                       }
                                     },
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(2),
                               children: const [
                                 Padding(
                                   padding: EdgeInsets.symmetric(horizontal: 12),
@@ -2411,19 +2412,19 @@ class _SendViewState extends State<SendView> {
                             filled: true,
                             fillColor: Colors.black,
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.0),
+                              borderRadius: BorderRadius.circular(2),
                               borderSide: BorderSide.none,
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.0),
-                              borderSide: const BorderSide(color: Colors.white, width: 1.0),
+                              borderRadius: BorderRadius.circular(2),
+                              borderSide: const BorderSide(color: S256Colors.lineStrong, width: 1.0),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.0),
-                              borderSide: const BorderSide(color: Colors.cyanAccent, width: 1.0),
+                              borderRadius: BorderRadius.circular(2),
+                              borderSide: const BorderSide(color: S256Colors.primary, width: 1.0),
                             ),
                             disabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.0),
+                              borderRadius: BorderRadius.circular(2),
                               borderSide: const BorderSide(color: Colors.white24, width: 1.0),
                             ),
                             suffixIcon: Row(
@@ -2432,7 +2433,7 @@ class _SendViewState extends State<SendView> {
                                 IconButton(
                                   icon: const Icon(
                                     Icons.contact_page_rounded,
-                                    color: Colors.cyanAccent,
+                                    color: S256Colors.primary,
                                   ),
                                   tooltip: 'Choose from Address Book',
                                   onPressed: _isSending ? null : _pickAddressFromAddressbook,
@@ -2499,19 +2500,19 @@ class _SendViewState extends State<SendView> {
                                   filled: true,
                                   fillColor: Colors.black,
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8.0),
+                                    borderRadius: BorderRadius.circular(2),
                                     borderSide: BorderSide.none,
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8.0),
-                                    borderSide: const BorderSide(color: Colors.white, width: 1.0),
+                                    borderRadius: BorderRadius.circular(2),
+                                    borderSide: const BorderSide(color: S256Colors.lineStrong, width: 1.0),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8.0),
-                                    borderSide: const BorderSide(color: Colors.cyanAccent, width: 1.0),
+                                    borderRadius: BorderRadius.circular(2),
+                                    borderSide: const BorderSide(color: S256Colors.primary, width: 1.0),
                                   ),
                                   disabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8.0),
+                                    borderRadius: BorderRadius.circular(2),
                                     borderSide: const BorderSide(color: Colors.white24, width: 1.0),
                                   ),
                                 ),
@@ -2547,13 +2548,13 @@ class _SendViewState extends State<SendView> {
                                   height: 12,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: Colors.white38,
+                                    color: S256Colors.textLight,
                                   ),
                                 ),
                                 SizedBox(width: 6),
                                 Text(
                                   'Checking network fee estimate...',
-                                  style: TextStyle(fontSize: 11, color: Colors.white54),
+                                  style: TextStyle(fontSize: 11, color: S256Colors.textLight),
                                 ),
                               ],
                             ),
@@ -2595,7 +2596,7 @@ class _SendViewState extends State<SendView> {
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: Colors.red.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(2),
                               border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
                             ),
                             child: Row(
@@ -2618,7 +2619,7 @@ class _SendViewState extends State<SendView> {
                         // Information Text
                         const Text(
                           'To send S256, enter the recipient\'s s21 or legacy address and the amount. Ensure you have enough balance to cover the transaction fee.',
-                          style: TextStyle(color: Colors.white54),
+                          style: TextStyle(color: S256Colors.textLight),
                         ),
 
                         const SizedBox(height: 20),
@@ -2674,7 +2675,7 @@ class _SendViewState extends State<SendView> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          CircularProgressIndicator(color: Colors.cyanAccent),
+                          CircularProgressIndicator(color: S256Colors.primary),
                           SizedBox(height: 16),
                           Text(
                             'Processing...',

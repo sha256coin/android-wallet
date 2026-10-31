@@ -14,6 +14,7 @@ All notable changes to this project are documented in this file.
 
 ### Changed
 
+- New look that matches sha256coin.eu: graphite background with a faint grid, flat square cards with thin borders and small uppercase titles, a single amber accent instead of purple and cyan, and square buttons and inputs. Chakra Petch (headings and balance), IBM Plex Sans (text) and IBM Plex Mono (addresses) are bundled with the app. Secondary text is lighter for better contrast.
 - Request Amount (Receive): the amount must be above 0 with at most 8 decimals, and is saved in a standard form (`01.50` becomes `1.5`). The note is limited to 200 characters.
 
 ## [1.6.5] - Play Store versionCode 7

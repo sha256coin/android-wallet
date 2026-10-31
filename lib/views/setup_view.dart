@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:s256_wallet/services/biometric_service.dart';
 import 'package:s256_wallet/providers/wallet_provider.dart';
 import 'package:s256_wallet/providers/blockchain_provider.dart';
+import 'package:s256_wallet/widgets/app_background.dart';
 
 class SetupView extends StatelessWidget {
   SetupView({super.key});
@@ -74,7 +75,7 @@ class SetupView extends StatelessWidget {
             children: [
               Icon(
                 typeName.contains('Face') ? Icons.face : Icons.fingerprint,
-                color: Colors.cyanAccent,
+                color: S256Colors.primary,
                 size: 28,
               ),
               const SizedBox(width: 8),
@@ -101,7 +102,7 @@ class SetupView extends StatelessWidget {
               Text(
                 'When enabled, you\'ll need to authenticate with $typeName each time you open the app.',
                 style: const TextStyle(
-                  color: Colors.white54,
+                  color: S256Colors.textLight,
                   fontSize: 14,
                 ),
               ),
@@ -112,13 +113,13 @@ class SetupView extends StatelessWidget {
               onPressed: () => Navigator.of(context).pop(false),
               child: const Text(
                 'Skip',
-                style: TextStyle(color: Colors.white54),
+                style: TextStyle(color: S256Colors.textLight),
               ),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.cyanAccent,
+                backgroundColor: S256Colors.primary,
                 foregroundColor: Colors.black,
               ),
               child: const Text('Enable'),
@@ -202,7 +203,7 @@ class SetupView extends StatelessWidget {
                     const Text(
                       'Wallet Address:',
                       style: TextStyle(
-                        color: Colors.cyanAccent,
+                        color: S256Colors.primary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -212,8 +213,8 @@ class SetupView extends StatelessWidget {
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.3)),
+                        borderRadius: BorderRadius.circular(2),
+                        border: Border.all(color: S256Colors.primary.withValues(alpha: 0.3)),
                       ),
                       child: SelectableText(
                         address,
@@ -221,7 +222,7 @@ class SetupView extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 12,
                           fontFamily: 'monospace',
-                          color: Colors.cyanAccent,
+                          color: S256Colors.primary,
                         ),
                       ),
                     ),
@@ -255,7 +256,7 @@ class SetupView extends StatelessWidget {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Colors.orange.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(2),
                           border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
                         ),
                         child: SelectableText(
@@ -289,7 +290,7 @@ class SetupView extends StatelessWidget {
                     const Text(
                       'Your Raw Private Key:',
                       style: TextStyle(
-                        color: Colors.white38,
+                        color: S256Colors.textLight,
                         fontWeight: FontWeight.bold,
                         fontSize: 10,
                       ),
@@ -300,7 +301,7 @@ class SetupView extends StatelessWidget {
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(2),
                         border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                       ),
                       child: SelectableText(
@@ -309,7 +310,7 @@ class SetupView extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 9,
                           fontFamily: 'monospace',
-                          color: Colors.white38,
+                          color: S256Colors.textLight,
                         ),
                       ),
                     ),
@@ -359,7 +360,7 @@ class SetupView extends StatelessWidget {
                   onPressed: () => Navigator.of(context).pop(false),
                   child: const Text(
                     'Cancel',
-                    style: TextStyle(color: Colors.white54),
+                    style: TextStyle(color: S256Colors.textLight),
                   ),
                 ),
                 ElevatedButton(
@@ -418,17 +419,17 @@ class SetupView extends StatelessWidget {
     final int? words = await showDialog<int>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: S256Colors.cardBg,
         title: const Text('Seed Phrase Length', style: TextStyle(color: Colors.white)),
         content: const Text('Choose how many words you want for your recovery phrase.', style: TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, 12),
-            child: const Text('12 Words', style: TextStyle(color: Colors.cyanAccent)),
+            child: const Text('12 Words', style: TextStyle(color: S256Colors.primary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, 24),
-            child: const Text('24 Words', style: TextStyle(color: Colors.cyanAccent)),
+            child: const Text('24 Words', style: TextStyle(color: S256Colors.primary)),
           ),
         ],
       ),
@@ -452,10 +453,10 @@ class SetupView extends StatelessWidget {
   ButtonStyle _primaryActionStyle() {
     return ElevatedButton.styleFrom(
       minimumSize: const Size(double.infinity, 52),
-      backgroundColor: Colors.cyanAccent,
+      backgroundColor: S256Colors.primary,
       foregroundColor: Colors.black,
       textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
       elevation: 0,
     );
   }
@@ -465,8 +466,8 @@ class SetupView extends StatelessWidget {
       minimumSize: const Size(double.infinity, 52),
       foregroundColor: Colors.white,
       textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-      side: const BorderSide(color: Colors.white38),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      side: const BorderSide(color: S256Colors.textLight),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
       backgroundColor: Colors.white.withValues(alpha: 0.02),
     );
   }
@@ -512,10 +513,10 @@ class SetupView extends StatelessWidget {
                                   height: 66,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: Colors.cyanAccent.withValues(alpha: 0.15),
-                                    border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.55)),
+                                    color: S256Colors.primary.withValues(alpha: 0.15),
+                                    border: Border.all(color: S256Colors.primary.withValues(alpha: 0.55)),
                                   ),
-                                  child: const Icon(Icons.account_balance_wallet_outlined, color: Colors.cyanAccent, size: 32),
+                                  child: const Icon(Icons.account_balance_wallet_outlined, color: S256Colors.primary, size: 32),
                                 ),
                               ),
                               const SizedBox(height: 18),
@@ -539,7 +540,7 @@ class SetupView extends StatelessWidget {
                               Container(
                                 decoration: BoxDecoration(
                                   color: Colors.white.withValues(alpha: 0.07),
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadius.circular(2),
                                   border: Border.all(color: Colors.white24),
                                 ),
                                 padding: const EdgeInsets.all(18),
@@ -563,17 +564,17 @@ class SetupView extends StatelessWidget {
                                       textInputAction: TextInputAction.done,
                                       decoration: InputDecoration(
                                         hintText: 'Seed phrase or private key',
-                                        hintStyle: const TextStyle(color: Colors.white54),
+                                        hintStyle: const TextStyle(color: S256Colors.textLight),
                                         filled: true,
                                         fillColor: Colors.black.withValues(alpha: 0.25),
                                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                                         enabledBorder: OutlineInputBorder(
                                           borderSide: const BorderSide(color: Colors.white30),
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(2),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderSide: const BorderSide(color: Colors.cyanAccent),
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: const BorderSide(color: S256Colors.primary),
+                                          borderRadius: BorderRadius.circular(2),
                                         ),
                                       ),
                                     ),
@@ -610,7 +611,7 @@ class SetupView extends StatelessWidget {
                               Container(
                                 decoration: BoxDecoration(
                                   color: Colors.white.withValues(alpha: 0.05),
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadius.circular(2),
                                   border: Border.all(color: Colors.white24),
                                 ),
                                 padding: const EdgeInsets.all(18),

@@ -141,12 +141,7 @@ class _TransactionsViewState extends State<TransactionsView> {
             ),
             child: Container(
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.black, Colors.black],
-                  stops: [0, 0.75],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
+                color: S256Colors.darkBg,
               ),
               child: Column(
                 children: [

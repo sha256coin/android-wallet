@@ -132,10 +132,10 @@ class _SettingsViewState extends State<SettingsView> {
       useRootNavigator: false,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          backgroundColor: const Color(0xFF1A1A1A),
+          backgroundColor: S256Colors.cardBg,
           title: const Row(
             children: [
-              Icon(Icons.auto_awesome, color: Colors.cyanAccent),
+              Icon(Icons.auto_awesome, color: S256Colors.primary),
               SizedBox(width: 8),
               Text('Upgrade to Seed Phrase',
                   style: TextStyle(color: Colors.white, fontSize: 18)),
@@ -159,7 +159,7 @@ class _SettingsViewState extends State<SettingsView> {
                     value: 12,
                     groupValue: migrationSeedWords,
                     onChanged: (val) => setState(() => migrationSeedWords = val!),
-                    activeColor: Colors.cyanAccent,
+                    activeColor: S256Colors.primary,
                   ),
                   const Text('12 Words', style: TextStyle(color: Colors.white70)),
                   const SizedBox(width: 20),
@@ -167,7 +167,7 @@ class _SettingsViewState extends State<SettingsView> {
                     value: 24,
                     groupValue: migrationSeedWords,
                     onChanged: (val) => setState(() => migrationSeedWords = val!),
-                    activeColor: Colors.cyanAccent,
+                    activeColor: S256Colors.primary,
                   ),
                   const Text('24 Words', style: TextStyle(color: Colors.white70)),
                 ],
@@ -185,12 +185,12 @@ class _SettingsViewState extends State<SettingsView> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+              child: const Text('Cancel', style: TextStyle(color: S256Colors.textLight)),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
               style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.cyanAccent,
+                  backgroundColor: S256Colors.primary,
                   foregroundColor: Colors.black),
               child: const Text('Start Migration'),
             ),
@@ -238,13 +238,13 @@ class _SettingsViewState extends State<SettingsView> {
       builder: (dialogContext) {
         preparingDialogContext = dialogContext;
         return AlertDialog(
-          backgroundColor: const Color(0xFF1A1A1A),
+          backgroundColor: S256Colors.cardBg,
           content: ValueListenableBuilder<String>(
             valueListenable: preparingMessage,
             builder: (context, message, _) {
               return Row(
                 children: [
-                  const CircularProgressIndicator(color: Colors.cyanAccent),
+                  const CircularProgressIndicator(color: S256Colors.primary),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Text(message,
@@ -371,13 +371,13 @@ class _SettingsViewState extends State<SettingsView> {
         builder: (dialogContext) {
           progressDialogContext = dialogContext;
           return AlertDialog(
-            backgroundColor: const Color(0xFF1A1A1A),
+            backgroundColor: S256Colors.cardBg,
             content: ValueListenableBuilder<String>(
               valueListenable: progressMessage,
               builder: (context, message, _) {
                 return Row(
                   children: [
-                    const CircularProgressIndicator(color: Colors.cyanAccent),
+                    const CircularProgressIndicator(color: S256Colors.primary),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Text(message,
@@ -638,10 +638,10 @@ class _SettingsViewState extends State<SettingsView> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              backgroundColor: const Color(0xFF1A1A1A),
+              backgroundColor: S256Colors.cardBg,
               title: const Row(
                 children: [
-                  Icon(Icons.verified_user, color: Colors.cyanAccent),
+                  Icon(Icons.verified_user, color: S256Colors.primary),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -663,7 +663,7 @@ class _SettingsViewState extends State<SettingsView> {
                       style: const TextStyle(color: Colors.white70),
                     ),
                     const SizedBox(height: 12),
-                    const Text('New Address', style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
+                    const Text('New Address', style: TextStyle(color: S256Colors.primary, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
                     SelectableText(
                       newAddress,
@@ -696,8 +696,8 @@ class _SettingsViewState extends State<SettingsView> {
                           mnemonic: mnemonic,
                           plannedSweepAmount: amountToSend,
                         ),
-                        icon: const Icon(Icons.copy, size: 16, color: Colors.cyanAccent),
-                        label: const Text('Copy All Backup Data', style: TextStyle(color: Colors.cyanAccent)),
+                        icon: const Icon(Icons.copy, size: 16, color: S256Colors.primary),
+                        label: const Text('Copy All Backup Data', style: TextStyle(color: S256Colors.primary)),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -719,7 +719,7 @@ class _SettingsViewState extends State<SettingsView> {
                           hasSaved = value ?? false;
                         });
                       },
-                      activeColor: Colors.cyanAccent,
+                      activeColor: S256Colors.primary,
                       contentPadding: EdgeInsets.zero,
                       controlAffinity: ListTileControlAffinity.leading,
                       title: const Text(
@@ -733,11 +733,11 @@ class _SettingsViewState extends State<SettingsView> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(false),
-                  child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+                  child: const Text('Cancel', style: TextStyle(color: S256Colors.textLight)),
                 ),
                 ElevatedButton(
                   onPressed: hasSaved ? () => Navigator.of(dialogContext).pop(true) : null,
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.cyanAccent, foregroundColor: Colors.black),
+                  style: ElevatedButton.styleFrom(backgroundColor: S256Colors.primary, foregroundColor: Colors.black),
                   child: Text(amountToSend > 0.00001 ? 'Continue & Send' : 'Load New Wallet'),
                 ),
               ],
@@ -756,7 +756,7 @@ class _SettingsViewState extends State<SettingsView> {
       useRootNavigator: true,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: S256Colors.cardBg,
         title: const Row(
           children: [
             Icon(Icons.info_outline, color: Colors.orangeAccent),
@@ -805,10 +805,10 @@ class _SettingsViewState extends State<SettingsView> {
       context: context,
       useRootNavigator: false,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: S256Colors.cardBg,
         title: const Row(
           children: [
-            Icon(Icons.info_outline, color: Colors.cyanAccent),
+            Icon(Icons.info_outline, color: S256Colors.primary),
             SizedBox(width: 8),
             Expanded(
               child: Text('Migration Cancelled', style: TextStyle(color: Colors.white, fontSize: 18)),
@@ -822,7 +822,7 @@ class _SettingsViewState extends State<SettingsView> {
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.cyanAccent, foregroundColor: Colors.black),
+            style: ElevatedButton.styleFrom(backgroundColor: S256Colors.primary, foregroundColor: Colors.black),
             child: const Text('OK'),
           ),
         ],
@@ -864,7 +864,7 @@ class _SettingsViewState extends State<SettingsView> {
                       style: TextStyle(color: Colors.white70),
                     ),
                     const SizedBox(height: 12),
-                    const Text('New Address', style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
+                    const Text('New Address', style: TextStyle(color: S256Colors.primary, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
                     SelectableText(newAddress, style: const TextStyle(color: Colors.white60, fontFamily: 'monospace', fontSize: 12)),
                     const SizedBox(height: 10),
@@ -939,7 +939,7 @@ class _SettingsViewState extends State<SettingsView> {
       useRootNavigator: false,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: S256Colors.cardBg,
         title: Row(
           children: [
             const Icon(Icons.check_circle, color: Colors.greenAccent),
@@ -963,12 +963,12 @@ class _SettingsViewState extends State<SettingsView> {
               style: const TextStyle(color: Colors.white70),
             ),
             const SizedBox(height: 10),
-            const Text('New Address', style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
+            const Text('New Address', style: TextStyle(color: S256Colors.primary, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
             SelectableText(newAddress, style: const TextStyle(color: Colors.white60, fontFamily: 'monospace', fontSize: 12)),
             if (txid.isNotEmpty) ...[
               const SizedBox(height: 10),
-              const Text('Transaction ID', style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
+              const Text('Transaction ID', style: TextStyle(color: S256Colors.primary, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               SelectableText(txid, style: const TextStyle(color: Colors.white60, fontFamily: 'monospace', fontSize: 12)),
             ],
@@ -977,7 +977,7 @@ class _SettingsViewState extends State<SettingsView> {
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.cyanAccent, foregroundColor: Colors.black),
+            style: ElevatedButton.styleFrom(backgroundColor: S256Colors.primary, foregroundColor: Colors.black),
             child: const Text('OK'),
           ),
         ],
@@ -990,7 +990,7 @@ class _SettingsViewState extends State<SettingsView> {
       context: context,
       useRootNavigator: false,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: S256Colors.cardBg,
         title: const Row(
           children: [
             Icon(Icons.schedule, color: Colors.amberAccent),
@@ -1033,7 +1033,7 @@ class _SettingsViewState extends State<SettingsView> {
       context: context,
       useRootNavigator: false,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: S256Colors.cardBg,
         title: const Row(
           children: [
             Icon(Icons.error_outline, color: Colors.redAccent),
@@ -1057,7 +1057,7 @@ class _SettingsViewState extends State<SettingsView> {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.35),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(2),
                 border: Border.all(color: Colors.redAccent.withValues(alpha: 0.35)),
               ),
               child: Text(message, style: const TextStyle(color: Colors.white60, fontSize: 12)),
@@ -1090,7 +1090,7 @@ class _SettingsViewState extends State<SettingsView> {
       useRootNavigator: false,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: S256Colors.cardBg,
         title: const Row(
           children: [
             Icon(Icons.warning_amber_rounded, color: Colors.orangeAccent),
@@ -1118,7 +1118,7 @@ class _SettingsViewState extends State<SettingsView> {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.35),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(2),
                   border: Border.all(color: Colors.white24),
                 ),
                 child: Text(
@@ -1129,7 +1129,7 @@ class _SettingsViewState extends State<SettingsView> {
               const SizedBox(height: 12),
               const Text(
                 'Broadcast TXIDs',
-                style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold),
+                style: TextStyle(color: S256Colors.primary, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
               Container(
@@ -1138,14 +1138,14 @@ class _SettingsViewState extends State<SettingsView> {
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: Colors.black,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(2),
                   border: Border.all(color: Colors.white24),
                 ),
                 child: SingleChildScrollView(
                   child: SelectableText(
                     txidText,
                     style: const TextStyle(
-                      color: Colors.cyanAccent,
+                      color: S256Colors.primary,
                       fontFamily: 'monospace',
                       fontSize: 12,
                     ),
@@ -1251,7 +1251,7 @@ class _SettingsViewState extends State<SettingsView> {
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: Colors.orange.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(2),
                         border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.35)),
                       ),
                       child: const Text(
@@ -1264,7 +1264,7 @@ class _SettingsViewState extends State<SettingsView> {
                     const Text(
                       'New Address',
                       style: TextStyle(
-                        color: Colors.cyanAccent,
+                        color: S256Colors.primary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1331,7 +1331,7 @@ class _SettingsViewState extends State<SettingsView> {
                       const Text(
                         'Broadcast Batch TXIDs',
                         style: TextStyle(
-                          color: Colors.cyanAccent,
+                          color: S256Colors.primary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -1342,7 +1342,7 @@ class _SettingsViewState extends State<SettingsView> {
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: Colors.black,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(2),
                           border: Border.all(color: Colors.white24),
                         ),
                         child: SingleChildScrollView(
@@ -1351,7 +1351,7 @@ class _SettingsViewState extends State<SettingsView> {
                             style: const TextStyle(
                               fontSize: 12,
                               fontFamily: 'monospace',
-                              color: Colors.cyanAccent,
+                              color: S256Colors.primary,
                             ),
                           ),
                         ),
@@ -1548,10 +1548,10 @@ class _SettingsViewState extends State<SettingsView> {
       context: context,
       useRootNavigator: false,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: S256Colors.cardBg,
         title: const Row(
           children: [
-            Icon(Icons.send_rounded, color: Colors.cyanAccent),
+            Icon(Icons.send_rounded, color: S256Colors.primary),
             SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -1573,7 +1573,7 @@ class _SettingsViewState extends State<SettingsView> {
             SelectableText(
               newAddress,
               style: const TextStyle(
-                color: Colors.cyanAccent,
+                color: S256Colors.primary,
                 fontFamily: 'monospace',
                 fontSize: 12,
               ),
@@ -1589,7 +1589,7 @@ class _SettingsViewState extends State<SettingsView> {
           ElevatedButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.cyanAccent,
+              backgroundColor: S256Colors.primary,
               foregroundColor: Colors.black,
             ),
             child: const Text('OK'),
@@ -1610,7 +1610,7 @@ class _SettingsViewState extends State<SettingsView> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              backgroundColor: const Color(0xFF1A1A1A),
+              backgroundColor: S256Colors.cardBg,
               title: const Row(
                 children: [
                   Icon(Icons.warning_amber_rounded, color: Colors.orangeAccent),
@@ -1647,7 +1647,7 @@ class _SettingsViewState extends State<SettingsView> {
                       },
                       controlAffinity: ListTileControlAffinity.leading,
                       contentPadding: EdgeInsets.zero,
-                      activeColor: Colors.cyanAccent,
+                      activeColor: S256Colors.primary,
                       title: const Text(
                         'I understand my wallet address will change and I will back up the new wallet immediately.',
                         style: TextStyle(color: Colors.white70, fontSize: 13),
@@ -1659,11 +1659,11 @@ class _SettingsViewState extends State<SettingsView> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(false),
-                  child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+                  child: const Text('Cancel', style: TextStyle(color: S256Colors.textLight)),
                 ),
                 ElevatedButton(
                   onPressed: acknowledged ? () => Navigator.of(dialogContext).pop(true) : null,
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.cyanAccent, foregroundColor: Colors.black),
+                  style: ElevatedButton.styleFrom(backgroundColor: S256Colors.primary, foregroundColor: Colors.black),
                   child: const Text('Agree & Continue'),
                 ),
               ],
@@ -1679,7 +1679,7 @@ class _SettingsViewState extends State<SettingsView> {
       context: context,
       useRootNavigator: false,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: S256Colors.cardBg,
         title: const Row(
           children: [
             Icon(Icons.warning_amber_rounded, color: Colors.orangeAccent),
@@ -1714,7 +1714,7 @@ class _SettingsViewState extends State<SettingsView> {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.35),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(2),
                   border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.35)),
                 ),
                 child: Text(feeError, style: const TextStyle(color: Colors.white60, fontSize: 12)),
@@ -1785,7 +1785,7 @@ class _SettingsViewState extends State<SettingsView> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Colors.orange.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(2),
                     border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
                   ),
                   child: const Column(
@@ -1817,7 +1817,7 @@ class _SettingsViewState extends State<SettingsView> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Colors.red.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(2),
                     border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
                   ),
                   child: const Column(
@@ -1918,18 +1918,18 @@ class _SettingsViewState extends State<SettingsView> {
                         filled: true,
                         fillColor: const Color.fromARGB(100, 0, 0, 0),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.0),
+                          borderRadius: BorderRadius.circular(2),
                           borderSide: BorderSide.none,
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.0),
+                          borderRadius: BorderRadius.circular(2),
                           borderSide:
-                              const BorderSide(color: Colors.white, width: 1.0),
+                              const BorderSide(color: S256Colors.lineStrong, width: 1.0),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.0),
+                          borderRadius: BorderRadius.circular(2),
                           borderSide:
-                              const BorderSide(color: Colors.white, width: 1.0),
+                              const BorderSide(color: S256Colors.lineStrong, width: 1.0),
                         ),
                         suffixIcon: IconButton(
                           icon: const Icon(Icons.copy, color: Colors.white),
@@ -1951,7 +1951,7 @@ class _SettingsViewState extends State<SettingsView> {
                     const SizedBox(height: 20),
                     const Text(
                       'Your Seed Phrase above recovers your entire wallet, including all future addresses. Keep it secure and never share it with anyone.',
-                      style: TextStyle(color: Colors.white54, fontSize: 14),
+                      style: TextStyle(color: S256Colors.textLight, fontSize: 14),
                     ),
                     const SizedBox(height: 20),
                   ],
@@ -1972,18 +1972,18 @@ class _SettingsViewState extends State<SettingsView> {
                       filled: true,
                       fillColor: const Color.fromARGB(100, 0, 0, 0),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
+                        borderRadius: BorderRadius.circular(2),
                         borderSide: BorderSide.none,
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
+                        borderRadius: BorderRadius.circular(2),
                         borderSide:
-                            const BorderSide(color: Colors.white, width: 1.0),
+                            const BorderSide(color: S256Colors.lineStrong, width: 1.0),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
+                        borderRadius: BorderRadius.circular(2),
                         borderSide:
-                            const BorderSide(color: Colors.white, width: 1.0),
+                            const BorderSide(color: S256Colors.lineStrong, width: 1.0),
                       ),
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.copy, color: Colors.white),
@@ -2005,7 +2005,7 @@ class _SettingsViewState extends State<SettingsView> {
                   const SizedBox(height: 20),
                   const Text(
                     'This WIF key is derived from your seed and controls ONLY the current address. The Seed Phrase is the primary backup.',
-                    style: TextStyle(color: Colors.white54, fontSize: 14),
+                    style: TextStyle(color: S256Colors.textLight, fontSize: 14),
                   ),
                   const SizedBox(height: 20),
 
@@ -2015,16 +2015,16 @@ class _SettingsViewState extends State<SettingsView> {
                       icon: const Icon(Icons.upgrade),
                       label: const Text('Migrate to Seed Phrase'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.cyanAccent.withValues(alpha: 0.1),
-                        foregroundColor: Colors.cyanAccent,
-                        side: const BorderSide(color: Colors.cyanAccent),
+                        backgroundColor: S256Colors.primary.withValues(alpha: 0.1),
+                        foregroundColor: S256Colors.primary,
+                        side: const BorderSide(color: S256Colors.primary),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
                     const SizedBox(height: 10),
                     const Text(
                       'Upgrade to a modern 12 or 24 word recovery phrase. This is more secure and easier to back up.',
-                      style: TextStyle(color: Colors.cyanAccent, fontSize: 11, fontStyle: FontStyle.italic),
+                      style: TextStyle(color: S256Colors.primary, fontSize: 11, fontStyle: FontStyle.italic),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 20),
@@ -2049,7 +2049,7 @@ class _SettingsViewState extends State<SettingsView> {
                       height: 72,
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(2),
                         border: Border.all(
                           color: Colors.white.withValues(alpha: 0.1),
                         ),
@@ -2060,7 +2060,7 @@ class _SettingsViewState extends State<SettingsView> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFC0C0C0)),
+                            valueColor: AlwaysStoppedAnimation<Color>(S256Colors.primary),
                           ),
                         ),
                       ),
@@ -2069,7 +2069,7 @@ class _SettingsViewState extends State<SettingsView> {
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(2),
                         border: Border.all(
                           color: Colors.white.withValues(alpha: 0.1),
                         ),
@@ -2083,17 +2083,17 @@ class _SettingsViewState extends State<SettingsView> {
                           _biometricEnabled
                               ? 'App requires $_biometricType authentification'
                               : 'Secure your wallet with $_biometricType',
-                          style: const TextStyle(color: Colors.white54, fontSize: 12),
+                          style: const TextStyle(color: S256Colors.textLight, fontSize: 12),
                         ),
                         secondary: Icon(
                           _biometricType.contains('Face')
                               ? Icons.face
                               : Icons.fingerprint,
-                          color: _biometricEnabled ? const Color(0xFFC0C0C0) : Colors.white,
+                          color: _biometricEnabled ? S256Colors.primary : Colors.white,
                         ),
                         value: _biometricEnabled,
                         onChanged: _toggleBiometric,
-                        activeThumbColor: const Color(0xFFC0C0C0),
+                        activeThumbColor: S256Colors.primary,
                       ),
                     )
                   else
@@ -2101,7 +2101,7 @@ class _SettingsViewState extends State<SettingsView> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: Colors.orange.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(2),
                         border: Border.all(
                           color: Colors.orange.withValues(alpha: 0.3),
                         ),

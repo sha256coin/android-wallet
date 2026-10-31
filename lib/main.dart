@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:s256_wallet/theme/s256_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:s256_wallet/providers/addressbook_provider.dart';
@@ -177,82 +178,9 @@ class MyApp extends StatelessWidget {
       title: 'S256 Wallet',
       debugShowCheckedModeBanner: false,
 
-      // Material 3 theme with S256 brand colors
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0b0f14),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFFa300ff),      // S256 Purple
-          secondary: Color(0xFF00d4ff),    // S256 Cyan
-          tertiary: Color(0xFFffd700),     // S256 Gold
-          surface: Color(0xFF1a1f2e),
-          onPrimary: Colors.white,
-          onSecondary: Colors.black,
-          onSurface: Colors.white,
-        ),
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-          elevation: 0,
-          backgroundColor: Color(0xFF0b0f14),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-        cardTheme: CardThemeData(
-          color: const Color(0xFF1a1f2e),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: const Color(0xFFa300ff).withValues(alpha: 0.15),
-            ),
-          ),
-        ),
-      ),
-
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0b0f14),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFFa300ff),      // S256 Purple
-          secondary: Color(0xFF00d4ff),    // S256 Cyan
-          tertiary: Color(0xFFffd700),     // S256 Gold
-          surface: Color(0xFF1a1f2e),
-          onPrimary: Colors.white,
-          onSecondary: Colors.black,
-          onSurface: Colors.white,
-        ),
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-          elevation: 0,
-          backgroundColor: Color(0xFF0b0f14),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-        cardTheme: CardThemeData(
-          color: const Color(0xFF1a1f2e),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: const Color(0xFFa300ff).withValues(alpha: 0.15),
-            ),
-          ),
-        ),
-      ),
+      // S256 "Digital Platinum" theme (see lib/theme/s256_theme.dart)
+      theme: S256Theme.dark,
+      darkTheme: S256Theme.dark,
 
       themeMode: ThemeMode.dark, // Always use dark theme
 

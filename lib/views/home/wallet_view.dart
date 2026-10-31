@@ -89,11 +89,11 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
             ),
           ],
         ),
-        backgroundColor: const Color(0xFF2A2A2A),
+        backgroundColor: S256Colors.surface2,
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(2),
           side: BorderSide(
             color: S256Colors.accent.withValues(alpha: 0.3),
             width: 1,
@@ -130,11 +130,11 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
               ),
             ],
           ),
-          backgroundColor: const Color(0xFF2A2A2A),
+          backgroundColor: S256Colors.surface2,
           duration: const Duration(seconds: 1),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(2),
             side: BorderSide(
               color: Colors.green.withValues(alpha: 0.3),
               width: 1,
@@ -153,8 +153,8 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
         decoration: const BoxDecoration(
           color: Color.fromARGB(255, 25, 25, 25),
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
+            topLeft: Radius.circular(2),
+            topRight: Radius.circular(2),
           ),
         ),
         child: TransactionModal(txid: txid),
@@ -350,7 +350,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                 child: Text(
                   text,
                   style: const TextStyle(
-                    color: Colors.white38,
+                    color: S256Colors.textLight,
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
                   ),
@@ -443,7 +443,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
 
     return Scaffold(
       body: RefreshIndicator(
-        backgroundColor: const Color(0xFF3A3A3A),
+        backgroundColor: S256Colors.surface2,
         color: S256Colors.accent,
         strokeWidth: 3,
         onRefresh: _onRefresh,
@@ -471,7 +471,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                                 child: SkeletonLoader(
                                   width: double.infinity,
                                   height: 48,
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(2),
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -479,7 +479,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                                 child: SkeletonLoader(
                                   width: double.infinity,
                                   height: 48,
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(2),
                                 ),
                               ),
                             ],
@@ -496,7 +496,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                               SkeletonLoader(
                                 width: 150,
                                 height: 20,
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(2),
                               ),
                               const SizedBox(height: 12),
                               ...List.generate(3, (index) => const TransactionSkeleton()),
@@ -539,8 +539,9 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                                         color: hasPending
                                             ? Colors.orange.withValues(alpha: 0.9)
                                             : Colors.white,
-                                        fontSize: 36,
-                                        fontWeight: FontWeight.bold,
+                                        fontFamily: 'ChakraPetch',
+                                        fontSize: 40,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                     const SizedBox(width: 8),
@@ -549,7 +550,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                                       style: TextStyle(
                                         color: hasPending
                                             ? Colors.orange.withValues(alpha: 0.7)
-                                            : Colors.white54,
+                                            : S256Colors.textLight,
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -566,7 +567,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                                 child: Text(
                                   'Confirmed: ${confirmedBalance?.toStringAsFixed(4) ?? '0.0000'} S256',
                                   style: const TextStyle(
-                                    color: Colors.white38,
+                                    color: S256Colors.textLight,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -609,7 +610,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                                     const Text(
                                       'Your balance chart will appear here',
                                       style: TextStyle(
-                                        color: Colors.white38,
+                                        color: S256Colors.textLight,
                                         fontSize: 12,
                                       ),
                                     ),
@@ -636,7 +637,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                       decoration: BoxDecoration(
                                         color: Colors.orange.withValues(alpha: 0.15),
-                                        borderRadius: BorderRadius.circular(20),
+                                        borderRadius: BorderRadius.circular(2),
                                         border: Border.all(
                                           color: Colors.orange.withValues(alpha: 0.3),
                                           width: 1,
@@ -682,7 +683,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                             Text(
                               'Last sync: $timestamp',
                               style: const TextStyle(
-                                color: Colors.white38,
+                                color: S256Colors.textLight,
                                 fontSize: 11,
                               ),
                             ),
@@ -714,7 +715,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                               Expanded(
                                 child: ButtonWidget(
                                   text: 'Receive',
-                                  isPrimary: true,
+                                  isPrimary: false,
                                   icon: Icons.arrow_downward,
                                   onPressed: () {
                                     Navigator.push(
@@ -754,7 +755,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                       decoration: BoxDecoration(
                                         color: Colors.orange.withValues(alpha: 0.2),
-                                        borderRadius: BorderRadius.circular(10),
+                                        borderRadius: BorderRadius.circular(2),
                                       ),
                                       child: Text(
                                         '${walletProvider.pendingTransactionsCount} pending',
@@ -777,7 +778,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
                                         color: Colors.orange.withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(12),
+                                        borderRadius: BorderRadius.circular(2),
                                         border: Border.all(
                                           color: Colors.orange.withValues(alpha: 0.2),
                                           width: 1,

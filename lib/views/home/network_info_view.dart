@@ -51,7 +51,7 @@ class _NetworkInfoViewState extends State<NetworkInfoView> {
       ),
       body: AppBackground(
         child: _loading
-            ? const Center(child: CircularProgressIndicator(color: Colors.cyanAccent))
+            ? const Center(child: CircularProgressIndicator(color: S256Colors.primary))
             : _info == null
                 ? const Center(child: Text('Failed to load network information', style: TextStyle(color: Colors.white70)))
                 : ListView(
@@ -89,7 +89,7 @@ class _NetworkInfoViewState extends State<NetworkInfoView> {
       child: Text(
         title.toUpperCase(),
         style: const TextStyle(
-          color: Colors.cyanAccent,
+          color: S256Colors.primary,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.2,
           fontSize: 12,
@@ -102,7 +102,7 @@ class _NetworkInfoViewState extends State<NetworkInfoView> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(2),
         border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Column(

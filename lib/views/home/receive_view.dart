@@ -5,6 +5,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:s256_wallet/providers/wallet_provider.dart';
 import 'package:s256_wallet/services/payment_request.dart';
+import 'package:s256_wallet/widgets/app_background.dart';
 
 class ReceiveView extends StatefulWidget {
   const ReceiveView({super.key});
@@ -95,7 +96,7 @@ class _ReceiveViewState extends State<ReceiveView>
         backgroundColor: Colors.green.shade600,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(2),
         ),
         margin: const EdgeInsets.all(20),
         duration: const Duration(seconds: 2),
@@ -155,20 +156,13 @@ class _ReceiveViewState extends State<ReceiveView>
         return Dialog(
           backgroundColor: Colors.grey.shade900,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(2),
           ),
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.grey.shade900,
-                  Colors.black,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
+              color: S256Colors.darkBg,
+              borderRadius: BorderRadius.circular(2),
               border: Border.all(
                 color: Colors.white.withValues(alpha: 0.1),
               ),
@@ -184,12 +178,12 @@ class _ReceiveViewState extends State<ReceiveView>
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.purple.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(8),
+                          color: S256Colors.primary.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(2),
                         ),
                         child: const Icon(
                           Icons.request_quote,
-                          color: Colors.purple,
+                          color: S256Colors.primary,
                           size: 24,
                         ),
                       ),
@@ -214,20 +208,20 @@ class _ReceiveViewState extends State<ReceiveView>
                     decoration: InputDecoration(
                       labelText: 'Amount (S256)',
                       labelStyle: TextStyle(color: Colors.grey.shade400),
-                      prefixIcon: Icon(Icons.monetization_on, color: Colors.purple.shade400),
+                      prefixIcon: Icon(Icons.monetization_on, color: S256Colors.primary),
                       filled: true,
                       fillColor: Colors.black.withValues(alpha: 0.3),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(2),
                         borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(2),
                         borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.purple.shade400),
+                        borderRadius: BorderRadius.circular(2),
+                        borderSide: BorderSide(color: S256Colors.primary),
                       ),
                     ),
                     validator: (value) {
@@ -250,20 +244,20 @@ class _ReceiveViewState extends State<ReceiveView>
                     decoration: InputDecoration(
                       labelText: 'Message (optional)',
                       labelStyle: TextStyle(color: Colors.grey.shade400),
-                      prefixIcon: Icon(Icons.message, color: Colors.purple.shade400),
+                      prefixIcon: Icon(Icons.message, color: S256Colors.primary),
                       filled: true,
                       fillColor: Colors.black.withValues(alpha: 0.3),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(2),
                         borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(2),
                         borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.purple.shade400),
+                        borderRadius: BorderRadius.circular(2),
+                        borderSide: BorderSide(color: S256Colors.primary),
                       ),
                     ),
                   ),
@@ -290,7 +284,7 @@ class _ReceiveViewState extends State<ReceiveView>
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(2),
                               side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
                             ),
                           ),
@@ -318,16 +312,16 @@ class _ReceiveViewState extends State<ReceiveView>
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.purple.shade600,
+                            backgroundColor: S256Colors.primary,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(2),
                             ),
                           ),
                           child: const Text(
                             'Create Request',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: S256Colors.onPrimary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -355,15 +349,16 @@ class _ReceiveViewState extends State<ReceiveView>
         SnackBar(
           content: Row(
             children: [
-              const Icon(Icons.check_circle, color: Colors.white, size: 20),
+              const Icon(Icons.check_circle, color: S256Colors.onPrimary, size: 20),
               const SizedBox(width: 8),
-              Text('Payment request created: ${result['amount']} S256'),
+              Text('Payment request created: ${result['amount']} S256',
+                  style: const TextStyle(color: S256Colors.onPrimary)),
             ],
           ),
-          backgroundColor: Colors.purple.shade600,
+          backgroundColor: S256Colors.primary,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(2),
           ),
           margin: const EdgeInsets.all(20),
         ),
@@ -396,7 +391,7 @@ class _ReceiveViewState extends State<ReceiveView>
             margin: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(2),
             ),
             child: IconButton(
               icon: const Icon(Icons.arrow_back_ios_new,
@@ -422,15 +417,7 @@ class _ReceiveViewState extends State<ReceiveView>
         ),
         body: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.black,
-                Colors.grey.shade900.withValues(alpha: 0.8),
-                Colors.black,
-              ],
-            ),
+            color: S256Colors.darkBg,
           ),
           child: SafeArea(
             child: SingleChildScrollView(
@@ -456,12 +443,7 @@ class _ReceiveViewState extends State<ReceiveView>
                                   height: 80,
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        Colors.blue.shade400.withValues(alpha: 0.2),
-                                        Colors.purple.shade400.withValues(alpha: 0.2),
-                                      ],
-                                    ),
+                                    color: S256Colors.cardBg,
                                     shape: BoxShape.circle,
                                     border: Border.all(
                                       color: Colors.white.withValues(alpha: 0.2),
@@ -494,7 +476,7 @@ class _ReceiveViewState extends State<ReceiveView>
                             ),
                             decoration: BoxDecoration(
                               color: Colors.green.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(2),
                               border: Border.all(
                                 color: Colors.green.withValues(alpha: 0.3),
                               ),
@@ -533,17 +515,17 @@ class _ReceiveViewState extends State<ReceiveView>
                           margin: const EdgeInsets.only(bottom: 16),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.purple.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
+                            color: S256Colors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(2),
                             border: Border.all(
-                              color: Colors.purple.withValues(alpha: 0.3),
+                              color: S256Colors.primary.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Row(
                             children: [
                               Icon(
                                 Icons.request_quote,
-                                color: Colors.purple.shade400,
+                                color: S256Colors.primary,
                                 size: 20,
                               ),
                               const SizedBox(width: 8),
@@ -573,7 +555,7 @@ class _ReceiveViewState extends State<ReceiveView>
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.clear, color: Colors.white54, size: 20),
+                                icon: const Icon(Icons.clear, color: S256Colors.textLight, size: 20),
                                 onPressed: () {
                                   setState(() {
                                     _requestedAmount = null;
@@ -592,29 +574,9 @@ class _ReceiveViewState extends State<ReceiveView>
                         width: qrSize + 40,
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Colors.white,
-                              Colors.grey.shade100,
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.blue.withValues(alpha: 0.3),
-                              blurRadius: 30,
-                              spreadRadius: 0,
-                              offset: const Offset(0, 10),
-                            ),
-                            BoxShadow(
-                              color: Colors.purple.withValues(alpha: 0.2),
-                              blurRadius: 20,
-                              spreadRadius: 0,
-                              offset: const Offset(0, -5),
-                            ),
-                          ],
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(2),
+                          
                         ),
                         child: Column(
                           children: [
@@ -636,7 +598,7 @@ class _ReceiveViewState extends State<ReceiveView>
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
                                     color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(2),
                                     border: Border.all(
                                       color: Colors.black.withValues(alpha: 0.1),
                                       width: 2,
@@ -670,13 +632,8 @@ class _ReceiveViewState extends State<ReceiveView>
                         child: Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.white.withValues(alpha: 0.05),
-                                Colors.white.withValues(alpha: 0.02),
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(16),
+                            color: S256Colors.cardBg,
+                            borderRadius: BorderRadius.circular(2),
                             border: Border.all(
                               color: Colors.white.withValues(alpha: 0.1),
                             ),
@@ -688,7 +645,7 @@ class _ReceiveViewState extends State<ReceiveView>
                                 children: [
                                   Icon(
                                     Icons.account_balance_wallet,
-                                    color: Colors.blue.shade400,
+                                    color: S256Colors.primary,
                                     size: 20,
                                   ),
                                   const SizedBox(width: 8),
@@ -707,7 +664,7 @@ class _ReceiveViewState extends State<ReceiveView>
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
                                   color: Colors.black.withValues(alpha: 0.3),
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(2),
                                   border: Border.all(
                                     color: _isAddressCopied
                                         ? Colors.green.withValues(alpha: 0.5)
@@ -731,20 +688,16 @@ class _ReceiveViewState extends State<ReceiveView>
                                     const SizedBox(width: 8),
                                     InkWell(
                                       onTap: () => _copyToClipboard(address),
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(2),
                                       child: Container(
                                         padding: const EdgeInsets.all(8),
                                         decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            colors: _isAddressCopied
-                                                ? [Colors.green.shade600, Colors.green.shade700]
-                                                : [Colors.blue.shade600, Colors.purple.shade600],
-                                          ),
-                                          borderRadius: BorderRadius.circular(8),
+                                          color: _isAddressCopied ? Colors.green.shade600 : S256Colors.primary,
+                                          borderRadius: BorderRadius.circular(2),
                                         ),
                                         child: Icon(
                                           _isAddressCopied ? Icons.check : Icons.copy,
-                                          color: Colors.white,
+                                          color: S256Colors.onPrimary,
                                           size: 18,
                                         ),
                                       ),
@@ -770,8 +723,8 @@ class _ReceiveViewState extends State<ReceiveView>
                                 label: 'Share',
                                 onTap: () => _shareAddress(address),
                                 gradient: [
-                                  Colors.blue.shade600,
-                                  Colors.blue.shade700,
+                                  S256Colors.primary,
+                                  S256Colors.primary,
                                 ],
                               ),
                             ),
@@ -782,8 +735,8 @@ class _ReceiveViewState extends State<ReceiveView>
                                 label: 'Request Amount',
                                 onTap: () => _showRequestAmountDialog(context, address),
                                 gradient: [
-                                  Colors.purple.shade600,
-                                  Colors.purple.shade700,
+                                  S256Colors.primary,
+                                  S256Colors.primary,
                                 ],
                               ),
                             ),
@@ -799,10 +752,10 @@ class _ReceiveViewState extends State<ReceiveView>
                         child: Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.blue.withValues(alpha: 0.05),
-                            borderRadius: BorderRadius.circular(12),
+                            color: S256Colors.primary.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(2),
                             border: Border.all(
-                              color: Colors.blue.withValues(alpha: 0.1),
+                              color: S256Colors.primary.withValues(alpha: 0.1),
                             ),
                           ),
                           child: Row(
@@ -810,7 +763,7 @@ class _ReceiveViewState extends State<ReceiveView>
                             children: [
                               Icon(
                                 Icons.info_outline,
-                                color: Colors.blue.shade400,
+                                color: S256Colors.primary,
                                 size: 20,
                               ),
                               const SizedBox(width: 12),
@@ -897,29 +850,23 @@ class _ReceiveViewState extends State<ReceiveView>
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(2),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          gradient: LinearGradient(colors: gradient),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: gradient.first.withValues(alpha: 0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          color: gradient.first,
+          borderRadius: BorderRadius.circular(2),
+          
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white, size: 20),
+            Icon(icon, color: S256Colors.onPrimary, size: 20),
             const SizedBox(width: 8),
             Text(
               label,
               style: const TextStyle(
-                color: Colors.white,
+                color: S256Colors.onPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),

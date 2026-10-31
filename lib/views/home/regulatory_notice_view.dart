@@ -29,16 +29,16 @@ class RegulatoryNoticeView extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blue.withValues(alpha: 0.35)),
+                  color: S256Colors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(2),
+                  border: Border.all(color: S256Colors.primary.withValues(alpha: 0.35)),
                 ),
                 child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.policy_outlined, color: Colors.blue),
+                        Icon(Icons.policy_outlined, color: S256Colors.primary),
                         SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -90,7 +90,7 @@ class RegulatoryNoticeView extends StatelessWidget {
                 text:
                     'Nothing in this wallet constitutes investment, legal, or tax advice. Users remain responsible for their own decisions and local regulatory obligations.',
                 icon: Icons.balance_rounded,
-                color: Colors.purple,
+                color: S256Colors.primary,
               ),
               const SizedBox(height: 18),
               Container(
@@ -98,7 +98,7 @@ class RegulatoryNoticeView extends StatelessWidget {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(2),
                   border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
                 ),
                 child: const Text(
@@ -134,7 +134,7 @@ class _NoticeBlock extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(2),
         border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Row(

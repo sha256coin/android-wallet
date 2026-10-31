@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:s256_wallet/widgets/app_background.dart';
 
 class PrivacyView extends StatefulWidget {
   const PrivacyView({super.key});
@@ -74,16 +75,7 @@ class _PrivacyViewState extends State<PrivacyView>
         appBar: _buildAppBar(context),
         body: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.black,
-                Colors.grey.shade900,
-                Colors.black,
-              ],
-              stops: const [0.0, 0.5, 1.0],
-            ),
+            color: S256Colors.cardBg,
           ),
           child: SafeArea(
             child: CustomScrollView(
@@ -129,7 +121,7 @@ class _PrivacyViewState extends State<PrivacyView>
         margin: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(2),
         ),
         child: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
@@ -162,10 +154,8 @@ class _PrivacyViewState extends State<PrivacyView>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.blue.shade700, Colors.blue.shade900],
-            ),
-            borderRadius: BorderRadius.circular(20),
+            color: S256Colors.cardBg,
+            borderRadius: BorderRadius.circular(2),
           ),
           child: const Text(
             'PRIVACY FIRST',
@@ -226,13 +216,8 @@ class _PrivacyViewState extends State<PrivacyView>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.blue.withValues(alpha: 0.1),
-            Colors.purple.withValues(alpha: 0.05),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
+        color: S256Colors.cardBg,
+        borderRadius: BorderRadius.circular(2),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.1),
           width: 1,
@@ -246,12 +231,12 @@ class _PrivacyViewState extends State<PrivacyView>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
+                  color: S256Colors.primary.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(2),
                 ),
                 child: const Icon(
                   Icons.shield_outlined,
-                  color: Colors.blue,
+                  color: S256Colors.primary,
                   size: 20,
                 ),
               ),
@@ -314,7 +299,7 @@ List<Widget> _buildSections() {
     {
       'icon': Icons.share_outlined,
       'title': 'Sharing Data with Third Parties',
-      'color': Colors.purple,
+      'color': S256Colors.primary,
       'points': <String>[
         'The S256 Wallet does not share personal data with third parties.',
         'All transactions conducted through the wallet are publicly viewable on the blockchain, but we do not store or track this information.',
@@ -401,10 +386,8 @@ List<Widget> _buildSections() {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [color.withValues(alpha: 0.3), color.withValues(alpha: 0.1)],
-                  ),
-                  borderRadius: BorderRadius.circular(8),
+                  color: S256Colors.cardBg,
+                  borderRadius: BorderRadius.circular(2),
                 ),
                 child: Center(
                   child: Text(
@@ -441,7 +424,7 @@ List<Widget> _buildSections() {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(2),
                 border: Border(
                   left: BorderSide(
                     color: color.withValues(alpha: 0.5),
@@ -523,13 +506,8 @@ List<Widget> _buildSections() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.white.withValues(alpha: 0.05),
-            Colors.white.withValues(alpha: 0.02),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
+        color: S256Colors.cardBg,
+        borderRadius: BorderRadius.circular(2),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.1),
         ),
@@ -539,7 +517,7 @@ List<Widget> _buildSections() {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.verified_user, color: Colors.blue.shade400, size: 24),
+              Icon(Icons.verified_user, color: S256Colors.primary, size: 24),
               const SizedBox(width: 8),
               const Text(
                 'S256 Team',
@@ -555,18 +533,18 @@ List<Widget> _buildSections() {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.blue.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: S256Colors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(2),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.email, size: 16, color: Colors.blue.shade300),
+                Icon(Icons.email, size: 16, color: S256Colors.primary),
                 const SizedBox(width: 8),
                 Text(
                   'info@sha256coin.eu',
                   style: TextStyle(
-                    color: Colors.blue.shade300,
+                    color: S256Colors.primary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

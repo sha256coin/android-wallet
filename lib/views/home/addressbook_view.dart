@@ -226,7 +226,7 @@ class _AddressbookViewState extends State<AddressbookView> {
             ),
           ),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: isError ? const Color(0xFFD32F2F) : const Color(0xFF111111),
+          backgroundColor: isError ? const Color(0xFFD32F2F) : S256Colors.cardBg,
           duration: Duration(milliseconds: isError ? 2600 : 1600),
         ),
       );
@@ -236,14 +236,14 @@ class _AddressbookViewState extends State<AddressbookView> {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(12),
+        color: S256Colors.cardBg,
+        borderRadius: BorderRadius.circular(2),
         border: Border.all(color: Colors.white24),
       ),
       child: ListTile(
         leading: const Icon(
           Icons.contact_page_rounded,
-          color: Colors.cyanAccent,
+          color: S256Colors.primary,
         ),
         title: Text(
           entry.label,
@@ -267,7 +267,7 @@ class _AddressbookViewState extends State<AddressbookView> {
             ? const Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
-                color: Colors.white38,
+                color: S256Colors.textLight,
               )
             : Row(
                 mainAxisSize: MainAxisSize.min,
@@ -275,7 +275,7 @@ class _AddressbookViewState extends State<AddressbookView> {
                   // Same as the web wallet's Contacts tab: open Send with
                   // this address filled in.
                   IconButton(
-                    icon: const Icon(Icons.send_rounded, color: Colors.cyanAccent),
+                    icon: const Icon(Icons.send_rounded, color: S256Colors.primary),
                     tooltip: 'Send to this address',
                     visualDensity: VisualDensity.compact,
                     onPressed: _isBusy ? null : () => _sendTo(entry.address),
@@ -305,8 +305,8 @@ class _AddressbookViewState extends State<AddressbookView> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(12),
+        color: S256Colors.cardBg,
+        borderRadius: BorderRadius.circular(2),
         border: Border.all(color: Colors.white24),
       ),
       child: Column(
@@ -341,7 +341,7 @@ class _AddressbookViewState extends State<AddressbookView> {
               labelText: 'Address',
               hintText: 's21...',
               suffixIcon: IconButton(
-                icon: const Icon(Icons.qr_code_scanner, color: Colors.cyanAccent),
+                icon: const Icon(Icons.qr_code_scanner, color: S256Colors.primary),
                 tooltip: 'Scan QR code',
                 onPressed: _isBusy ? null : _scanAddress,
               ),
@@ -426,7 +426,7 @@ class _AddressbookViewState extends State<AddressbookView> {
                                 padding: EdgeInsets.all(16),
                                 child: Text(
                                   'No saved addresses yet.',
-                                  style: TextStyle(color: Colors.white54),
+                                  style: TextStyle(color: S256Colors.textLight),
                                 ),
                               ),
                             )

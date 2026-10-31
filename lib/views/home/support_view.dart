@@ -34,14 +34,7 @@ class SupportView extends StatelessWidget {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [
-                        S256Colors.accent.withValues(alpha: 0.3),
-                        S256Colors.accent.withValues(alpha: 0.1),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: S256Colors.cardBg,
                   ),
                   child: const Icon(
                     Icons.support_agent,
@@ -68,7 +61,7 @@ class SupportView extends StatelessWidget {
                 child: Text(
                   'We\'re here to help you with S256',
                   style: TextStyle(
-                    color: Colors.white54,
+                    color: S256Colors.textLight,
                     fontSize: 15,
                   ),
                   textAlign: TextAlign.center,
@@ -86,7 +79,7 @@ class SupportView extends StatelessWidget {
                 title: 'Website',
                 subtitle: 'sha256coin.eu',
                 url: 'https://sha256coin.eu',
-                color: Colors.blue,
+                color: S256Colors.primary,
               ),
 
               _buildEmailCard(
@@ -167,15 +160,8 @@ class SupportView extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      S256Colors.accent.withValues(alpha: 0.2),
-                      S256Colors.accent.withValues(alpha: 0.05),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
+                  color: S256Colors.cardBg,
+                  borderRadius: BorderRadius.circular(2),
                 ),
                 child: Row(
                   children: [
@@ -234,12 +220,12 @@ class SupportView extends StatelessWidget {
         builder: (BuildContext builderContext) {
           return InkWell(
             onTap: () => _openUrl(context ?? builderContext, url, title),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(2),
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(2),
                 border: Border.all(
                   color: Colors.white.withValues(alpha: 0.1),
                   width: 1,
@@ -251,7 +237,7 @@ class SupportView extends StatelessWidget {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: color,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                     child: Icon(
                       icon,
@@ -332,9 +318,9 @@ class SupportView extends StatelessWidget {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF1A1A1A),
+          backgroundColor: S256Colors.cardBg,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(2),
             side: BorderSide(
               color: S256Colors.accent.withValues(alpha: 0.3),
               width: 1,
@@ -372,7 +358,7 @@ class SupportView extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(2),
                   border: Border.all(
                     color: S256Colors.accent.withValues(alpha: 0.3),
                   ),
@@ -401,7 +387,7 @@ class SupportView extends StatelessWidget {
                             backgroundColor: Colors.green,
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(2),
                             ),
                           ),
                         );
@@ -454,12 +440,12 @@ class SupportView extends StatelessWidget {
             _showEmailDialog(context, email);
           }
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(2),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(2),
             border: Border.all(
               color: Colors.white.withValues(alpha: 0.1),
               width: 1,
@@ -471,7 +457,7 @@ class SupportView extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.red,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(2),
                 ),
                 child: const Icon(
                   Icons.email,
@@ -520,9 +506,9 @@ class SupportView extends StatelessWidget {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF1A1A1A),
+          backgroundColor: S256Colors.cardBg,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(2),
             side: BorderSide(
               color: S256Colors.accent.withValues(alpha: 0.3),
               width: 1,
@@ -558,7 +544,7 @@ class SupportView extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(2),
                   border: Border.all(
                     color: S256Colors.accent.withValues(alpha: 0.3),
                   ),
@@ -586,7 +572,7 @@ class SupportView extends StatelessWidget {
                             backgroundColor: Colors.green,
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(2),
                             ),
                           ),
                         );

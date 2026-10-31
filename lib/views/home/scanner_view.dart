@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:s256_wallet/widgets/app_background.dart';
 
 /// Scans a QR code and pops with its full text.
 class ScannerView extends StatefulWidget {
@@ -178,7 +179,7 @@ class _ScannerViewState extends State<ScannerView> with WidgetsBindingObserver {
                     ),
                     decoration: BoxDecoration(
                       color: Colors.black54,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                     child: const Text(
                       'Align QR code within the frame',
@@ -221,7 +222,7 @@ class _ScannerViewState extends State<ScannerView> with WidgetsBindingObserver {
                   height: scanArea,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
@@ -319,7 +320,7 @@ class _ScannerViewState extends State<ScannerView> with WidgetsBindingObserver {
           Icon(
             errorIcon,
             size: 80,
-            color: Colors.white54,
+            color: S256Colors.textLight,
           ),
           const SizedBox(height: 24),
           Text(

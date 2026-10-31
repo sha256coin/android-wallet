@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:s256_wallet/config.dart';
+import 'package:s256_wallet/widgets/app_background.dart';
 
 class TransactionModal extends StatefulWidget {
   final String txid;
@@ -51,8 +52,8 @@ class _TransactionModalState extends State<TransactionModal> {
   Widget build(BuildContext context) {
     return ClipRRect(
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(16.0),
-          topRight: Radius.circular(16.0),
+          topLeft: Radius.circular(2),
+          topRight: Radius.circular(2),
         ),
         child: Container(
           color: Colors.black,
@@ -75,7 +76,7 @@ class _TransactionModalState extends State<TransactionModal> {
                                 'Transaction Details',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white54,
+                                  color: S256Colors.textLight,
                                 ),
                               ),
                               const SizedBox(height: 16),

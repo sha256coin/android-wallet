@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:s256_wallet/widgets/app_background.dart';
 
 class TransactionTile extends StatelessWidget {
   final dynamic tx;
@@ -35,7 +36,7 @@ class TransactionTile extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(2),
       ),
       child: Material(
         color: Colors.transparent,
@@ -78,9 +79,9 @@ class TransactionTile extends StatelessWidget {
           ),
           subtitle: Text(
             formattedDate,
-            style: const TextStyle(color: Colors.white54, fontSize: 12),
+            style: const TextStyle(color: S256Colors.textLight, fontSize: 12),
           ),
-          trailing: const Icon(Icons.chevron_right, color: Colors.white38),
+          trailing: const Icon(Icons.chevron_right, color: S256Colors.textLight),
           onTap: onTap,
         ),
       ),

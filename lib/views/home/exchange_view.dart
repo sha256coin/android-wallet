@@ -30,12 +30,7 @@ class ExchangeView extends StatelessWidget {
                             color: S256Colors.accent.withValues(alpha: 0.5),
                             width: 2,
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: S256Colors.accent.withValues(alpha: 0.2),
-                              blurRadius: 20,
-                            ),
-                          ],
+                          
                         ),
                         child: Image.asset(
                           'assets/logo.png',
@@ -67,7 +62,7 @@ class ExchangeView extends StatelessWidget {
                   title: 'Disclaimer',
                   body:
                       'This wallet is non-custodial software. You keep sole control of private keys and transactions. The app does not execute, route, or guarantee exchange trades. Any external platform access is user-initiated and outside wallet control.',
-                  color: Colors.blue,
+                  color: S256Colors.primary,
                 ),
                 const SizedBox(height: 12),
                 _infoCard(
@@ -138,7 +133,7 @@ class ExchangeView extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(2),
         border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Row(
@@ -185,18 +180,18 @@ class ExchangeView extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       child: InkWell(
         onTap: () => _openUrl(link),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(2),
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(2),
             border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
           ),
           child: Row(
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(2),
                 child: Image.asset(
                   imageIcon,
                   width: 42,

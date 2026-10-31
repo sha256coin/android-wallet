@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:s256_wallet/widgets/app_background.dart';
 
+/// Primary: amber fill with dark text. Secondary: hairline outline.
+/// Square corners, like the website's buttons.
 class ButtonWidget extends StatelessWidget {
   final String? text;
   final IconData? icon;
@@ -20,36 +23,32 @@ class ButtonWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isDisabled = onPressed == null;
 
+    final Color fill = isDisabled
+        ? S256Colors.surface2
+        : (isPrimary ? S256Colors.primary : Colors.transparent);
+    final Color content = isDisabled
+        ? S256Colors.textLight
+        : (isPrimary ? S256Colors.onPrimary : S256Colors.text);
+    final BorderSide border = isPrimary && !isDisabled
+        ? BorderSide.none
+        : const BorderSide(color: S256Colors.lineStrong);
+
     final buttonStyle = ButtonStyle(
-      backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
-        if (states.contains(WidgetState.disabled)) {
-          return isPrimary
-              ? const Color.fromARGB(255, 25, 25, 25).withValues(alpha: 0.5)
-              : Colors.white.withValues(alpha: 0.5);
-        }
-        return isPrimary
-            ? const Color.fromARGB(255, 25, 25, 25)
-            : Colors.white;
-      }),
-      foregroundColor: WidgetStateProperty.resolveWith<Color>((states) {
-        if (states.contains(WidgetState.disabled)) {
-          return (isPrimary ? Colors.white : Colors.black).withValues(alpha: 0.5);
-        }
-        return isPrimary ? Colors.white : Colors.black;
-      }),
+      backgroundColor: WidgetStateProperty.all(fill),
+      foregroundColor: WidgetStateProperty.all(content),
+      elevation: WidgetStateProperty.all(0),
       padding: WidgetStateProperty.all(
         const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
       shape: WidgetStateProperty.all(
         RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(2),
+          side: border,
         ),
       ),
       overlayColor: WidgetStateProperty.resolveWith<Color?>((states) {
         if (states.contains(WidgetState.pressed)) {
-          return isPrimary
-              ? Colors.white.withValues(alpha: 0.1)
-              : Colors.black.withValues(alpha: 0.1);
+          return content.withValues(alpha: 0.12);
         }
         return null;
       }),
@@ -58,22 +57,12 @@ class ButtonWidget extends StatelessWidget {
     if (isCompact && icon != null) {
       return Container(
         decoration: BoxDecoration(
-          color: isDisabled
-              ? (isPrimary
-              ? const Color.fromARGB(255, 25, 25, 25).withValues(alpha: 0.5)
-              : Colors.white.withValues(alpha: 0.5))
-              : (isPrimary
-              ? const Color.fromARGB(255, 25, 25, 25)
-              : Colors.white),
-          borderRadius: BorderRadius.circular(8),
+          color: fill,
+          borderRadius: BorderRadius.circular(2),
+          border: border == BorderSide.none ? null : Border.all(color: S256Colors.lineStrong),
         ),
         child: IconButton(
-          icon: Icon(
-            icon,
-            color: isDisabled
-                ? (isPrimary ? Colors.white : Colors.black).withValues(alpha: 0.5)
-                : (isPrimary ? Colors.white : Colors.black),
-          ),
+          icon: Icon(icon, color: content),
           onPressed: onPressed,
         ),
       );
@@ -89,19 +78,15 @@ class ButtonWidget extends StatelessWidget {
           if (icon != null)
             Padding(
               padding: const EdgeInsets.only(right: 8.0),
-              child: Icon(
-                icon,
-                color: isDisabled
-                    ? (isPrimary ? Colors.white : Colors.black).withValues(alpha: 0.5)
-                    : (isPrimary ? Colors.white : Colors.black),
-              ),
+              child: Icon(icon, color: content),
             ),
           Text(
             (text ?? 'Button').toUpperCase(),
             style: TextStyle(
-              color: isDisabled
-                  ? (isPrimary ? Colors.white : Colors.black).withValues(alpha: 0.5)
-                  : null,
+              fontFamily: 'ChakraPetch',
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.6,
+              color: content,
             ),
           ),
         ],
