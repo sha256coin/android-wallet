@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:s256_wallet/theme/s256_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -88,15 +89,15 @@ class _ReceiveViewState extends State<ReceiveView>
       SnackBar(
         content: const Row(
           children: [
-            Icon(Icons.check_circle, color: Colors.white, size: 20),
+            Icon(Icons.check_circle, color: S256Colors.text, size: 20),
             SizedBox(width: 8),
             Text('Address copied to clipboard!'),
           ],
         ),
-        backgroundColor: Colors.green.shade600,
+        backgroundColor: S256Colors.surface2,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: S256Theme.borderRadius,
         ),
         margin: const EdgeInsets.all(20),
         duration: const Duration(seconds: 2),
@@ -154,17 +155,17 @@ class _ReceiveViewState extends State<ReceiveView>
       barrierDismissible: false,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Colors.grey.shade900,
+          backgroundColor: S256Colors.surface2,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: S256Theme.borderRadius,
           ),
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: S256Colors.darkBg,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: S256Theme.borderRadius,
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.1),
+                color: S256Colors.text.withValues(alpha: 0.1),
               ),
             ),
             child: Form(
@@ -179,7 +180,7 @@ class _ReceiveViewState extends State<ReceiveView>
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: S256Colors.primary.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: S256Theme.borderRadius,
                         ),
                         child: const Icon(
                           Icons.request_quote,
@@ -191,7 +192,7 @@ class _ReceiveViewState extends State<ReceiveView>
                       const Text(
                         'Request Amount',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: S256Colors.text,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
@@ -204,23 +205,23 @@ class _ReceiveViewState extends State<ReceiveView>
                   TextFormField(
                     controller: amountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(color: S256Colors.text),
                     decoration: InputDecoration(
                       labelText: 'Amount (S256)',
-                      labelStyle: TextStyle(color: Colors.grey.shade400),
+                      labelStyle: TextStyle(color: S256Colors.textLight),
                       prefixIcon: Icon(Icons.monetization_on, color: S256Colors.primary),
                       filled: true,
-                      fillColor: Colors.black.withValues(alpha: 0.3),
+                      fillColor: S256Colors.darkBg.withValues(alpha: 0.3),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(2),
-                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                        borderRadius: S256Theme.borderRadius,
+                        borderSide: BorderSide(color: S256Colors.text.withValues(alpha: 0.1)),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(2),
-                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                        borderRadius: S256Theme.borderRadius,
+                        borderSide: BorderSide(color: S256Colors.text.withValues(alpha: 0.1)),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: S256Theme.borderRadius,
                         borderSide: BorderSide(color: S256Colors.primary),
                       ),
                     ),
@@ -240,23 +241,23 @@ class _ReceiveViewState extends State<ReceiveView>
                     controller: messageController,
                     maxLines: 3,
                     maxLength: PaymentRequest.maxMessageLength,
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(color: S256Colors.text),
                     decoration: InputDecoration(
                       labelText: 'Message (optional)',
-                      labelStyle: TextStyle(color: Colors.grey.shade400),
+                      labelStyle: TextStyle(color: S256Colors.textLight),
                       prefixIcon: Icon(Icons.message, color: S256Colors.primary),
                       filled: true,
-                      fillColor: Colors.black.withValues(alpha: 0.3),
+                      fillColor: S256Colors.darkBg.withValues(alpha: 0.3),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(2),
-                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                        borderRadius: S256Theme.borderRadius,
+                        borderSide: BorderSide(color: S256Colors.text.withValues(alpha: 0.1)),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(2),
-                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                        borderRadius: S256Theme.borderRadius,
+                        borderSide: BorderSide(color: S256Colors.text.withValues(alpha: 0.1)),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: S256Theme.borderRadius,
                         borderSide: BorderSide(color: S256Colors.primary),
                       ),
                     ),
@@ -266,7 +267,7 @@ class _ReceiveViewState extends State<ReceiveView>
                   Text(
                     'This will create a payment request with your address',
                     style: TextStyle(
-                      color: Colors.grey.shade500,
+                      color: S256Colors.textLight,
                       fontSize: 12,
                     ),
                   ),
@@ -284,14 +285,14 @@ class _ReceiveViewState extends State<ReceiveView>
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(2),
-                              side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                              borderRadius: S256Theme.borderRadius,
+                              side: BorderSide(color: S256Colors.text.withValues(alpha: 0.2)),
                             ),
                           ),
                           child: const Text(
                             'Cancel',
                             style: TextStyle(
-                              color: Colors.white70,
+                              color: S256Colors.textLight,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -315,7 +316,7 @@ class _ReceiveViewState extends State<ReceiveView>
                             backgroundColor: S256Colors.primary,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(2),
+                              borderRadius: S256Theme.borderRadius,
                             ),
                           ),
                           child: const Text(
@@ -358,7 +359,7 @@ class _ReceiveViewState extends State<ReceiveView>
           backgroundColor: S256Colors.primary,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: S256Theme.borderRadius,
           ),
           margin: const EdgeInsets.all(20),
         ),
@@ -380,7 +381,7 @@ class _ReceiveViewState extends State<ReceiveView>
 
     return Theme(
       data: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: Colors.black,
+        scaffoldBackgroundColor: S256Colors.darkBg,
       ),
       child: Scaffold(
         extendBodyBehindAppBar: true,
@@ -390,12 +391,12 @@ class _ReceiveViewState extends State<ReceiveView>
           leading: Container(
             margin: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(2),
+              color: S256Colors.text.withValues(alpha: 0.1),
+              borderRadius: S256Theme.borderRadius,
             ),
             child: IconButton(
               icon: const Icon(Icons.arrow_back_ios_new,
-                  color: Colors.white,
+                  color: S256Colors.text,
                   size: 20
               ),
               onPressed: () {
@@ -407,7 +408,7 @@ class _ReceiveViewState extends State<ReceiveView>
           title: const Text(
             'Receive S256',
             style: TextStyle(
-              color: Colors.white,
+              color: S256Colors.text,
               fontSize: 20,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.5,
@@ -446,7 +447,7 @@ class _ReceiveViewState extends State<ReceiveView>
                                     color: S256Colors.cardBg,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.2),
+                                      color: S256Colors.text.withValues(alpha: 0.2),
                                       width: 2,
                                     ),
                                   ),
@@ -462,7 +463,7 @@ class _ReceiveViewState extends State<ReceiveView>
                           const Text(
                             'S256 Wallet',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: S256Colors.text,
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                               letterSpacing: -0.5,
@@ -475,10 +476,10 @@ class _ReceiveViewState extends State<ReceiveView>
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.green.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(2),
+                              color: S256Colors.success.withValues(alpha: 0.2),
+                              borderRadius: S256Theme.borderRadius,
                               border: Border.all(
-                                color: Colors.green.withValues(alpha: 0.3),
+                                color: S256Colors.success.withValues(alpha: 0.3),
                               ),
                             ),
                             child: const Row(
@@ -487,13 +488,13 @@ class _ReceiveViewState extends State<ReceiveView>
                                 Icon(
                                   Icons.circle,
                                   size: 8,
-                                  color: Colors.green,
+                                  color: S256Colors.success,
                                 ),
                                 SizedBox(width: 6),
                                 Text(
                                   'Ready to receive',
                                   style: TextStyle(
-                                    color: Colors.green,
+                                    color: S256Colors.success,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -516,7 +517,7 @@ class _ReceiveViewState extends State<ReceiveView>
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: S256Colors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(2),
+                            borderRadius: S256Theme.borderRadius,
                             border: Border.all(
                               color: S256Colors.primary.withValues(alpha: 0.3),
                             ),
@@ -536,7 +537,7 @@ class _ReceiveViewState extends State<ReceiveView>
                                     Text(
                                       'Requesting $_requestedAmount S256',
                                       style: const TextStyle(
-                                        color: Colors.white,
+                                        color: S256Colors.text,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -545,7 +546,7 @@ class _ReceiveViewState extends State<ReceiveView>
                                       Text(
                                         _requestMessage!,
                                         style: TextStyle(
-                                          color: Colors.grey.shade400,
+                                          color: S256Colors.textLight,
                                           fontSize: 12,
                                         ),
                                         maxLines: 1,
@@ -573,10 +574,10 @@ class _ReceiveViewState extends State<ReceiveView>
                       Container(
                         width: qrSize + 40,
                         padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(2),
-                          
+                        decoration: const BoxDecoration(
+                          // Pure white behind the QR code so every scanner reads it.
+                          color: Color(0xFFFFFFFF),
+                          borderRadius: S256Theme.borderRadius,
                         ),
                         child: Column(
                           children: [
@@ -597,10 +598,10 @@ class _ReceiveViewState extends State<ReceiveView>
                                   height: 50,
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(2),
+                                    color: S256Colors.text,
+                                    borderRadius: S256Theme.borderRadius,
                                     border: Border.all(
-                                      color: Colors.black.withValues(alpha: 0.1),
+                                      color: S256Colors.darkBg.withValues(alpha: 0.1),
                                       width: 2,
                                     ),
                                   ),
@@ -615,7 +616,7 @@ class _ReceiveViewState extends State<ReceiveView>
                             Text(
                               'Scan to send S256',
                               style: TextStyle(
-                                color: Colors.grey.shade700,
+                                color: S256Colors.textLight,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -633,9 +634,9 @@ class _ReceiveViewState extends State<ReceiveView>
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: S256Colors.cardBg,
-                            borderRadius: BorderRadius.circular(2),
+                            borderRadius: S256Theme.borderRadius,
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.1),
+                              color: S256Colors.text.withValues(alpha: 0.1),
                             ),
                           ),
                           child: Column(
@@ -652,7 +653,7 @@ class _ReceiveViewState extends State<ReceiveView>
                                   const Text(
                                     'Wallet Address',
                                     style: TextStyle(
-                                      color: Colors.white70,
+                                      color: S256Colors.textLight,
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -663,12 +664,12 @@ class _ReceiveViewState extends State<ReceiveView>
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.3),
-                                  borderRadius: BorderRadius.circular(2),
+                                  color: S256Colors.darkBg.withValues(alpha: 0.3),
+                                  borderRadius: S256Theme.borderRadius,
                                   border: Border.all(
                                     color: _isAddressCopied
-                                        ? Colors.green.withValues(alpha: 0.5)
-                                        : Colors.white.withValues(alpha: 0.1),
+                                        ? S256Colors.success.withValues(alpha: 0.5)
+                                        : S256Colors.text.withValues(alpha: 0.1),
                                   ),
                                 ),
                                 child: Row(
@@ -677,8 +678,8 @@ class _ReceiveViewState extends State<ReceiveView>
                                       child: Text(
                                         address,
                                         style: const TextStyle(
-                                          color: Colors.white,
-                                          fontFamily: 'monospace',
+                                          color: S256Colors.text,
+                                          fontFamily: S256Theme.mono,
                                           fontSize: 13,
                                         ),
                                         maxLines: 2,
@@ -688,12 +689,12 @@ class _ReceiveViewState extends State<ReceiveView>
                                     const SizedBox(width: 8),
                                     InkWell(
                                       onTap: () => _copyToClipboard(address),
-                                      borderRadius: BorderRadius.circular(2),
+                                      borderRadius: S256Theme.borderRadius,
                                       child: Container(
                                         padding: const EdgeInsets.all(8),
                                         decoration: BoxDecoration(
-                                          color: _isAddressCopied ? Colors.green.shade600 : S256Colors.primary,
-                                          borderRadius: BorderRadius.circular(2),
+                                          color: _isAddressCopied ? S256Colors.success : S256Colors.primary,
+                                          borderRadius: S256Theme.borderRadius,
                                         ),
                                         child: Icon(
                                           _isAddressCopied ? Icons.check : Icons.copy,
@@ -753,7 +754,7 @@ class _ReceiveViewState extends State<ReceiveView>
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: S256Colors.primary.withValues(alpha: 0.05),
-                            borderRadius: BorderRadius.circular(2),
+                            borderRadius: S256Theme.borderRadius,
                             border: Border.all(
                               color: S256Colors.primary.withValues(alpha: 0.1),
                             ),
@@ -774,7 +775,7 @@ class _ReceiveViewState extends State<ReceiveView>
                                     const Text(
                                       'How to receive S256',
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: S256Colors.text,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -783,7 +784,7 @@ class _ReceiveViewState extends State<ReceiveView>
                                     Text(
                                       'Share your wallet address or QR code with the sender. Always verify the address before confirming any transaction to ensure funds are sent to the correct location.',
                                       style: TextStyle(
-                                        color: Colors.grey.shade400,
+                                        color: S256Colors.textLight,
                                         fontSize: 13,
                                         height: 1.5,
                                       ),
@@ -806,13 +807,13 @@ class _ReceiveViewState extends State<ReceiveView>
                               Icon(
                                 Icons.account_balance_wallet_outlined,
                                 size: 80,
-                                color: Colors.grey.shade600,
+                                color: S256Colors.textLight,
                               ),
                               const SizedBox(height: 16),
                               Text(
                                 'No wallet address available',
                                 style: TextStyle(
-                                  color: Colors.grey.shade400,
+                                  color: S256Colors.textLight,
                                   fontSize: 18,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -821,7 +822,7 @@ class _ReceiveViewState extends State<ReceiveView>
                               Text(
                                 'Please create or import a wallet first',
                                 style: TextStyle(
-                                  color: Colors.grey.shade600,
+                                  color: S256Colors.textLight,
                                   fontSize: 14,
                                 ),
                               ),
@@ -850,12 +851,12 @@ class _ReceiveViewState extends State<ReceiveView>
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(2),
+      borderRadius: S256Theme.borderRadius,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
           color: gradient.first,
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: S256Theme.borderRadius,
           
         ),
         child: Row(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:s256_wallet/theme/s256_theme.dart';
 import 'package:s256_wallet/widgets/app_background.dart';
 
 class EmptyState extends StatelessWidget {
@@ -71,7 +72,7 @@ class EmptyState extends StatelessWidget {
               child: Text(
                 title,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: S256Colors.text,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
@@ -126,13 +127,13 @@ class EmptyState extends StatelessWidget {
                   label: Text(actionText!),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: S256Colors.accent,
-                    foregroundColor: Colors.black,
+                    foregroundColor: S256Colors.onPrimary,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
                       vertical: 12,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: S256Theme.borderRadius,
                     ),
                   ),
                 ),

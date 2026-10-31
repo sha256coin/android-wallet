@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:s256_wallet/theme/s256_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:s256_wallet/widgets/app_background.dart';
@@ -142,7 +143,7 @@ class _ScannerViewState extends State<ScannerView> with WidgetsBindingObserver {
                       IconButton(
                         icon: const Icon(
                           Icons.close,
-                          color: Colors.white,
+                          color: S256Colors.text,
                           size: 30,
                         ),
                         onPressed: () => Navigator.pop(context),
@@ -156,7 +157,7 @@ class _ScannerViewState extends State<ScannerView> with WidgetsBindingObserver {
                           return IconButton(
                             icon: Icon(
                               torchEnabled ? Icons.flash_on : Icons.flash_off,
-                              color: Colors.white,
+                              color: S256Colors.text,
                               size: 28,
                             ),
                             onPressed: () => controller.toggleTorch(),
@@ -179,12 +180,12 @@ class _ScannerViewState extends State<ScannerView> with WidgetsBindingObserver {
                     ),
                     decoration: BoxDecoration(
                       color: Colors.black54,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: S256Theme.borderRadius,
                     ),
                     child: const Text(
                       'Align QR code within the frame',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: S256Colors.text,
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
@@ -221,8 +222,8 @@ class _ScannerViewState extends State<ScannerView> with WidgetsBindingObserver {
                   width: scanArea,
                   height: scanArea,
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(2),
+                    color: S256Colors.text,
+                    borderRadius: S256Theme.borderRadius,
                   ),
                 ),
               ),
@@ -237,7 +238,7 @@ class _ScannerViewState extends State<ScannerView> with WidgetsBindingObserver {
             height: scanArea,
             child: CustomPaint(
               painter: ScannerOverlayPainter(
-                borderColor: Colors.white,
+                borderColor: S256Colors.text,
                 borderWidth: 3,
                 cornerLength: 30,
                 cornerRadius: 16,
@@ -273,13 +274,13 @@ class _ScannerViewState extends State<ScannerView> with WidgetsBindingObserver {
                         gradient: LinearGradient(
                           colors: [
                             Colors.transparent,
-                            Colors.white.withValues(alpha: 0.8),
+                            S256Colors.text.withValues(alpha: 0.8),
                             Colors.transparent,
                           ],
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.white.withValues(alpha: 0.5),
+                            color: S256Colors.text.withValues(alpha: 0.5),
                             blurRadius: 10,
                             spreadRadius: 2,
                           ),
@@ -327,7 +328,7 @@ class _ScannerViewState extends State<ScannerView> with WidgetsBindingObserver {
             errorMessage,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: Colors.white,
+              color: S256Colors.text,
               fontSize: 16,
             ),
           ),
@@ -349,7 +350,7 @@ class _ScannerViewState extends State<ScannerView> with WidgetsBindingObserver {
             ),
             style: ElevatedButton.styleFrom(
               foregroundColor: Colors.black,
-              backgroundColor: Colors.white,
+              backgroundColor: S256Colors.text,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
           ),
@@ -378,7 +379,7 @@ class ScannerOverlayPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = animationValue > 0 ? Colors.green : borderColor
+      ..color = animationValue > 0 ? S256Colors.success : borderColor
       ..strokeWidth = borderWidth
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;

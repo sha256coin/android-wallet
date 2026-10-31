@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:s256_wallet/widgets/transaction_widget.dart';
 import 'package:s256_wallet/widgets/skeleton_loader.dart';
 import 'package:s256_wallet/widgets/empty_state.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:s256_wallet/models/price_info.dart';
@@ -13,7 +12,11 @@ import 'package:s256_wallet/views/home/send_view.dart';
 import 'package:s256_wallet/widgets/button_widget.dart';
 import 'package:s256_wallet/modals/transaction_modal.dart';
 import 'package:s256_wallet/views/home/transactions_view.dart';
+import 'package:s256_wallet/theme/s256_theme.dart';
 import 'package:s256_wallet/widgets/app_background.dart';
+import 'package:s256_wallet/widgets/balance_chart.dart';
+import 'package:s256_wallet/widgets/hud.dart';
+import 'package:s256_wallet/widgets/status_strip.dart';
 
 class WalletView extends StatefulWidget {
   const WalletView({super.key});
@@ -23,7 +26,6 @@ class WalletView extends StatefulWidget {
 }
 
 class _WalletViewState extends State<WalletView> with SingleTickerProviderStateMixin {
-  int? _touchedIndex;
   late AnimationController _pendingAnimationController;
   late Animation<double> _pendingAnimation;
   Timer? _refreshTimer;
@@ -83,7 +85,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                   ? 'Checking for confirmations...'
                   : 'Syncing wallet data...',
               style: const TextStyle(
-                color: Colors.white,
+                color: S256Colors.text,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -94,7 +96,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: S256Theme.borderRadius,
           side: BorderSide(
             color: S256Colors.accent.withValues(alpha: 0.3),
             width: 1,
@@ -119,12 +121,12 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
         SnackBar(
           content: const Row(
             children: [
-              Icon(Icons.check_circle, color: Colors.green, size: 18),
+              Icon(Icons.check_circle, color: S256Colors.success, size: 18),
               SizedBox(width: 12),
               Text(
                 'Wallet synced',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: S256Colors.text,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
@@ -135,9 +137,9 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
           duration: const Duration(seconds: 1),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: S256Theme.borderRadius,
             side: BorderSide(
-              color: Colors.green.withValues(alpha: 0.3),
+              color: S256Colors.success.withValues(alpha: 0.3),
               width: 1,
             ),
           ),
@@ -152,7 +154,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: const BoxDecoration(
-          color: Color.fromARGB(255, 25, 25, 25),
+          color: S256Colors.cardBg,
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(2),
             topRight: Radius.circular(2),
@@ -163,273 +165,165 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
     );
   }
 
-  // The explorer's per-transaction "balance" is a running total that restarts
-  // at 0 for every page of 50, so it is wrong for any wallet with more
-  // transactions than one page. The chart is rebuilt from the real balance
-  // instead: the newest transaction ends at [currentBalance] and each earlier
-  // point is the later balance minus that transaction's net amount.
-  List<FlSpot> _generateDataPoints(List<dynamic> transactions, double? currentBalance) {
-    final end = currentBalance ?? 0.0;
-    if (transactions.isEmpty) {
-      // Show a flat line at the current balance
-      return [FlSpot(0, end), FlSpot(1, end)];
-    }
+  Widget _buildBalanceCard(
+    BlockchainProvider blockchainProvider,
+    WalletProvider walletProvider,
+    List<dynamic> transactions,
+    double? displayBalance,
+    double? confirmedBalance,
+    bool hasPending,
+    double? price,
+  ) {
+    final info = blockchainProvider.priceInfo;
+    final history = BalanceHistory.fromExplorer(
+      transactions,
+      confirmedBalance: confirmedBalance ?? displayBalance ?? 0,
+      totalBalance: displayBalance,
+    );
 
-    // transactions are newest first; walk back from the current balance
-    final balances = <double>[];
-    var after = end;
-    for (final tx in transactions) {
-      balances.add(after < 0 ? 0.0 : after);
-      final net = (tx['amount'] as num?)?.toDouble() ?? 0.0;
-      after = double.parse((after - net).toStringAsFixed(8));
-    }
-
-    // First point: the balance before the oldest loaded transaction
-    // (0 when the whole history is loaded).
-    final spots = <FlSpot>[FlSpot(0, after < 0 ? 0.0 : after)];
-    final oldestFirst = balances.reversed.toList();
-    for (int i = 0; i < oldestFirst.length; i++) {
-      spots.add(FlSpot(i + 1.0, oldestFirst[i]));
-    }
-    return spots;
-  }
-
-  LineChartData _buildChartData(List<dynamic> transactions, double? currentBalance) {
-    final spots = _generateDataPoints(transactions, currentBalance);
-
-    // Calculate bounds
-    double maxY = currentBalance ?? 1.0;
-    if (spots.isNotEmpty) {
-      final maxSpotY = spots.map((s) => s.y).reduce((a, b) => a > b ? a : b);
-      maxY = maxSpotY > maxY ? maxSpotY : maxY;
-    }
-    maxY = maxY * 1.1; // Add 10% padding
-    if (maxY == 0) maxY = 1; // Ensure we have some height
-
-    final maxX = spots.length > 1 ? spots.length - 1.0 : 1.0;
-
-    return LineChartData(
-      backgroundColor: Colors.transparent,
-
-      // Touch behavior
-      lineTouchData: LineTouchData(
-        enabled: true,
-        handleBuiltInTouches: true,
-        touchCallback: (FlTouchEvent event, LineTouchResponse? touchResponse) {
-          if (event is FlTapUpEvent || event is FlPanUpdateEvent) {
-            setState(() {
-              if (touchResponse?.lineBarSpots != null &&
-                  touchResponse!.lineBarSpots!.isNotEmpty) {
-                _touchedIndex = touchResponse.lineBarSpots!.first.spotIndex;
-              }
-            });
-          } else if (event is FlPanEndEvent || event is FlTapCancelEvent) {
-            setState(() {
-              _touchedIndex = null;
-            });
-          }
-        },
-        touchTooltipData: LineTouchTooltipData(
-          getTooltipColor: (spot) => Colors.black87,
-          tooltipPadding: const EdgeInsets.all(8),
-          tooltipMargin: 8,
-          getTooltipItems: (touchedSpots) {
-            return touchedSpots.map((LineBarSpot touchedSpot) {
-              if (touchedSpot.x == 0) {
-                return LineTooltipItem(
-                  'Before these transactions\n',
-                  const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  children: [
-                    TextSpan(
-                      text: '${touchedSpot.y.toStringAsFixed(4)} S256',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.normal,
-                      ),
+    return HudCard(
+      brackets: true,
+      borderColor: S256Colors.lineStrong,
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const HudLabel('Wallet balance'),
+              if (hasPending) ...[
+                const SizedBox(width: 10),
+                FadeTransition(
+                  opacity: _pendingAnimation,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: S256Colors.glow,
+                      borderRadius: S256Theme.borderRadius,
+                      border: Border.all(color: S256Colors.primary.withValues(alpha: 0.5)),
                     ),
-                  ],
-                );
-              }
-
-              final txIndex = touchedSpot.x.toInt() - 1;
-              if (txIndex >= 0 && txIndex < transactions.length) {
-                // final reversedTx = transactions.reversed.toList(); // Unused variable
-                // final tx = reversedTx[txIndex]; // Unused variable
-                return LineTooltipItem(
-                  'Transaction ${txIndex + 1}\n',
-                  const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  children: [
-                    TextSpan(
-                      text: '${touchedSpot.y.toStringAsFixed(4)} S256',
-                      style: const TextStyle(
-                        color: S256Colors.accent,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.access_time, color: S256Colors.primary, size: 12),
+                        SizedBox(width: 6),
+                        Text(
+                          'PENDING',
+                          style: TextStyle(fontFamily: S256Theme.mono, color: S256Colors.primary, fontSize: 10, letterSpacing: 1.2),
+                        ),
+                      ],
                     ),
-                  ],
-                );
-              }
-
-              return LineTooltipItem(
-                '${touchedSpot.y.toStringAsFixed(4)} S256',
-                const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              );
-            }).toList();
-          },
-        ),
-        getTouchedSpotIndicator: (barData, spotIndexes) {
-          return spotIndexes.map((index) {
-            return TouchedSpotIndicatorData(
-              FlLine(
-                color: S256Colors.accent.withValues(alpha: 0.5),
-                strokeWidth: 2,
-                dashArray: [5, 5],
-              ),
-              FlDotData(
-                show: true,
-                getDotPainter: (spot, percent, bar, index) {
-                  return FlDotCirclePainter(
-                    radius: 5,
-                    color: S256Colors.accent,
-                    strokeWidth: 2,
-                    strokeColor: Colors.white,
-                  );
-                },
-              ),
-            );
-          }).toList();
-        },
-      ),
-
-      // Grid
-      gridData: FlGridData(
-        show: true,
-        drawVerticalLine: false,
-        horizontalInterval: maxY / 5,
-        getDrawingHorizontalLine: (value) {
-          return FlLine(
-            color: Colors.white.withValues(alpha: 0.1),
-            strokeWidth: 0.5,
-          );
-        },
-      ),
-
-      // Titles
-      titlesData: FlTitlesData(
-        show: true,
-        bottomTitles: AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
-        leftTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            reservedSize: 45,
-            interval: maxY / 5,
-            getTitlesWidget: (value, meta) {
-              if (value == meta.max) return const SizedBox.shrink();
-
-              String text;
-              if (value >= 1000) {
-                text = '${(value / 1000).toStringAsFixed(1)}k';
-              } else if (value >= 1) {
-                text = value.toStringAsFixed(0);
-              } else {
-                text = value.toStringAsFixed(2);
-              }
-
-              return Padding(
-                padding: const EdgeInsets.only(right: 5),
-                child: Text(
-                  text,
-                  style: const TextStyle(
-                    color: S256Colors.textLight,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
                   ),
-                  textAlign: TextAlign.right,
                 ),
-              );
-            },
-          ),
-        ),
-        rightTitles: AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
-        topTitles: AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
-      ),
-
-      // Border
-      borderData: FlBorderData(
-        show: false,
-      ),
-
-      // Min/Max values
-      minX: 0,
-      maxX: maxX,
-      minY: 0,
-      maxY: maxY,
-
-      // Line bars
-      lineBarsData: [
-        LineChartBarData(
-          spots: spots,
-          isCurved: true,
-          curveSmoothness: 0.3,
-          preventCurveOverShooting: true,
-          color: S256Colors.accent,
-          barWidth: 2.5,
-          isStrokeCapRound: true,
-
-          // Don't show dots by default, only on touch
-          dotData: FlDotData(
-            show: true,
-            getDotPainter: (spot, percent, bar, index) {
-              // Only show dot if it's touched or it's the last point
-              if (index == _touchedIndex || index == spots.length - 1) {
-                return FlDotCirclePainter(
-                  radius: 4,
-                  color: S256Colors.accent,
-                  strokeWidth: 2,
-                  strokeColor: Colors.white,
-                );
-              }
-              return FlDotCirclePainter(
-                radius: 0,
-                color: Colors.transparent,
-              );
-            },
-          ),
-
-          // Gradient below line
-          belowBarData: BarAreaData(
-            show: true,
-            gradient: LinearGradient(
-              colors: [
-                S256Colors.accent.withValues(alpha: 0.3),
-                S256Colors.accent.withValues(alpha: 0.05),
               ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
+            ],
+          ),
+          const SizedBox(height: 12),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                PlatinumText(
+                  displayBalance?.toStringAsFixed(4) ?? '0.0000',
+                  style: const TextStyle(
+                    fontFamily: S256Theme.display,
+                    fontSize: 40,
+                    fontWeight: FontWeight.w700,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'S256',
+                  style: TextStyle(
+                    fontFamily: S256Theme.display,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: S256Colors.primary,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-      ],
+          // Value in USD, only while the explorer has a price
+          if (price != null && displayBalance != null) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 10,
+              runSpacing: 4,
+              children: [
+                Text(
+                  '≈ ${PriceInfo.formatUsd(displayBalance * price)} USD',
+                  style: const TextStyle(fontFamily: S256Theme.mono, color: S256Colors.accent, fontSize: 14),
+                ),
+                if (info.change24h case final change?)
+                  Text(
+                    '${PriceInfo.formatChange(change)} 24H',
+                    style: TextStyle(
+                      fontFamily: S256Theme.mono,
+                      fontSize: 11,
+                      color: change >= 0 ? S256Colors.success : S256Colors.danger,
+                    ),
+                  ),
+                // Not a live price: say when it last traded
+                if (info.isLastTrade)
+                  Text(
+                    'LAST TRADED ${PriceInfo.formatDate(info.lastTraded!).toUpperCase()}',
+                    style: const TextStyle(
+                      fontFamily: S256Theme.mono,
+                      color: S256Colors.textLight,
+                      fontSize: 10.5,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+          if (hasPending && confirmedBalance != displayBalance) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Confirmed: ${confirmedBalance?.toStringAsFixed(4) ?? '0.0000'} S256',
+              style: const TextStyle(fontFamily: S256Theme.mono, color: S256Colors.textLight, fontSize: 12),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              '${walletProvider.pendingTransactionsCount} transaction'
+              '${walletProvider.pendingTransactionsCount > 1 ? 's' : ''} pending. '
+              'The balance updates after confirmation.',
+              style: const TextStyle(color: S256Colors.textLight, fontSize: 12),
+            ),
+          ],
+          const SizedBox(height: 20),
+          if (history.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(Icons.show_chart, size: 40, color: S256Colors.lineStrong),
+                    SizedBox(height: 8),
+                    Text(
+                      'No activity yet',
+                      style: TextStyle(color: S256Colors.text, fontSize: 15, fontWeight: FontWeight.w500),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Your balance chart will appear here',
+                      style: TextStyle(color: S256Colors.textLight, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            BalanceChart(history: history, height: 150),
+        ],
+      ),
     );
   }
 
@@ -463,9 +357,11 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
             child: AppBackground(
               child: SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 20, bottom: 20),
+                  padding: const EdgeInsets.only(bottom: 20),
                   child: Column(
                     children: [
+                      const StatusStrip(),
+                      const SizedBox(height: 16),
                       if (blockchainProvider.isLoading || walletProvider.isLoading) ...[
                         const WalletBalanceSkeleton(),
                         // Action Buttons Skeleton
@@ -478,7 +374,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                                 child: SkeletonLoader(
                                   width: double.infinity,
                                   height: 48,
-                                  borderRadius: BorderRadius.circular(2),
+                                  borderRadius: S256Theme.borderRadius,
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -486,7 +382,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                                 child: SkeletonLoader(
                                   width: double.infinity,
                                   height: 48,
-                                  borderRadius: BorderRadius.circular(2),
+                                  borderRadius: S256Theme.borderRadius,
                                 ),
                               ),
                             ],
@@ -503,7 +399,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                               SkeletonLoader(
                                 width: 150,
                                 height: 20,
-                                borderRadius: BorderRadius.circular(2),
+                                borderRadius: S256Theme.borderRadius,
                               ),
                               const SizedBox(height: 12),
                               ...List.generate(3, (index) => const TransactionSkeleton()),
@@ -512,218 +408,28 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                         ),
                         ),
                       ] else ...[
-                        // Balance Display
-                        Column(
-                          children: [
-                            const SizedBox(height: 20),
-
-                            const SizedBox(height: 8),
-
-                            // S256 Balance with pending indicator
-                            Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                                  textBaseline: TextBaseline.alphabetic,
-                                  children: [
-                                    if (hasPending)
-                                      AnimatedBuilder(
-                                        animation: _pendingAnimation,
-                                        builder: (context, child) {
-                                          return Icon(
-                                            Icons.access_time,
-                                            color: Colors.orange.withValues(alpha: _pendingAnimation.value),
-                                            size: 20,
-                                          );
-                                        },
-                                      ),
-                                    if (hasPending) const SizedBox(width: 8),
-                                    Text(
-                                      displayBalance?.toStringAsFixed(4) ?? '0.0000',
-                                      style: TextStyle(
-                                        color: hasPending
-                                            ? Colors.orange.withValues(alpha: 0.9)
-                                            : Colors.white,
-                                        fontFamily: 'ChakraPetch',
-                                        fontSize: 40,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'S256',
-                                      style: TextStyle(
-                                        color: hasPending
-                                            ? Colors.orange.withValues(alpha: 0.7)
-                                            : S256Colors.textLight,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-
-                            // Value in USD, only while the explorer has a price
-                            if (price != null && displayBalance != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 6),
-                                child: Text.rich(
-                                  TextSpan(
-                                    children: [
-                                      TextSpan(text: '≈ ${PriceInfo.formatUsd(displayBalance * price)}'),
-                                      // Not a live price: say when it last traded
-                                      if (blockchainProvider.priceInfo.isLastTrade)
-                                        TextSpan(
-                                          text: '  last traded '
-                                              '${PriceInfo.formatDate(blockchainProvider.priceInfo.lastTraded!)}',
-                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
-                                        ),
-                                    ],
-                                  ),
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontFamily: 'ChakraPetch',
-                                    color: hasPending
-                                        ? Colors.orange.withValues(alpha: 0.8)
-                                        : S256Colors.textLight,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-
-                            // Show confirmed balance if different from display balance
-                            if (hasPending && confirmedBalance != displayBalance)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 8),
-                                child: Text(
-                                  'Confirmed: ${confirmedBalance?.toStringAsFixed(4) ?? '0.0000'} S256',
-                                  style: const TextStyle(
-                                    color: S256Colors.textLight,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-
-                            const SizedBox(height: 30),
-
-                            // Chart Container
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              child: SilverCard(
-                                padding: const EdgeInsets.only(
-                                  top: 20,
-                                  bottom: 10,
-                                  left: 5,
-                                  right: 20,
-                                ),
-                                child: SizedBox(
-                                  height: 200,
-                              child: transactions.isEmpty
-                                  ? Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.show_chart,
-                                      size: 48,
-                                      color: S256Colors.accent.withValues(alpha: 0.3),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    const Text(
-                                      'No Activity Yet',
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    const Text(
-                                      'Your balance chart will appear here',
-                                      style: TextStyle(
-                                        color: S256Colors.textLight,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                                  : LineChart(
-                                _buildChartData(transactions, confirmedBalance ?? displayBalance),
-                                duration: const Duration(milliseconds: 250),
-                              ),
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 10),
-
-                            // Pending Transactions Pills
-                            if (hasPending)
-                              Container(
-                                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-                                child: Column(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                      decoration: BoxDecoration(
-                                        color: Colors.orange.withValues(alpha: 0.15),
-                                        borderRadius: BorderRadius.circular(2),
-                                        border: Border.all(
-                                          color: Colors.orange.withValues(alpha: 0.3),
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          SizedBox(
-                                            width: 16,
-                                            height: 16,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              valueColor: AlwaysStoppedAnimation<Color>(
-                                                Colors.orange.withValues(alpha: 0.8),
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            '${walletProvider.pendingTransactionsCount} transaction${walletProvider.pendingTransactionsCount > 1 ? 's' : ''} pending',
-                                            style: const TextStyle(
-                                              color: Colors.orange,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Balance will update after confirmation',
-                                      style: TextStyle(
-                                        color: Colors.orange.withValues(alpha: 0.6),
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                            Text(
-                              'Last sync: $timestamp',
-                              style: const TextStyle(
-                                color: S256Colors.textLight,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
+                        // Balance card: brackets, platinum figures, price and chart
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _buildBalanceCard(
+                            blockchainProvider,
+                            walletProvider,
+                            transactions,
+                            displayBalance,
+                            confirmedBalance,
+                            hasPending,
+                            price,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'LAST SYNC $timestamp'.toUpperCase(),
+                          style: const TextStyle(
+                            fontFamily: S256Theme.mono,
+                            color: S256Colors.textLight,
+                            fontSize: 10,
+                            letterSpacing: 1,
+                          ),
                         ),
 
                         // Action Buttons
@@ -778,25 +484,18 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text(
-                                    'Recent Transactions',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
+                                  const HudLabel('Recent transactions'),
                                   if (hasPending)
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: Colors.orange.withValues(alpha: 0.2),
-                                        borderRadius: BorderRadius.circular(2),
+                                        color: S256Colors.primary.withValues(alpha: 0.2),
+                                        borderRadius: S256Theme.borderRadius,
                                       ),
                                       child: Text(
                                         '${walletProvider.pendingTransactionsCount} pending',
                                         style: const TextStyle(
-                                          color: Colors.orange,
+                                          color: S256Colors.primary,
                                           fontSize: 10,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -813,10 +512,10 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                                       margin: const EdgeInsets.only(bottom: 8),
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: Colors.orange.withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(2),
+                                        color: S256Colors.primary.withValues(alpha: 0.1),
+                                        borderRadius: S256Theme.borderRadius,
                                         border: Border.all(
-                                          color: Colors.orange.withValues(alpha: 0.2),
+                                          color: S256Colors.primary.withValues(alpha: 0.2),
                                           width: 1,
                                         ),
                                       ),
@@ -825,12 +524,12 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                                           Container(
                                             padding: const EdgeInsets.all(8),
                                             decoration: BoxDecoration(
-                                              color: Colors.orange.withValues(alpha: 0.2),
+                                              color: S256Colors.primary.withValues(alpha: 0.2),
                                               shape: BoxShape.circle,
                                             ),
                                             child: const Icon(
                                               Icons.arrow_upward,
-                                              color: Colors.orange,
+                                              color: S256Colors.primary,
                                               size: 16,
                                             ),
                                           ),
@@ -842,7 +541,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                                                 Text(
                                                   'Sent to ${pendingTx.toAddress.substring(0, 8)}...${pendingTx.toAddress.substring(pendingTx.toAddress.length - 6)}',
                                                   style: const TextStyle(
-                                                    color: Colors.white,
+                                                    color: S256Colors.text,
                                                     fontSize: 13,
                                                     fontWeight: FontWeight.w500,
                                                   ),
@@ -851,7 +550,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                                                 Text(
                                                   'Pending confirmation',
                                                   style: TextStyle(
-                                                    color: Colors.orange.withValues(alpha: 0.8),
+                                                    color: S256Colors.primary.withValues(alpha: 0.8),
                                                     fontSize: 11,
                                                   ),
                                                 ),
@@ -864,7 +563,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                                               Text(
                                                 '-${pendingTx.amount.toStringAsFixed(4)}',
                                                 style: const TextStyle(
-                                                  color: Colors.orange,
+                                                  color: S256Colors.primary,
                                                   fontSize: 13,
                                                   fontWeight: FontWeight.bold,
                                                 ),
@@ -872,7 +571,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                                               Text(
                                                 'S256',
                                                 style: TextStyle(
-                                                  color: Colors.orange.withValues(alpha: 0.6),
+                                                  color: S256Colors.primary.withValues(alpha: 0.6),
                                                   fontSize: 10,
                                                 ),
                                               ),
@@ -883,7 +582,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                                     ),
                                 ),
                                 if (transactions.isNotEmpty)
-                                  const Divider(color: Colors.white12, height: 20),
+                                  const Divider(color: S256Colors.line, height: 20),
                               ],
 
                               if (transactions.isEmpty && !hasPending)

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:s256_wallet/theme/s256_theme.dart';
 import 'package:intl/intl.dart';
 import 'package:s256_wallet/widgets/app_background.dart';
 
@@ -25,7 +26,7 @@ class TransactionTile extends StatelessWidget {
     final amount = _formatAmount(amountValue.toDouble());
     final isReceived = amountValue > 0;
     final icon = isReceived ? Icons.arrow_downward : Icons.arrow_upward;
-    final color = isReceived ? Colors.green : Colors.red;
+    final color = isReceived ? S256Colors.success : S256Colors.danger;
     int timestampInSeconds = tx['timestamp'];
     DateTime dateTime =
         DateTime.fromMillisecondsSinceEpoch(timestampInSeconds * 1000);
@@ -35,8 +36,8 @@ class TransactionTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(2),
+        color: S256Colors.text.withValues(alpha: 0.05),
+        borderRadius: S256Theme.borderRadius,
       ),
       child: Material(
         color: Colors.transparent,

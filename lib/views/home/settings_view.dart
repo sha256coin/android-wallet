@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:s256_wallet/theme/s256_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +14,7 @@ import 'package:s256_wallet/views/home/network_info_view.dart';
 import 'package:s256_wallet/views/home/regulatory_notice_view.dart';
 import 'package:s256_wallet/services/biometric_service.dart';
 import 'package:s256_wallet/widgets/app_background.dart';
+import 'package:s256_wallet/widgets/hud.dart';
 
 const String _pendingMigrationInterruptedNoticeKey =
   'pending_migration_interrupted_notice';
@@ -90,7 +92,7 @@ class _SettingsViewState extends State<SettingsView> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('$_biometricType enabled'),
-              backgroundColor: Colors.green,
+              backgroundColor: S256Colors.success,
             ),
           );
         }
@@ -99,7 +101,7 @@ class _SettingsViewState extends State<SettingsView> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Authentication failed'),
-              backgroundColor: Colors.red,
+              backgroundColor: S256Colors.danger,
             ),
           );
         }
@@ -114,7 +116,7 @@ class _SettingsViewState extends State<SettingsView> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('$_biometricType disabled'),
-            backgroundColor: Colors.orange,
+            backgroundColor: S256Colors.primary,
           ),
         );
       }
@@ -138,7 +140,7 @@ class _SettingsViewState extends State<SettingsView> {
               Icon(Icons.auto_awesome, color: S256Colors.primary),
               SizedBox(width: 8),
               Text('Upgrade to Seed Phrase',
-                  style: TextStyle(color: Colors.white, fontSize: 18)),
+                  style: TextStyle(color: S256Colors.text, fontSize: 18)),
             ],
           ),
           content: Column(
@@ -147,12 +149,12 @@ class _SettingsViewState extends State<SettingsView> {
             children: [
               const Text(
                 'This will generate a new BIP39 seed phrase and move your funds to it.',
-                style: TextStyle(color: Colors.white70),
+                style: TextStyle(color: S256Colors.textLight),
               ),
               const SizedBox(height: 16),
               const Text('Choose Phrase Length:',
                   style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)),
+                      color: S256Colors.text, fontWeight: FontWeight.bold)),
               Row(
                 children: [
                   Radio<int>(
@@ -161,7 +163,7 @@ class _SettingsViewState extends State<SettingsView> {
                     onChanged: (val) => setState(() => migrationSeedWords = val!),
                     activeColor: S256Colors.primary,
                   ),
-                  const Text('12 Words', style: TextStyle(color: Colors.white70)),
+                  const Text('12 Words', style: TextStyle(color: S256Colors.textLight)),
                   const SizedBox(width: 20),
                   Radio<int>(
                     value: 24,
@@ -169,14 +171,14 @@ class _SettingsViewState extends State<SettingsView> {
                     onChanged: (val) => setState(() => migrationSeedWords = val!),
                     activeColor: S256Colors.primary,
                   ),
-                  const Text('24 Words', style: TextStyle(color: Colors.white70)),
+                  const Text('24 Words', style: TextStyle(color: S256Colors.textLight)),
                 ],
               ),
               const SizedBox(height: 12),
               const Text(
                 'Note: If you have a balance, a transaction will be sent to sweep your funds to the new address. Fees will apply.',
                 style: TextStyle(
-                    color: Colors.orange,
+                    color: S256Colors.primary,
                     fontSize: 12,
                     fontStyle: FontStyle.italic),
               ),
@@ -191,7 +193,7 @@ class _SettingsViewState extends State<SettingsView> {
               onPressed: () => Navigator.pop(context, true),
               style: ElevatedButton.styleFrom(
                   backgroundColor: S256Colors.primary,
-                  foregroundColor: Colors.black),
+                  foregroundColor: S256Colors.onPrimary),
               child: const Text('Start Migration'),
             ),
           ],
@@ -248,7 +250,7 @@ class _SettingsViewState extends State<SettingsView> {
                   const SizedBox(width: 14),
                   Expanded(
                     child: Text(message,
-                        style: const TextStyle(color: Colors.white70)),
+                        style: const TextStyle(color: S256Colors.textLight)),
                   ),
                 ],
               );
@@ -381,7 +383,7 @@ class _SettingsViewState extends State<SettingsView> {
                     const SizedBox(width: 14),
                     Expanded(
                       child: Text(message,
-                          style: const TextStyle(color: Colors.white70)),
+                          style: const TextStyle(color: S256Colors.textLight)),
                     ),
                   ],
                 );
@@ -477,7 +479,7 @@ class _SettingsViewState extends State<SettingsView> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Migration complete. New wallet loaded.'),
-            backgroundColor: Colors.green,
+            backgroundColor: S256Colors.success,
           ),
         );
       } catch (e) {
@@ -616,7 +618,7 @@ class _SettingsViewState extends State<SettingsView> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Migration backup data copied to clipboard'),
-        backgroundColor: Colors.green,
+        backgroundColor: S256Colors.success,
       ),
     );
   }
@@ -646,7 +648,7 @@ class _SettingsViewState extends State<SettingsView> {
                   Expanded(
                     child: Text(
                       'Review New Seed Wallet',
-                      style: TextStyle(color: Colors.white, fontSize: 18),
+                      style: TextStyle(color: S256Colors.text, fontSize: 18),
                     ),
                   ),
                 ],
@@ -660,30 +662,30 @@ class _SettingsViewState extends State<SettingsView> {
                       amountToSend > 0.00001
                           ? 'The app generated a new wallet. Save it now, then confirm sending ${amountToSend.toStringAsFixed(8)} S256 to this new address.'
                           : 'The app generated a new wallet. Save it now and confirm loading this wallet.',
-                      style: const TextStyle(color: Colors.white70),
+                      style: const TextStyle(color: S256Colors.textLight),
                     ),
                     const SizedBox(height: 12),
                     const Text('New Address', style: TextStyle(color: S256Colors.primary, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
                     SelectableText(
                       newAddress,
-                      style: const TextStyle(color: Colors.white60, fontFamily: 'monospace', fontSize: 12),
+                      style: const TextStyle(color: S256Colors.textLight, fontFamily: S256Theme.mono, fontSize: 12),
                     ),
                     const SizedBox(height: 10),
                     if (mnemonic.isNotEmpty) ...[
-                      const Text('Seed Phrase', style: TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold)),
+                      const Text('Seed Phrase', style: TextStyle(color: S256Colors.primary, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
                       SelectableText(
                         mnemonic,
-                        style: const TextStyle(color: Colors.white60, fontSize: 12),
+                        style: const TextStyle(color: S256Colors.textLight, fontSize: 12),
                       ),
                       const SizedBox(height: 10),
                     ],
-                    const Text('Private Key (WIF)', style: TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold)),
+                    const Text('Private Key (WIF)', style: TextStyle(color: S256Colors.primary, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
                     SelectableText(
                       privateKey,
-                      style: const TextStyle(color: Colors.white60, fontFamily: 'monospace', fontSize: 11),
+                      style: const TextStyle(color: S256Colors.textLight, fontFamily: S256Theme.mono, fontSize: 11),
                     ),
                     const SizedBox(height: 8),
                     Align(
@@ -704,12 +706,12 @@ class _SettingsViewState extends State<SettingsView> {
                     if (amountToSend > 0.00001)
                       Text(
                         'Planned sweep amount: ${amountToSend.toStringAsFixed(8)} S256',
-                        style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w600),
+                        style: const TextStyle(color: S256Colors.textLight, fontWeight: FontWeight.w600),
                       ),
                     const SizedBox(height: 8),
                     const Text(
                       'Important: complete migration in one go. Avoid switching apps, locking the screen, or navigating away until migration finishes.',
-                      style: TextStyle(color: Colors.redAccent, fontSize: 12, fontStyle: FontStyle.italic),
+                      style: TextStyle(color: S256Colors.danger, fontSize: 12, fontStyle: FontStyle.italic),
                     ),
                     const SizedBox(height: 8),
                     CheckboxListTile(
@@ -724,7 +726,7 @@ class _SettingsViewState extends State<SettingsView> {
                       controlAffinity: ListTileControlAffinity.leading,
                       title: const Text(
                         'I saved the new seed phrase/private key and want to continue.',
-                        style: TextStyle(color: Colors.white70, fontSize: 13),
+                        style: TextStyle(color: S256Colors.textLight, fontSize: 13),
                       ),
                     ),
                   ],
@@ -737,7 +739,7 @@ class _SettingsViewState extends State<SettingsView> {
                 ),
                 ElevatedButton(
                   onPressed: hasSaved ? () => Navigator.of(dialogContext).pop(true) : null,
-                  style: ElevatedButton.styleFrom(backgroundColor: S256Colors.primary, foregroundColor: Colors.black),
+                  style: ElevatedButton.styleFrom(backgroundColor: S256Colors.primary, foregroundColor: S256Colors.onPrimary),
                   child: Text(amountToSend > 0.00001 ? 'Continue & Send' : 'Load New Wallet'),
                 ),
               ],
@@ -759,12 +761,12 @@ class _SettingsViewState extends State<SettingsView> {
         backgroundColor: S256Colors.cardBg,
         title: const Row(
           children: [
-            Icon(Icons.info_outline, color: Colors.orangeAccent),
+            Icon(Icons.info_outline, color: S256Colors.primary),
             SizedBox(width: 8),
             Expanded(
               child: Text(
                 'Migration Interrupted',
-                style: TextStyle(color: Colors.white, fontSize: 18),
+                style: TextStyle(color: S256Colors.text, fontSize: 18),
               ),
             ),
           ],
@@ -775,12 +777,12 @@ class _SettingsViewState extends State<SettingsView> {
           children: [
             Text(
               'Migration could not continue because app context changed in the middle of the flow.',
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(color: S256Colors.textLight),
             ),
             SizedBox(height: 12),
             Text(
               'Please retry migration in one continuous session and avoid switching apps or opening other screens until it completes.',
-              style: TextStyle(color: Colors.redAccent, fontStyle: FontStyle.italic),
+              style: TextStyle(color: S256Colors.danger, fontStyle: FontStyle.italic),
             ),
           ],
         ),
@@ -788,8 +790,8 @@ class _SettingsViewState extends State<SettingsView> {
           ElevatedButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.black,
+              backgroundColor: S256Colors.danger,
+              foregroundColor: S256Colors.onPrimary,
             ),
             child: const Text('OK, I Will Retry'),
           ),
@@ -811,18 +813,18 @@ class _SettingsViewState extends State<SettingsView> {
             Icon(Icons.info_outline, color: S256Colors.primary),
             SizedBox(width: 8),
             Expanded(
-              child: Text('Migration Cancelled', style: TextStyle(color: Colors.white, fontSize: 18)),
+              child: Text('Migration Cancelled', style: TextStyle(color: S256Colors.text, fontSize: 18)),
             ),
           ],
         ),
         content: const Text(
           'Migration was cancelled before sending. If you want to continue, please start migration again and complete it in one go.',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: S256Colors.textLight),
         ),
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            style: ElevatedButton.styleFrom(backgroundColor: S256Colors.primary, foregroundColor: Colors.black),
+            style: ElevatedButton.styleFrom(backgroundColor: S256Colors.primary, foregroundColor: S256Colors.onPrimary),
             child: const Text('OK'),
           ),
         ],
@@ -846,12 +848,12 @@ class _SettingsViewState extends State<SettingsView> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              backgroundColor: const Color.fromARGB(255, 25, 25, 25),
+              backgroundColor: S256Colors.cardBg,
               title: const Row(
                 children: [
-                  Icon(Icons.warning_amber_rounded, color: Colors.orangeAccent),
+                  Icon(Icons.warning_amber_rounded, color: S256Colors.primary),
                   SizedBox(width: 8),
-                  Expanded(child: Text('Backup Required', style: TextStyle(color: Colors.white))),
+                  Expanded(child: Text('Backup Required', style: TextStyle(color: S256Colors.text))),
                 ],
               ),
               content: SingleChildScrollView(
@@ -861,22 +863,22 @@ class _SettingsViewState extends State<SettingsView> {
                   children: [
                     const Text(
                       'Migration succeeded. Before continuing, confirm you saved the new wallet recovery details.',
-                      style: TextStyle(color: Colors.white70),
+                      style: TextStyle(color: S256Colors.textLight),
                     ),
                     const SizedBox(height: 12),
                     const Text('New Address', style: TextStyle(color: S256Colors.primary, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
-                    SelectableText(newAddress, style: const TextStyle(color: Colors.white60, fontFamily: 'monospace', fontSize: 12)),
+                    SelectableText(newAddress, style: const TextStyle(color: S256Colors.textLight, fontFamily: S256Theme.mono, fontSize: 12)),
                     const SizedBox(height: 10),
                     if (mnemonic.isNotEmpty) ...[
-                      const Text('Seed Phrase', style: TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold)),
+                      const Text('Seed Phrase', style: TextStyle(color: S256Colors.primary, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
-                      SelectableText(mnemonic, style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                      SelectableText(mnemonic, style: const TextStyle(color: S256Colors.textLight, fontSize: 12)),
                       const SizedBox(height: 10),
                     ],
-                    const Text('Private Key (WIF)', style: TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold)),
+                    const Text('Private Key (WIF)', style: TextStyle(color: S256Colors.primary, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
-                    SelectableText(privateKey, style: const TextStyle(color: Colors.white60, fontFamily: 'monospace', fontSize: 11)),
+                    SelectableText(privateKey, style: const TextStyle(color: S256Colors.textLight, fontFamily: S256Theme.mono, fontSize: 11)),
                     const SizedBox(height: 8),
                     Align(
                       alignment: Alignment.centerRight,
@@ -887,8 +889,8 @@ class _SettingsViewState extends State<SettingsView> {
                           privateKey: privateKey,
                           mnemonic: mnemonic,
                         ),
-                        icon: const Icon(Icons.copy, size: 16, color: Colors.orangeAccent),
-                        label: const Text('Copy All Backup Data', style: TextStyle(color: Colors.orangeAccent)),
+                        icon: const Icon(Icons.copy, size: 16, color: S256Colors.primary),
+                        label: const Text('Copy All Backup Data', style: TextStyle(color: S256Colors.primary)),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -899,12 +901,12 @@ class _SettingsViewState extends State<SettingsView> {
                           hasSaved = value ?? false;
                         });
                       },
-                      activeColor: Colors.orangeAccent,
+                      activeColor: S256Colors.primary,
                       contentPadding: EdgeInsets.zero,
                       controlAffinity: ListTileControlAffinity.leading,
                       title: const Text(
                         'I saved my new seed phrase and private key securely.',
-                        style: TextStyle(color: Colors.white70, fontSize: 13),
+                        style: TextStyle(color: S256Colors.textLight, fontSize: 13),
                       ),
                     ),
                   ],
@@ -914,8 +916,8 @@ class _SettingsViewState extends State<SettingsView> {
                 ElevatedButton(
                   onPressed: hasSaved ? () => Navigator.of(dialogContext).pop(true) : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: hasSaved ? Colors.orangeAccent : Colors.grey,
-                    foregroundColor: Colors.black,
+                    backgroundColor: hasSaved ? S256Colors.primary : S256Colors.textLight,
+                    foregroundColor: S256Colors.onPrimary,
                   ),
                   child: const Text('I Saved It - Continue'),
                 ),
@@ -942,12 +944,12 @@ class _SettingsViewState extends State<SettingsView> {
         backgroundColor: S256Colors.cardBg,
         title: Row(
           children: [
-            const Icon(Icons.check_circle, color: Colors.greenAccent),
+            const Icon(Icons.check_circle, color: S256Colors.success),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 hasSweepTx ? 'Migration Transaction Sent' : 'Migration Complete',
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: S256Colors.text),
               ),
             ),
           ],
@@ -960,24 +962,24 @@ class _SettingsViewState extends State<SettingsView> {
               hasSweepTx
                   ? 'Funds were sent to your new seed wallet. The new wallet is now loaded.'
                   : 'No funds needed to be moved. Your new seed wallet is now loaded.',
-              style: const TextStyle(color: Colors.white70),
+              style: const TextStyle(color: S256Colors.textLight),
             ),
             const SizedBox(height: 10),
             const Text('New Address', style: TextStyle(color: S256Colors.primary, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            SelectableText(newAddress, style: const TextStyle(color: Colors.white60, fontFamily: 'monospace', fontSize: 12)),
+            SelectableText(newAddress, style: const TextStyle(color: S256Colors.textLight, fontFamily: S256Theme.mono, fontSize: 12)),
             if (txid.isNotEmpty) ...[
               const SizedBox(height: 10),
               const Text('Transaction ID', style: TextStyle(color: S256Colors.primary, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
-              SelectableText(txid, style: const TextStyle(color: Colors.white60, fontFamily: 'monospace', fontSize: 12)),
+              SelectableText(txid, style: const TextStyle(color: S256Colors.textLight, fontFamily: S256Theme.mono, fontSize: 12)),
             ],
           ],
         ),
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            style: ElevatedButton.styleFrom(backgroundColor: S256Colors.primary, foregroundColor: Colors.black),
+            style: ElevatedButton.styleFrom(backgroundColor: S256Colors.primary, foregroundColor: S256Colors.onPrimary),
             child: const Text('OK'),
           ),
         ],
@@ -993,9 +995,9 @@ class _SettingsViewState extends State<SettingsView> {
         backgroundColor: S256Colors.cardBg,
         title: const Row(
           children: [
-            Icon(Icons.schedule, color: Colors.amberAccent),
+            Icon(Icons.schedule, color: S256Colors.accent),
             SizedBox(width: 8),
-            Expanded(child: Text('Migration Delayed', style: TextStyle(color: Colors.white, fontSize: 18))),
+            Expanded(child: Text('Migration Delayed', style: TextStyle(color: S256Colors.text, fontSize: 18))),
           ],
         ),
         content: Column(
@@ -1004,19 +1006,19 @@ class _SettingsViewState extends State<SettingsView> {
           children: [
             Text(
               'You have $pendingCount pending transaction${pendingCount == 1 ? '' : 's'}. Migration is temporarily blocked until they finish confirming or clear from the mempool.',
-              style: const TextStyle(color: Colors.white70),
+              style: const TextStyle(color: S256Colors.textLight),
             ),
             const SizedBox(height: 12),
             const Text(
               'This avoids changing the wallet address while unconfirmed activity is still being tracked.',
-              style: TextStyle(color: Colors.orangeAccent, fontStyle: FontStyle.italic),
+              style: TextStyle(color: S256Colors.primary, fontStyle: FontStyle.italic),
             ),
           ],
         ),
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.amberAccent, foregroundColor: Colors.black),
+            style: ElevatedButton.styleFrom(backgroundColor: S256Colors.accent, foregroundColor: S256Colors.onPrimary),
             child: const Text('OK'),
           ),
         ],
@@ -1036,9 +1038,9 @@ class _SettingsViewState extends State<SettingsView> {
         backgroundColor: S256Colors.cardBg,
         title: const Row(
           children: [
-            Icon(Icons.error_outline, color: Colors.redAccent),
+            Icon(Icons.error_outline, color: S256Colors.danger),
             SizedBox(width: 8),
-            Expanded(child: Text('Migration Failed', style: TextStyle(color: Colors.white, fontSize: 18))),
+            Expanded(child: Text('Migration Failed', style: TextStyle(color: S256Colors.text, fontSize: 18))),
           ],
         ),
         content: Column(
@@ -1047,27 +1049,27 @@ class _SettingsViewState extends State<SettingsView> {
           children: [
             const Text(
               'Seed migration could not be completed. Your existing wallet remains active.',
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(color: S256Colors.textLight),
             ),
             const SizedBox(height: 12),
-            const Text('Reason:', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            const Text('Reason:', style: TextStyle(color: S256Colors.text, fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.35),
-                borderRadius: BorderRadius.circular(2),
-                border: Border.all(color: Colors.redAccent.withValues(alpha: 0.35)),
+                color: S256Colors.darkBg.withValues(alpha: 0.35),
+                borderRadius: S256Theme.borderRadius,
+                border: Border.all(color: S256Colors.danger.withValues(alpha: 0.35)),
               ),
-              child: Text(message, style: const TextStyle(color: Colors.white60, fontSize: 12)),
+              child: Text(message, style: const TextStyle(color: S256Colors.textLight, fontSize: 12)),
             ),
           ],
         ),
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: S256Colors.danger, foregroundColor: S256Colors.text),
             child: const Text('OK'),
           ),
         ],
@@ -1093,12 +1095,12 @@ class _SettingsViewState extends State<SettingsView> {
         backgroundColor: S256Colors.cardBg,
         title: const Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.orangeAccent),
+            Icon(Icons.warning_amber_rounded, color: S256Colors.primary),
             SizedBox(width: 8),
             Expanded(
               child: Text(
                 'Broadcast Succeeded, Finalization Failed',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: S256Colors.text),
               ),
             ),
           ],
@@ -1110,20 +1112,20 @@ class _SettingsViewState extends State<SettingsView> {
             children: [
               const Text(
                 'Migration transaction(s) were already broadcast. Keep your new wallet credentials and TXIDs now, then recover with the new seed wallet if needed.',
-                style: TextStyle(color: Colors.orangeAccent),
+                style: TextStyle(color: S256Colors.primary),
               ),
               const SizedBox(height: 10),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.35),
-                  borderRadius: BorderRadius.circular(2),
-                  border: Border.all(color: Colors.white24),
+                  color: S256Colors.darkBg.withValues(alpha: 0.35),
+                  borderRadius: S256Theme.borderRadius,
+                  border: Border.all(color: S256Colors.lineStrong),
                 ),
                 child: Text(
                   error,
-                  style: const TextStyle(color: Colors.white60, fontSize: 12),
+                  style: const TextStyle(color: S256Colors.textLight, fontSize: 12),
                 ),
               ),
               const SizedBox(height: 12),
@@ -1137,16 +1139,16 @@ class _SettingsViewState extends State<SettingsView> {
                 constraints: const BoxConstraints(maxHeight: 130),
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(2),
-                  border: Border.all(color: Colors.white24),
+                  color: S256Colors.darkBg,
+                  borderRadius: S256Theme.borderRadius,
+                  border: Border.all(color: S256Colors.lineStrong),
                 ),
                 child: SingleChildScrollView(
                   child: SelectableText(
                     txidText,
                     style: const TextStyle(
                       color: S256Colors.primary,
-                      fontFamily: 'monospace',
+                      fontFamily: S256Theme.mono,
                       fontSize: 12,
                     ),
                   ),
@@ -1174,8 +1176,8 @@ class _SettingsViewState extends State<SettingsView> {
           ElevatedButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orangeAccent,
-              foregroundColor: Colors.black,
+              backgroundColor: S256Colors.primary,
+              foregroundColor: S256Colors.onPrimary,
             ),
             child: const Text('Continue to Backup'),
           ),
@@ -1211,15 +1213,15 @@ class _SettingsViewState extends State<SettingsView> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              backgroundColor: const Color.fromARGB(255, 25, 25, 25),
+              backgroundColor: S256Colors.cardBg,
               title: const Row(
                 children: [
-                  Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
+                  Icon(Icons.warning_amber_rounded, color: S256Colors.danger),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Partial Batch Sent',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: S256Colors.text),
                     ),
                   ),
                 ],
@@ -1233,31 +1235,31 @@ class _SettingsViewState extends State<SettingsView> {
                       totalBatches != null && totalBatches > 0
                           ? 'Migration sweep failed after $completedBatches of $totalBatches batch(es) were broadcast.'
                           : 'Migration sweep failed after one or more batches were already broadcast.',
-                      style: const TextStyle(color: Colors.orangeAccent),
+                      style: const TextStyle(color: S256Colors.primary),
                     ),
                     const SizedBox(height: 10),
                     const Text(
                       'Important: some funds may already be moving to your NEW wallet. Save these credentials now before closing this dialog.',
-                      style: TextStyle(color: Colors.white70),
+                      style: TextStyle(color: S256Colors.textLight),
                     ),
                     const SizedBox(height: 8),
                     const Text(
                       'Your current wallet stays active right now. You can retry sweeping remaining funds, or send them manually to the new address.',
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                      style: TextStyle(color: S256Colors.textLight, fontSize: 12),
                     ),
                     const SizedBox(height: 10),
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.orange.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(2),
-                        border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.35)),
+                        color: S256Colors.primary.withValues(alpha: 0.12),
+                        borderRadius: S256Theme.borderRadius,
+                        border: Border.all(color: S256Colors.primary.withValues(alpha: 0.35)),
                       ),
                       child: const Text(
                         'Next step required: after this dialog, keep using your current wallet and send any remaining funds to the NEW address shown below. '
                         'Use the new seed phrase wallet details for recovery going forward.',
-                        style: TextStyle(color: Colors.orangeAccent, fontSize: 12),
+                        style: TextStyle(color: S256Colors.primary, fontSize: 12),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -1272,8 +1274,8 @@ class _SettingsViewState extends State<SettingsView> {
                     SelectableText(
                       newAddress,
                       style: const TextStyle(
-                        color: Colors.white60,
-                        fontFamily: 'monospace',
+                        color: S256Colors.textLight,
+                        fontFamily: S256Theme.mono,
                         fontSize: 12,
                       ),
                     ),
@@ -1282,21 +1284,21 @@ class _SettingsViewState extends State<SettingsView> {
                       const Text(
                         'Seed Phrase',
                         style: TextStyle(
-                          color: Colors.orangeAccent,
+                          color: S256Colors.primary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 4),
                       SelectableText(
                         mnemonic,
-                        style: const TextStyle(color: Colors.white60, fontSize: 12),
+                        style: const TextStyle(color: S256Colors.textLight, fontSize: 12),
                       ),
                       const SizedBox(height: 10),
                     ],
                     const Text(
                       'Private Key (WIF)',
                       style: TextStyle(
-                        color: Colors.orangeAccent,
+                        color: S256Colors.primary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1304,8 +1306,8 @@ class _SettingsViewState extends State<SettingsView> {
                     SelectableText(
                       privateKey,
                       style: const TextStyle(
-                        color: Colors.white60,
-                        fontFamily: 'monospace',
+                        color: S256Colors.textLight,
+                        fontFamily: S256Theme.mono,
                         fontSize: 11,
                       ),
                     ),
@@ -1319,10 +1321,10 @@ class _SettingsViewState extends State<SettingsView> {
                           privateKey: privateKey,
                           mnemonic: mnemonic,
                         ),
-                        icon: const Icon(Icons.copy, size: 16, color: Colors.orangeAccent),
+                        icon: const Icon(Icons.copy, size: 16, color: S256Colors.primary),
                         label: const Text(
                           'Copy All Backup Data',
-                          style: TextStyle(color: Colors.orangeAccent),
+                          style: TextStyle(color: S256Colors.primary),
                         ),
                       ),
                     ),
@@ -1341,16 +1343,16 @@ class _SettingsViewState extends State<SettingsView> {
                         constraints: const BoxConstraints(maxHeight: 140),
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.black,
-                          borderRadius: BorderRadius.circular(2),
-                          border: Border.all(color: Colors.white24),
+                          color: S256Colors.darkBg,
+                          borderRadius: S256Theme.borderRadius,
+                          border: Border.all(color: S256Colors.lineStrong),
                         ),
                         child: SingleChildScrollView(
                           child: SelectableText(
                             batchTxids.join('\n'),
                             style: const TextStyle(
                               fontSize: 12,
-                              fontFamily: 'monospace',
+                              fontFamily: S256Theme.mono,
                               color: S256Colors.primary,
                             ),
                           ),
@@ -1365,12 +1367,12 @@ class _SettingsViewState extends State<SettingsView> {
                           hasSaved = value ?? false;
                         });
                       },
-                      activeColor: Colors.orangeAccent,
+                      activeColor: S256Colors.primary,
                       contentPadding: EdgeInsets.zero,
                       controlAffinity: ListTileControlAffinity.leading,
                       title: const Text(
                         'I saved my new seed phrase and private key securely.',
-                        style: TextStyle(color: Colors.white70, fontSize: 13),
+                        style: TextStyle(color: S256Colors.textLight, fontSize: 13),
                       ),
                     ),
                   ],
@@ -1394,8 +1396,8 @@ class _SettingsViewState extends State<SettingsView> {
                       ? () => Navigator.of(dialogContext).pop('close')
                       : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: hasSaved ? Colors.orangeAccent : Colors.grey,
-                    foregroundColor: Colors.black,
+                    backgroundColor: hasSaved ? S256Colors.primary : S256Colors.textLight,
+                    foregroundColor: S256Colors.onPrimary,
                   ),
                   child: const Text('I Saved It - Close'),
                 ),
@@ -1443,7 +1445,7 @@ class _SettingsViewState extends State<SettingsView> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Migration complete. New wallet loaded.'),
-              backgroundColor: Colors.green,
+              backgroundColor: S256Colors.success,
             ),
           );
         }
@@ -1502,7 +1504,7 @@ class _SettingsViewState extends State<SettingsView> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Migration complete. New wallet loaded.'),
-            backgroundColor: Colors.green,
+            backgroundColor: S256Colors.success,
           ),
         );
       }
@@ -1556,7 +1558,7 @@ class _SettingsViewState extends State<SettingsView> {
             Expanded(
               child: Text(
                 'Send Remaining Funds',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: S256Colors.text),
               ),
             ),
           ],
@@ -1567,21 +1569,21 @@ class _SettingsViewState extends State<SettingsView> {
           children: [
             const Text(
               'Your current wallet is still active. Open Send and transfer the remaining balance to this new address:',
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(color: S256Colors.textLight),
             ),
             const SizedBox(height: 10),
             SelectableText(
               newAddress,
               style: const TextStyle(
                 color: S256Colors.primary,
-                fontFamily: 'monospace',
+                fontFamily: S256Theme.mono,
                 fontSize: 12,
               ),
             ),
             const SizedBox(height: 8),
             const Text(
               'Address copied to clipboard.',
-              style: TextStyle(color: Colors.orangeAccent, fontSize: 12),
+              style: TextStyle(color: S256Colors.primary, fontSize: 12),
             ),
           ],
         ),
@@ -1590,7 +1592,7 @@ class _SettingsViewState extends State<SettingsView> {
             onPressed: () => Navigator.of(dialogContext).pop(),
             style: ElevatedButton.styleFrom(
               backgroundColor: S256Colors.primary,
-              foregroundColor: Colors.black,
+              foregroundColor: S256Colors.onPrimary,
             ),
             child: const Text('OK'),
           ),
@@ -1613,9 +1615,9 @@ class _SettingsViewState extends State<SettingsView> {
               backgroundColor: S256Colors.cardBg,
               title: const Row(
                 children: [
-                  Icon(Icons.warning_amber_rounded, color: Colors.orangeAccent),
+                  Icon(Icons.warning_amber_rounded, color: S256Colors.primary),
                   SizedBox(width: 8),
-                  Expanded(child: Text('Confirm Migration', style: TextStyle(color: Colors.white, fontSize: 18))),
+                  Expanded(child: Text('Confirm Migration', style: TextStyle(color: S256Colors.text, fontSize: 18))),
                 ],
               ),
               content: SingleChildScrollView(
@@ -1625,17 +1627,17 @@ class _SettingsViewState extends State<SettingsView> {
                   children: [
                     const Text(
                       'Migration will create a brand-new wallet and move your funds to a new address.',
-                      style: TextStyle(color: Colors.white70),
+                      style: TextStyle(color: S256Colors.textLight),
                     ),
                     const SizedBox(height: 12),
-                    const Text('Important:', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                    const Text('Important:', style: TextStyle(color: S256Colors.danger, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     const Text(
                       '• Your wallet address will change\n'
                       '• Any balance will be swept to the new address\n'
                       '• Fees may apply\n'
                       '• You must back up the new seed phrase and private key immediately',
-                      style: TextStyle(color: Colors.white60, fontSize: 13),
+                      style: TextStyle(color: S256Colors.textLight, fontSize: 13),
                     ),
                     const SizedBox(height: 16),
                     CheckboxListTile(
@@ -1650,7 +1652,7 @@ class _SettingsViewState extends State<SettingsView> {
                       activeColor: S256Colors.primary,
                       title: const Text(
                         'I understand my wallet address will change and I will back up the new wallet immediately.',
-                        style: TextStyle(color: Colors.white70, fontSize: 13),
+                        style: TextStyle(color: S256Colors.textLight, fontSize: 13),
                       ),
                     ),
                   ],
@@ -1663,7 +1665,7 @@ class _SettingsViewState extends State<SettingsView> {
                 ),
                 ElevatedButton(
                   onPressed: acknowledged ? () => Navigator.of(dialogContext).pop(true) : null,
-                  style: ElevatedButton.styleFrom(backgroundColor: S256Colors.primary, foregroundColor: Colors.black),
+                  style: ElevatedButton.styleFrom(backgroundColor: S256Colors.primary, foregroundColor: S256Colors.onPrimary),
                   child: const Text('Agree & Continue'),
                 ),
               ],
@@ -1682,12 +1684,12 @@ class _SettingsViewState extends State<SettingsView> {
         backgroundColor: S256Colors.cardBg,
         title: const Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.orangeAccent),
+            Icon(Icons.warning_amber_rounded, color: S256Colors.primary),
             SizedBox(width: 8),
             Expanded(
               child: Text(
                 'Migration Temporarily Unavailable',
-                style: TextStyle(color: Colors.white, fontSize: 18),
+                style: TextStyle(color: S256Colors.text, fontSize: 18),
               ),
             ),
           ],
@@ -1698,26 +1700,26 @@ class _SettingsViewState extends State<SettingsView> {
           children: [
             const Text(
               'Smart fee is not initialized yet from node, so the app cannot safely sweep funds during migration.',
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(color: S256Colors.textLight),
             ),
             const SizedBox(height: 12),
             const Text(
               'Please wait for a few more blocks and try again.',
-              style: TextStyle(color: Colors.orangeAccent, fontStyle: FontStyle.italic),
+              style: TextStyle(color: S256Colors.primary, fontStyle: FontStyle.italic),
             ),
             if (feeError != null && feeError.isNotEmpty) ...[
               const SizedBox(height: 14),
-              const Text('Node response:', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              const Text('Node response:', style: TextStyle(color: S256Colors.text, fontWeight: FontWeight.bold)),
               const SizedBox(height: 6),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.35),
-                  borderRadius: BorderRadius.circular(2),
-                  border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.35)),
+                  color: S256Colors.darkBg.withValues(alpha: 0.35),
+                  borderRadius: S256Theme.borderRadius,
+                  border: Border.all(color: S256Colors.primary.withValues(alpha: 0.35)),
                 ),
-                child: Text(feeError, style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                child: Text(feeError, style: const TextStyle(color: S256Colors.textLight, fontSize: 12)),
               ),
             ],
           ],
@@ -1725,7 +1727,7 @@ class _SettingsViewState extends State<SettingsView> {
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent, foregroundColor: Colors.black),
+            style: ElevatedButton.styleFrom(backgroundColor: S256Colors.primary, foregroundColor: S256Colors.onPrimary),
             child: const Text('OK'),
           ),
         ],
@@ -1739,15 +1741,15 @@ class _SettingsViewState extends State<SettingsView> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: const Color.fromARGB(255, 25, 25, 25),
+          backgroundColor: S256Colors.cardBg,
           title: const Row(
             children: [
-              Icon(Icons.warning, color: Colors.red, size: 28),
+              Icon(Icons.warning, color: S256Colors.danger, size: 28),
               SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Delete Wallet?',
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(color: S256Colors.text),
                 ),
               ),
             ],
@@ -1760,7 +1762,7 @@ class _SettingsViewState extends State<SettingsView> {
                 const Text(
                   '⚠️ IMPORTANT WARNING',
                   style: TextStyle(
-                    color: Colors.red,
+                    color: S256Colors.danger,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
@@ -1769,7 +1771,7 @@ class _SettingsViewState extends State<SettingsView> {
                 const Text(
                   'This action will:',
                   style: TextStyle(
-                    color: Colors.white70,
+                    color: S256Colors.textLight,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -1778,27 +1780,27 @@ class _SettingsViewState extends State<SettingsView> {
                   '• Remove your wallet from this device\n'
                   '• Delete all transaction history\n'
                   '• Disable biometric authentication',
-                  style: TextStyle(color: Colors.white60, fontSize: 14),
+                  style: TextStyle(color: S256Colors.textLight, fontSize: 14),
                 ),
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(2),
-                    border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                    color: S256Colors.primary.withValues(alpha: 0.1),
+                    borderRadius: S256Theme.borderRadius,
+                    border: Border.all(color: S256Colors.primary.withValues(alpha: 0.3)),
                   ),
                   child: const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.lightbulb_outline, color: Colors.orange, size: 20),
+                          Icon(Icons.lightbulb_outline, color: S256Colors.primary, size: 20),
                           SizedBox(width: 8),
                           Text(
                             'Did you know?',
                             style: TextStyle(
-                              color: Colors.orange,
+                              color: S256Colors.primary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -1807,7 +1809,7 @@ class _SettingsViewState extends State<SettingsView> {
                       SizedBox(height: 8),
                       Text(
                         'You can switch wallets without deleting! Simply recover a different wallet using its private key in the setup screen.',
-                        style: TextStyle(color: Colors.orange, fontSize: 13),
+                        style: TextStyle(color: S256Colors.primary, fontSize: 13),
                       ),
                     ],
                   ),
@@ -1816,21 +1818,21 @@ class _SettingsViewState extends State<SettingsView> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(2),
-                    border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                    color: S256Colors.danger.withValues(alpha: 0.1),
+                    borderRadius: S256Theme.borderRadius,
+                    border: Border.all(color: S256Colors.danger.withValues(alpha: 0.3)),
                   ),
                   child: const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.security, color: Colors.red, size: 20),
+                          Icon(Icons.security, color: S256Colors.danger, size: 20),
                           SizedBox(width: 8),
                           Text(
                             'Before you delete:',
                             style: TextStyle(
-                              color: Colors.red,
+                              color: S256Colors.danger,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -1841,7 +1843,7 @@ class _SettingsViewState extends State<SettingsView> {
                         '✓ Make sure your private key is safely backed up\n'
                         '✓ Without it, you CANNOT recover your funds\n'
                         '✓ This action is IRREVERSIBLE',
-                        style: TextStyle(color: Colors.red, fontSize: 13),
+                        style: TextStyle(color: S256Colors.danger, fontSize: 13),
                       ),
                     ],
                   ),
@@ -1854,14 +1856,14 @@ class _SettingsViewState extends State<SettingsView> {
               onPressed: () => Navigator.of(context).pop(false),
               child: const Text(
                 'Cancel',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: S256Colors.text),
               ),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
+                backgroundColor: S256Colors.danger,
+                foregroundColor: S256Colors.text,
               ),
               child: const Text('Delete Wallet'),
             ),
@@ -1901,50 +1903,43 @@ class _SettingsViewState extends State<SettingsView> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   if (mnemonic != null) ...[
-                    const Text(
-                      'Seed Phrase',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    HudLabel('Seed Phrase'),
                     const SizedBox(height: 10),
                     TextField(
                       controller: TextEditingController(text: mnemonic),
                       decoration: InputDecoration(
                         labelText: 'Your 12/24 Word Phrase',
-                        labelStyle: const TextStyle(color: Colors.white),
+                        labelStyle: const TextStyle(color: S256Colors.text),
                         filled: true,
                         fillColor: const Color.fromARGB(100, 0, 0, 0),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: S256Theme.borderRadius,
                           borderSide: BorderSide.none,
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: S256Theme.borderRadius,
                           borderSide:
                               const BorderSide(color: S256Colors.lineStrong, width: 1.0),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: S256Theme.borderRadius,
                           borderSide:
                               const BorderSide(color: S256Colors.lineStrong, width: 1.0),
                         ),
                         suffixIcon: IconButton(
-                          icon: const Icon(Icons.copy, color: Colors.white),
+                          icon: const Icon(Icons.copy, color: S256Colors.text),
                           onPressed: () {
                             Clipboard.setData(ClipboardData(text: mnemonic));
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Seed phrase copied to clipboard'),
-                                backgroundColor: Colors.green,
+                                backgroundColor: S256Colors.success,
                               ),
                             );
                           },
                         ),
                       ),
-                      style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+                      style: const TextStyle(color: S256Colors.primary, fontWeight: FontWeight.bold),
                       obscureText: true,
                       maxLines: 1,
                     ),
@@ -1955,50 +1950,43 @@ class _SettingsViewState extends State<SettingsView> {
                     ),
                     const SizedBox(height: 20),
                   ],
-                  const Text(
-                    'Private Key (WIF)',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  HudLabel('Private Key (WIF)'),
                   const SizedBox(height: 10),
                   TextField(
                     controller: TextEditingController(text: privateKey),
                     decoration: InputDecoration(
                       labelText: 'Private Key (WIF)',
-                      labelStyle: const TextStyle(color: Colors.white),
+                      labelStyle: const TextStyle(color: S256Colors.text),
                       filled: true,
                       fillColor: const Color.fromARGB(100, 0, 0, 0),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: S256Theme.borderRadius,
                         borderSide: BorderSide.none,
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: S256Theme.borderRadius,
                         borderSide:
                             const BorderSide(color: S256Colors.lineStrong, width: 1.0),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: S256Theme.borderRadius,
                         borderSide:
                             const BorderSide(color: S256Colors.lineStrong, width: 1.0),
                       ),
                       suffixIcon: IconButton(
-                        icon: const Icon(Icons.copy, color: Colors.white),
+                        icon: const Icon(Icons.copy, color: S256Colors.text),
                         onPressed: () {
                           Clipboard.setData(ClipboardData(text: privateKey));
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Copied to clipboard'),
-                              backgroundColor: Colors.green,
+                              backgroundColor: S256Colors.success,
                             ),
                           );
                         },
                       ),
                     ),
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(color: S256Colors.text),
                     obscureText: true,
                     maxLines: 1,
                   ),
@@ -2033,14 +2021,7 @@ class _SettingsViewState extends State<SettingsView> {
                   const SizedBox(height: 10),
 
                   // Security Section
-                  const Text(
-                    'Security',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  HudLabel('Security'),
                   const SizedBox(height: 10),
 
                   // Biometric Toggle - Always show placeholder while loading to prevent layout shift
@@ -2048,10 +2029,10 @@ class _SettingsViewState extends State<SettingsView> {
                     Container(
                       height: 72,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(2),
+                        color: S256Colors.text.withValues(alpha: 0.05),
+                        borderRadius: S256Theme.borderRadius,
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.1),
+                          color: S256Colors.text.withValues(alpha: 0.1),
                         ),
                       ),
                       child: const Center(
@@ -2068,16 +2049,16 @@ class _SettingsViewState extends State<SettingsView> {
                   else if (_biometricAvailable)
                     Container(
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(2),
+                        color: S256Colors.text.withValues(alpha: 0.05),
+                        borderRadius: S256Theme.borderRadius,
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.1),
+                          color: S256Colors.text.withValues(alpha: 0.1),
                         ),
                       ),
                       child: SwitchListTile(
                         title: Text(
                           'Enable $_biometricType',
-                          style: const TextStyle(color: Colors.white),
+                          style: const TextStyle(color: S256Colors.text),
                         ),
                         subtitle: Text(
                           _biometricEnabled
@@ -2089,7 +2070,7 @@ class _SettingsViewState extends State<SettingsView> {
                           _biometricType.contains('Face')
                               ? Icons.face
                               : Icons.fingerprint,
-                          color: _biometricEnabled ? S256Colors.primary : Colors.white,
+                          color: _biometricEnabled ? S256Colors.primary : S256Colors.text,
                         ),
                         value: _biometricEnabled,
                         onChanged: _toggleBiometric,
@@ -2100,20 +2081,20 @@ class _SettingsViewState extends State<SettingsView> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.orange.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(2),
+                        color: S256Colors.primary.withValues(alpha: 0.1),
+                        borderRadius: S256Theme.borderRadius,
                         border: Border.all(
-                          color: Colors.orange.withValues(alpha: 0.3),
+                          color: S256Colors.primary.withValues(alpha: 0.3),
                         ),
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                          Icon(Icons.info_outline, color: S256Colors.primary, size: 20),
                           SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               'Biometric authentication not available on this device',
-                              style: TextStyle(color: Colors.orange, fontSize: 12),
+                              style: TextStyle(color: S256Colors.primary, fontSize: 12),
                             ),
                           ),
                         ],
@@ -2121,22 +2102,15 @@ class _SettingsViewState extends State<SettingsView> {
                     ),
 
                   const SizedBox(height: 30),
-                  const Text(
-                    'General',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  HudLabel('General'),
                   const SizedBox(height: 10),
 
                   ListTile(
                     title: const Text(
                       'Network Status',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: S256Colors.text),
                     ),
-                    leading: const Icon(Icons.lan, color: Colors.white),
+                    leading: const Icon(Icons.lan, color: S256Colors.text),
                     onTap: () {
                       if (context.mounted) {
                         Navigator.push(
@@ -2148,13 +2122,13 @@ class _SettingsViewState extends State<SettingsView> {
                       }
                     },
                   ),
-                  const Divider(color: Colors.white),
+                  const Divider(color: S256Colors.text),
                   ListTile(
                     title: const Text(
                       'Privacy Policy',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: S256Colors.text),
                     ),
-                    leading: const Icon(Icons.description, color: Colors.white),
+                    leading: const Icon(Icons.description, color: S256Colors.text),
                     onTap: () async {
                       if (context.mounted) {
                         Navigator.push(
@@ -2164,13 +2138,13 @@ class _SettingsViewState extends State<SettingsView> {
                       }
                     },
                   ),
-                  const Divider(color: Colors.white),
+                  const Divider(color: S256Colors.text),
                   ListTile(
                     title: const Text(
                       'Support',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: S256Colors.text),
                     ),
-                    leading: const Icon(Icons.help, color: Colors.white),
+                    leading: const Icon(Icons.help, color: S256Colors.text),
                     onTap: () {
                       if (context.mounted) {
                         Navigator.push(
@@ -2182,13 +2156,13 @@ class _SettingsViewState extends State<SettingsView> {
                       }
                     },
                   ),
-                  const Divider(color: Colors.white),
+                  const Divider(color: S256Colors.text),
                   ListTile(
                     title: const Text(
                       'Disclaimer',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: S256Colors.text),
                     ),
-                    leading: const Icon(Icons.policy_outlined, color: Colors.white),
+                    leading: const Icon(Icons.policy_outlined, color: S256Colors.text),
                     onTap: () {
                       if (context.mounted) {
                         Navigator.push(
@@ -2200,13 +2174,13 @@ class _SettingsViewState extends State<SettingsView> {
                       }
                     },
                   ),
-                  const Divider(color: Colors.white),
+                  const Divider(color: S256Colors.text),
                   ListTile(
                     title: const Text(
                       'About',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: S256Colors.text),
                     ),
-                    leading: const Icon(Icons.info, color: Colors.white),
+                    leading: const Icon(Icons.info, color: S256Colors.text),
                     onTap: () {
                       if (context.mounted) {
                         Navigator.push(
@@ -2218,13 +2192,13 @@ class _SettingsViewState extends State<SettingsView> {
                       }
                     },
                   ),
-                  const Divider(color: Colors.white),
+                  const Divider(color: S256Colors.text),
                   ListTile(
                     title: const Text(
                       'Delete Wallet',
-                      style: TextStyle(color: Colors.red),
+                      style: TextStyle(color: S256Colors.danger),
                     ),
-                    leading: const Icon(Icons.delete, color: Colors.red),
+                    leading: const Icon(Icons.delete, color: S256Colors.danger),
                     onTap: () => _showDeleteWalletDialog(context, wp, bp),
                   ),
                 ],

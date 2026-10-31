@@ -206,12 +206,12 @@ class _LockScreenState extends State<_LockScreen> {
               const Icon(
                 Icons.error_outline,
                 size: 80,
-                color: Colors.red,
+                color: S256Colors.danger,
               ),
               const SizedBox(height: 24),
               const Text(
                 'Authentication Failed',
-                style: TextStyle(color: Colors.white, fontSize: 18),
+                style: TextStyle(color: S256Colors.text, fontSize: 18),
               ),
               const SizedBox(height: 12),
               const Text(
@@ -228,7 +228,7 @@ class _LockScreenState extends State<_LockScreen> {
                 label: const Text('Try Again'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: S256Colors.accent,
-                  foregroundColor: Colors.black,
+                  foregroundColor: S256Colors.onPrimary,
                 ),
               ),
               const SizedBox(height: 16),

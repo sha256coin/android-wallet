@@ -67,7 +67,7 @@ class _TransactionsViewState extends State<TransactionsView> {
               Text('Checking for new transactions...'),
             ],
           ),
-          backgroundColor: Colors.black87,
+          backgroundColor: S256Colors.surface2,
           duration: Duration(seconds: 2),
         ),
       );
@@ -82,12 +82,12 @@ class _TransactionsViewState extends State<TransactionsView> {
           const SnackBar(
             content: Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.green, size: 18),
+                Icon(Icons.check_circle, color: S256Colors.success, size: 18),
                 SizedBox(width: 12),
                 Text('Transactions updated'),
               ],
             ),
-            backgroundColor: Colors.black87,
+            backgroundColor: S256Colors.surface2,
             duration: Duration(seconds: 1),
           ),
         );
@@ -96,7 +96,7 @@ class _TransactionsViewState extends State<TransactionsView> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('No wallet address found.'),
-          backgroundColor: Colors.red,
+          backgroundColor: S256Colors.danger,
         ),
       );
     }
@@ -115,14 +115,14 @@ class _TransactionsViewState extends State<TransactionsView> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: S256Colors.darkBg,
         elevation: 0,
         title: const Text(
           'Transactions',
-          style: TextStyle(color: Colors.white, fontSize: 20),
+          style: TextStyle(color: S256Colors.text, fontSize: 20),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: S256Colors.text),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -130,7 +130,7 @@ class _TransactionsViewState extends State<TransactionsView> {
         centerTitle: true,
       ),
       body: RefreshIndicator(
-        backgroundColor: const Color.fromARGB(255, 25, 25, 25),
+        backgroundColor: S256Colors.cardBg,
         color: S256Colors.accent,
         onRefresh: _onRefresh,
         child: SingleChildScrollView(

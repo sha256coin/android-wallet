@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:s256_wallet/theme/s256_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -221,12 +222,12 @@ class _AddressbookViewState extends State<AddressbookView> {
           content: Text(
             message,
             style: const TextStyle(
-              color: Colors.white,
+              color: S256Colors.text,
               fontWeight: FontWeight.w600,
             ),
           ),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: isError ? const Color(0xFFD32F2F) : S256Colors.cardBg,
+          backgroundColor: isError ? S256Colors.dangerBg : S256Colors.cardBg,
           duration: Duration(milliseconds: isError ? 2600 : 1600),
         ),
       );
@@ -237,8 +238,8 @@ class _AddressbookViewState extends State<AddressbookView> {
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: S256Colors.cardBg,
-        borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: Colors.white24),
+        borderRadius: S256Theme.borderRadius,
+        border: Border.all(color: S256Colors.lineStrong),
       ),
       child: ListTile(
         leading: const Icon(
@@ -248,13 +249,13 @@ class _AddressbookViewState extends State<AddressbookView> {
         title: Text(
           entry.label,
           style: const TextStyle(
-            color: Colors.white,
+            color: S256Colors.text,
             fontWeight: FontWeight.w600,
           ),
         ),
         subtitle: Text(
           entry.address,
-          style: const TextStyle(color: Colors.white70, fontSize: 12),
+          style: const TextStyle(color: S256Colors.textLight, fontSize: 12),
         ),
         onTap: () {
           if (widget.selectionMode) {
@@ -281,7 +282,7 @@ class _AddressbookViewState extends State<AddressbookView> {
                     onPressed: _isBusy ? null : () => _sendTo(entry.address),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.white70),
+                    icon: const Icon(Icons.edit, color: S256Colors.textLight),
                     tooltip: 'Edit',
                     visualDensity: VisualDensity.compact,
                     onPressed: _isBusy ? null : () => _startEdit(entry),
@@ -289,7 +290,7 @@ class _AddressbookViewState extends State<AddressbookView> {
                   IconButton(
                     icon: const Icon(
                       Icons.delete_outline,
-                      color: Colors.redAccent,
+                      color: S256Colors.danger,
                     ),
                     tooltip: 'Delete',
                     visualDensity: VisualDensity.compact,
@@ -306,8 +307,8 @@ class _AddressbookViewState extends State<AddressbookView> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: S256Colors.cardBg,
-        borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: Colors.white24),
+        borderRadius: S256Theme.borderRadius,
+        border: Border.all(color: S256Colors.lineStrong),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -315,7 +316,7 @@ class _AddressbookViewState extends State<AddressbookView> {
           Text(
             _editingAddress == null ? 'Add address' : 'Edit address',
             style: const TextStyle(
-              color: Colors.white,
+              color: S256Colors.text,
               fontSize: 16,
               fontWeight: FontWeight.w700,
             ),
@@ -411,7 +412,7 @@ class _AddressbookViewState extends State<AddressbookView> {
                   child: Text(
                     'Saved Addresses',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: S256Colors.text,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),

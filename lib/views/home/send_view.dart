@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:s256_wallet/theme/s256_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
@@ -161,7 +162,7 @@ class _SendViewState extends State<SendView> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.message),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.red.shade800,
+        backgroundColor: S256Colors.dangerBg,
       ));
     }
   }
@@ -204,13 +205,13 @@ class _SendViewState extends State<SendView> {
     }
     final impersonates = nameTwin != null && _normalizeForMatch(nameTwin.address) != request.address;
     final showClaimedName = request.label != null && (savedContact == null || nameTwin != savedContact);
-    final accent = impersonates ? Colors.redAccent : S256Colors.primary;
+    final accent = impersonates ? S256Colors.danger : S256Colors.primary;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.fromLTRB(14, 12, 4, 12),
       decoration: BoxDecoration(
         color: accent.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: S256Theme.borderRadius,
         border: Border.all(color: accent.withValues(alpha: impersonates ? 0.8 : 0.4)),
       ),
       child: Row(
@@ -226,17 +227,17 @@ class _SendViewState extends State<SendView> {
                   requested == null
                       ? 'Payment request'
                       : 'Payment request: ${PaymentRequest.formatAmount(requested)} S256',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  style: const TextStyle(color: S256Colors.text, fontWeight: FontWeight.w600),
                 ),
                 if (savedContact != null) ...[
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.verified_user, size: 14, color: Colors.greenAccent),
+                      const Icon(Icons.verified_user, size: 14, color: S256Colors.success),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text('Saved contact: ${savedContact.label}',
-                            style: const TextStyle(color: Colors.greenAccent)),
+                            style: const TextStyle(color: S256Colors.success)),
                       ),
                     ],
                   ),
@@ -244,20 +245,20 @@ class _SendViewState extends State<SendView> {
                 if (showClaimedName) ...[
                   const SizedBox(height: 4),
                   Text('Name given in the request (not verified): ${request.label}',
-                      style: const TextStyle(color: Colors.white70)),
+                      style: const TextStyle(color: S256Colors.textLight)),
                 ],
                 if (impersonates) ...[
                   const SizedBox(height: 6),
                   Text(
                     '⚠ This request uses the name "${nameTwin.label}", but it is NOT the address you saved '
                     'for ${nameTwin.label}. Do not pay unless you are sure who sent it.',
-                    style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600),
+                    style: const TextStyle(color: S256Colors.danger, fontWeight: FontWeight.w600),
                   ),
                 ],
                 if (request.message != null) ...[
                   const SizedBox(height: 4),
                   Text('Note from the requester: ${request.message}',
-                      style: const TextStyle(color: Colors.white70)),
+                      style: const TextStyle(color: S256Colors.textLight)),
                 ],
                 const SizedBox(height: 6),
                 Text(
@@ -267,7 +268,7 @@ class _SendViewState extends State<SendView> {
                           'before sending. The note is not sent.',
                   style: TextStyle(
                     fontSize: 12,
-                    color: amountChanged ? Colors.amberAccent : S256Colors.textLight,
+                    color: amountChanged ? S256Colors.accent : S256Colors.textLight,
                   ),
                 ),
               ],
@@ -733,12 +734,12 @@ class _SendViewState extends State<SendView> {
       barrierDismissible: false,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: const Color.fromARGB(255, 25, 25, 25),
+          backgroundColor: S256Colors.cardBg,
           title: const Row(
             children: [
-              Icon(Icons.layers_rounded, color: Colors.orangeAccent),
+              Icon(Icons.layers_rounded, color: S256Colors.primary),
               SizedBox(width: 8),
-              Text('Batch Send Suggested', style: TextStyle(color: Colors.white)),
+              Text('Batch Send Suggested', style: TextStyle(color: S256Colors.text)),
             ],
           ),
           content: SizedBox(
@@ -749,19 +750,19 @@ class _SendViewState extends State<SendView> {
               children: [
                 Text(
                   reasonLabel(reason),
-                  style: const TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.w700),
+                  style: const TextStyle(color: S256Colors.primary, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 8),
                 const Text(
                   'This transfer may exceed safe single-transaction limits. '
                   'You can batch it into multiple broadcasts or continue with normal send.',
-                  style: TextStyle(color: Colors.white70),
+                  style: TextStyle(color: S256Colors.textLight),
                 ),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Requested amount', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                    const Text('Requested amount', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
                     Text('${amount.toStringAsFixed(8)} S256'),
                   ],
                 ),
@@ -769,7 +770,7 @@ class _SendViewState extends State<SendView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Predicted inputs', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                    const Text('Predicted inputs', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
                     Text('$predictedInputs'),
                   ],
                 ),
@@ -777,7 +778,7 @@ class _SendViewState extends State<SendView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Predicted tx size', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                    const Text('Predicted tx size', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
                     Text('$predictedVbytes vB'),
                   ],
                 ),
@@ -785,7 +786,7 @@ class _SendViewState extends State<SendView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Estimated batch count', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                    const Text('Estimated batch count', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
                     Text('$estimatedBatchCount'),
                   ],
                 ),
@@ -793,7 +794,7 @@ class _SendViewState extends State<SendView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Est. single fee', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                    const Text('Est. single fee', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
                     Text('${estimatedSingleFee.toStringAsFixed(8)} S256'),
                   ],
                 ),
@@ -801,7 +802,7 @@ class _SendViewState extends State<SendView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Est. total batch fee', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                    const Text('Est. total batch fee', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
                     Text('${estimatedTotalBatchFee.toStringAsFixed(8)} S256'),
                   ],
                 ),
@@ -809,7 +810,7 @@ class _SendViewState extends State<SendView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Est. net delivered', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                    const Text('Est. net delivered', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
                     Text('${estimatedNetDelivered.toStringAsFixed(8)} S256'),
                   ],
                 ),
@@ -822,7 +823,7 @@ class _SendViewState extends State<SendView> {
                   const SizedBox(height: 8),
                   const Text(
                     'You are currently using node-estimated fee. For batch sends, consider setting a manual fee first for more predictable total cost.',
-                    style: TextStyle(color: Colors.orangeAccent, fontSize: 11),
+                    style: TextStyle(color: S256Colors.primary, fontSize: 11),
                   ),
                 ],
               ],
@@ -871,12 +872,12 @@ class _SendViewState extends State<SendView> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: const Color.fromARGB(255, 25, 25, 25),
+          backgroundColor: S256Colors.cardBg,
           title: const Row(
             children: [
-              Icon(Icons.warning_amber_rounded, color: Colors.orangeAccent),
+              Icon(Icons.warning_amber_rounded, color: S256Colors.primary),
               SizedBox(width: 8),
-              Text('Normal Send Failed', style: TextStyle(color: Colors.white)),
+              Text('Normal Send Failed', style: TextStyle(color: S256Colors.text)),
             ],
           ),
           content: Column(
@@ -885,23 +886,23 @@ class _SendViewState extends State<SendView> {
             children: [
               const Text(
                 'This failure may be caused by single-transaction size or mempool constraints.',
-                style: TextStyle(color: Colors.white70),
+                style: TextStyle(color: S256Colors.textLight),
               ),
               const SizedBox(height: 8),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(2),
-                  border: Border.all(color: Colors.white24),
+                  color: S256Colors.text.withValues(alpha: 0.05),
+                  borderRadius: S256Theme.borderRadius,
+                  border: Border.all(color: S256Colors.lineStrong),
                 ),
-                child: Text(message, style: const TextStyle(color: Colors.white, fontSize: 12)),
+                child: Text(message, style: const TextStyle(color: S256Colors.text, fontSize: 12)),
               ),
               const SizedBox(height: 10),
               const Text(
                 'Retry now using Batch Send?',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                style: TextStyle(color: S256Colors.text, fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -963,12 +964,12 @@ class _SendViewState extends State<SendView> {
       barrierDismissible: false,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: const Color.fromARGB(255, 25, 25, 25),
+          backgroundColor: S256Colors.cardBg,
           title: const Row(
             children: [
-              Icon(Icons.fact_check_rounded, color: Colors.greenAccent, size: 24),
+              Icon(Icons.fact_check_rounded, color: S256Colors.success, size: 24),
               SizedBox(width: 8),
-              Text('Batch Send Complete', style: TextStyle(color: Colors.white)),
+              Text('Batch Send Complete', style: TextStyle(color: S256Colors.text)),
             ],
           ),
           content: SizedBox(
@@ -980,7 +981,7 @@ class _SendViewState extends State<SendView> {
                 Text(
                   'Broadcasted ${txids.length} transaction${txids.length == 1 ? '' : 's'}.',
                   style: const TextStyle(
-                    color: Colors.greenAccent,
+                    color: S256Colors.success,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -989,7 +990,7 @@ class _SendViewState extends State<SendView> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('Requested Amount', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
-                    Text('${requestedAmount.toStringAsFixed(8)} S256', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                    Text('${requestedAmount.toStringAsFixed(8)} S256', style: const TextStyle(color: S256Colors.text, fontWeight: FontWeight.w600)),
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -997,7 +998,7 @@ class _SendViewState extends State<SendView> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('Gross Sent', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
-                    Text('${displayedGross.toStringAsFixed(8)} S256', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                    Text('${displayedGross.toStringAsFixed(8)} S256', style: const TextStyle(color: S256Colors.text, fontWeight: FontWeight.w600)),
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -1013,26 +1014,26 @@ class _SendViewState extends State<SendView> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('Estimated Net Delivered', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
-                    Text('${displayedNet.toStringAsFixed(8)} S256', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                    Text('${displayedNet.toStringAsFixed(8)} S256', style: const TextStyle(color: S256Colors.text, fontWeight: FontWeight.w600)),
                   ],
                 ),
                 if (txids.isNotEmpty) ...[
                   const SizedBox(height: 12),
-                  const Text('Batch TXIDs', style: TextStyle(color: Colors.white60, fontWeight: FontWeight.w600)),
+                  const Text('Batch TXIDs', style: TextStyle(color: S256Colors.textLight, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 4),
                   Container(
                     width: double.infinity,
                     constraints: const BoxConstraints(maxHeight: 180),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.black,
-                      borderRadius: BorderRadius.circular(2),
-                      border: Border.all(color: Colors.white24),
+                      color: S256Colors.darkBg,
+                      borderRadius: S256Theme.borderRadius,
+                      border: Border.all(color: S256Colors.lineStrong),
                     ),
                     child: SingleChildScrollView(
                       child: SelectableText(
                         txids.join('\n'),
-                        style: const TextStyle(fontSize: 12, fontFamily: 'monospace', color: S256Colors.primary),
+                        style: const TextStyle(fontSize: 12, fontFamily: S256Theme.mono, color: S256Colors.primary),
                       ),
                     ),
                   ),
@@ -1089,8 +1090,8 @@ class _SendViewState extends State<SendView> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              backgroundColor: const Color.fromARGB(255, 25, 25, 25),
-              title: const Text('Manual Network Fee', style: TextStyle(color: Colors.white)),
+              backgroundColor: S256Colors.cardBg,
+              title: const Text('Manual Network Fee', style: TextStyle(color: S256Colors.text)),
               content: ConstrainedBox(
                 constraints: BoxConstraints(
                   maxHeight: MediaQuery.of(context).size.height * 0.65,
@@ -1102,13 +1103,13 @@ class _SendViewState extends State<SendView> {
                     children: [
                   Row(
                     children: [
-                      const Icon(Icons.warning_amber_rounded, color: Colors.amberAccent),
+                      const Icon(Icons.warning_amber_rounded, color: S256Colors.accent),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           provider.feeEstimateError ??
                               'A too low fee may result in the transaction being rejected by the network.',
-                          style: const TextStyle(color: Colors.white70),
+                          style: const TextStyle(color: S256Colors.textLight),
                         ),
                       ),
                     ],
@@ -1116,27 +1117,27 @@ class _SendViewState extends State<SendView> {
                   const SizedBox(height: 14),
                   const Text(
                     'Choose based on network conditions:',
-                    style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600),
+                    style: TextStyle(color: S256Colors.textLight, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.04),
-                      borderRadius: BorderRadius.circular(2),
-                      border: Border.all(color: Colors.white24),
+                      color: S256Colors.text.withValues(alpha: 0.04),
+                      borderRadius: S256Theme.borderRadius,
+                      border: Border.all(color: S256Colors.lineStrong),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Low traffic: ${_formatDecimal(lowSatVb, maxDecimals: 4)} sat/vB (${lowS256KvB.toStringAsFixed(8)} S256/kvB), slower confirmation',
-                          style: const TextStyle(color: Colors.white60, fontSize: 12),
+                          style: const TextStyle(color: S256Colors.textLight, fontSize: 12),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'High traffic: ${_formatDecimal(highSatVb, maxDecimals: 4)} sat/vB (${highS256KvB.toStringAsFixed(8)} S256/kvB), faster confirmation',
-                          style: const TextStyle(color: Colors.white60, fontSize: 12),
+                          style: const TextStyle(color: S256Colors.textLight, fontSize: 12),
                         ),
                       ],
                     ),
@@ -1173,23 +1174,23 @@ class _SendViewState extends State<SendView> {
                   TextField(
                     controller: _manualFeeController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(color: S256Colors.text),
                     decoration: InputDecoration(
                       labelText: useSatVb ? 'Fee rate (sat/vB)' : 'Fee rate (S256/kvB)',
-                      labelStyle: const TextStyle(color: Colors.white70),
+                      labelStyle: const TextStyle(color: S256Colors.textLight),
                       filled: true,
-                      fillColor: Colors.black,
+                      fillColor: S256Colors.darkBg,
                       errorText: validationError,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: S256Theme.borderRadius,
                         borderSide: BorderSide.none,
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(2),
-                        borderSide: const BorderSide(color: Colors.white24),
+                        borderRadius: S256Theme.borderRadius,
+                        borderSide: const BorderSide(color: S256Colors.lineStrong),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: S256Theme.borderRadius,
                         borderSide: const BorderSide(color: S256Colors.primary),
                       ),
                     ),
@@ -1252,7 +1253,7 @@ class _SendViewState extends State<SendView> {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: S256Colors.primary,
-                    foregroundColor: Colors.black,
+                    foregroundColor: S256Colors.onPrimary,
                   ),
                   child: const Text('Use This Fee'),
                 ),
@@ -1449,9 +1450,9 @@ class _SendViewState extends State<SendView> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: Colors.white24),
+        color: S256Colors.text.withValues(alpha: 0.04),
+        borderRadius: S256Theme.borderRadius,
+        border: Border.all(color: S256Colors.lineStrong),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1461,7 +1462,7 @@ class _SendViewState extends State<SendView> {
             children: [
               Text(
                 'Select Inputs (${provider.availableUtxos.length} total)',
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: const TextStyle(color: S256Colors.text, fontWeight: FontWeight.bold),
               ),
               Row(
                 children: [
@@ -1488,14 +1489,14 @@ class _SendViewState extends State<SendView> {
             Text(
               'Showing top ${provider.availableUtxos.length} inputs by amount. '
               '${provider.coinControlTruncatedCount} smaller input(s) are hidden for performance.',
-              style: const TextStyle(color: Colors.orangeAccent, fontSize: 11),
+              style: const TextStyle(color: S256Colors.primary, fontSize: 11),
             ),
           if (provider.coinControlTruncatedCount > 0)
             const SizedBox(height: 8),
           if (provider.selectedUtxoCount > 0)
             Text(
               '${provider.selectedUtxoCount} selected, total ${_satsToS256(_selectedUtxoTotalSats(provider)).toStringAsFixed(8)} S256',
-              style: const TextStyle(color: Colors.amber, fontSize: 12),
+              style: const TextStyle(color: S256Colors.primary, fontSize: 12),
             ),
           const SizedBox(height: 8),
           SizedBox(
@@ -1520,10 +1521,10 @@ class _SendViewState extends State<SendView> {
                       provider.toggleUtxo(key);
                       _syncAmountToSelection(provider);
                     },
-                    title: Text(short, style: const TextStyle(color: Colors.white, fontFamily: 'monospace', fontSize: 12)),
+                    title: Text(short, style: const TextStyle(color: S256Colors.text, fontFamily: S256Theme.mono, fontSize: 12)),
                     subtitle: Text(
                       '#${globalIndex + 1} | Amount: ${(utxo['amount'] as num).toStringAsFixed(8)} S256 | ${_formatConfirmationsLabel(confirmations)}',
-                      style: const TextStyle(color: Colors.white60, fontSize: 11),
+                      style: const TextStyle(color: S256Colors.textLight, fontSize: 11),
                     ),
                     controlAffinity: ListTileControlAffinity.leading,
                     activeColor: S256Colors.primary,
@@ -1545,7 +1546,7 @@ class _SendViewState extends State<SendView> {
                 ),
                 Text(
                   'Page ${provider.utxoPage + 1} / ${provider.utxoPageCount}',
-                  style: const TextStyle(color: Colors.white60, fontSize: 12),
+                  style: const TextStyle(color: S256Colors.textLight, fontSize: 12),
                 ),
                 TextButton(
                   onPressed: provider.utxoPage < provider.utxoPageCount - 1
@@ -1576,11 +1577,11 @@ class _SendViewState extends State<SendView> {
           ? 'Amount-aware estimate using ~${simpleEstimate.inputCount ?? 1} input(s)'
           : 'Simple mode estimate using ~${simpleEstimate.inputCount ?? 2} input(s)';
     final detailsColor = hasExactCoinControlFee
-      ? Colors.greenAccent
+      ? S256Colors.success
       : _advancedSend
-        ? Colors.amberAccent
+        ? S256Colors.accent
       : simpleEstimate.amountAware
-        ? Colors.white70
+        ? S256Colors.textLight
         : S256Colors.textLight;
     if (fee <= 0) return const SizedBox.shrink();
 
@@ -1605,28 +1606,28 @@ class _SendViewState extends State<SendView> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: Colors.white10),
+        color: S256Colors.text.withValues(alpha: 0.05),
+        borderRadius: S256Theme.borderRadius,
+        border: Border.all(color: S256Colors.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'Estimated Network Fee',
-            style: TextStyle(color: Colors.white70, fontSize: 11),
+            style: TextStyle(color: S256Colors.textLight, fontSize: 11),
           ),
           const SizedBox(height: 2),
           Text(
             '${fee.toStringAsFixed(8)} S256',
             style: const TextStyle(
-              color: Colors.white,
+              color: S256Colors.text,
               fontSize: 16,
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 8),
-          const Divider(height: 1, color: Colors.white12),
+          const Divider(height: 1, color: S256Colors.line),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1673,13 +1674,13 @@ class _SendViewState extends State<SendView> {
                 ),
                 Text(
                   netAfterFeeText,
-                  style: const TextStyle(color: Colors.greenAccent, fontSize: 12),
+                  style: const TextStyle(color: S256Colors.success, fontSize: 12),
                 ),
               ],
             ),
           ],
           const SizedBox(height: 8),
-          const Divider(height: 1, color: Colors.white12),
+          const Divider(height: 1, color: S256Colors.line),
           const SizedBox(height: 8),
           Text(
             detailsLabel,
@@ -1702,9 +1703,9 @@ class _SendViewState extends State<SendView> {
       return S256Colors.primary;
     }
     if (_isNodeFeeSource(provider)) {
-      return Colors.greenAccent;
+      return S256Colors.success;
     }
-    return Colors.amberAccent;
+    return S256Colors.accent;
   }
 
   Widget _buildFeeSourceSelector(WalletProvider provider) {
@@ -1715,9 +1716,9 @@ class _SendViewState extends State<SendView> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: Colors.white24),
+        color: S256Colors.text.withValues(alpha: 0.05),
+        borderRadius: S256Theme.borderRadius,
+        border: Border.all(color: S256Colors.lineStrong),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1727,7 +1728,7 @@ class _SendViewState extends State<SendView> {
             children: [
               const Text(
                 'Fee Source',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                style: TextStyle(color: S256Colors.text, fontWeight: FontWeight.w600),
               ),
               Text(
                 _feeSourceLabel(provider),
@@ -1750,13 +1751,13 @@ class _SendViewState extends State<SendView> {
                         },
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(
-                      color: manualSelected ? S256Colors.primary : Colors.white30,
+                      color: manualSelected ? S256Colors.primary : S256Colors.textLight,
                       width: manualSelected ? 1.6 : 1.0,
                     ),
                     backgroundColor: manualSelected
                         ? S256Colors.primary.withValues(alpha: 0.16)
                         : Colors.transparent,
-                    foregroundColor: manualSelected ? S256Colors.primary : Colors.white70,
+                    foregroundColor: manualSelected ? S256Colors.primary : S256Colors.textLight,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                   child: const Text('Manual'),
@@ -1770,13 +1771,13 @@ class _SendViewState extends State<SendView> {
                       : () => provider.fetchFeeRate(),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(
-                      color: nodeSelected ? Colors.greenAccent : Colors.white30,
+                      color: nodeSelected ? S256Colors.success : S256Colors.textLight,
                       width: nodeSelected ? 1.6 : 1.0,
                     ),
                     backgroundColor: nodeSelected
-                        ? Colors.greenAccent.withValues(alpha: 0.14)
+                        ? S256Colors.success.withValues(alpha: 0.14)
                         : Colors.transparent,
-                    foregroundColor: nodeSelected ? Colors.greenAccent : Colors.white70,
+                    foregroundColor: nodeSelected ? S256Colors.success : S256Colors.textLight,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                   child: const Text('Auto (Node Fee)'),
@@ -1822,27 +1823,27 @@ class _SendViewState extends State<SendView> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: Colors.white10),
+        color: S256Colors.text.withValues(alpha: 0.05),
+        borderRadius: S256Theme.borderRadius,
+        border: Border.all(color: S256Colors.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'Transaction Preview',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: TextStyle(color: S256Colors.text, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Selected Inputs', style: TextStyle(color: Colors.white60, fontSize: 12)),
+              const Text('Selected Inputs', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
               Text(
                 hasSelectedInputs
                     ? '${_satsToS256(selectedInputsSats).toStringAsFixed(8)} S256'
                     : 'Auto',
-                style: const TextStyle(color: Colors.white, fontSize: 12),
+                style: const TextStyle(color: S256Colors.text, fontSize: 12),
               ),
             ],
           ),
@@ -1850,10 +1851,10 @@ class _SendViewState extends State<SendView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Recipient Amount', style: TextStyle(color: Colors.white60, fontSize: 12)),
+              const Text('Recipient Amount', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
               Text(
                 '${_satsToS256(sendAmountSats).toStringAsFixed(8)} S256',
-                style: const TextStyle(color: Colors.white, fontSize: 12),
+                style: const TextStyle(color: S256Colors.text, fontSize: 12),
               ),
             ],
           ),
@@ -1862,10 +1863,10 @@ class _SendViewState extends State<SendView> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Entered Total (includes fee)', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                const Text('Entered Total (includes fee)', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
                 Text(
                   '${enteredAmount.toStringAsFixed(8)} S256',
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  style: const TextStyle(color: S256Colors.text, fontSize: 12),
                 ),
               ],
             ),
@@ -1874,10 +1875,10 @@ class _SendViewState extends State<SendView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Estimated Fee', style: TextStyle(color: Colors.white60, fontSize: 12)),
+              const Text('Estimated Fee', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
               Text(
                 '${fee.toStringAsFixed(8)} S256',
-                style: const TextStyle(color: Colors.white, fontSize: 12),
+                style: const TextStyle(color: S256Colors.text, fontSize: 12),
               ),
             ],
           ),
@@ -1885,10 +1886,10 @@ class _SendViewState extends State<SendView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Total Spend (est.)', style: TextStyle(color: Colors.white60, fontSize: 12)),
+              const Text('Total Spend (est.)', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
               Text(
                 '${_satsToS256(totalSpendSats).toStringAsFixed(8)} S256',
-                style: const TextStyle(color: Colors.white, fontSize: 12),
+                style: const TextStyle(color: S256Colors.text, fontSize: 12),
               ),
             ],
           ),
@@ -1896,10 +1897,10 @@ class _SendViewState extends State<SendView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Fee Source', style: TextStyle(color: Colors.white60, fontSize: 12)),
+              const Text('Fee Source', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
               Text(
                 _feeSourceLabel(provider),
-                style: const TextStyle(color: Colors.white, fontSize: 12),
+                style: const TextStyle(color: S256Colors.text, fontSize: 12),
               ),
             ],
           ),
@@ -1907,10 +1908,10 @@ class _SendViewState extends State<SendView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Fee Rate', style: TextStyle(color: Colors.white60, fontSize: 12)),
+              const Text('Fee Rate', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
               Text(
                 '${provider.feeRate.toStringAsFixed(8)} S256/kvB (${_formatSatVb(provider.feeRate)} sat/vB)',
-                style: const TextStyle(color: Colors.white, fontSize: 12),
+                style: const TextStyle(color: S256Colors.text, fontSize: 12),
               ),
             ],
           ),
@@ -1918,10 +1919,10 @@ class _SendViewState extends State<SendView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Expected Change', style: TextStyle(color: Colors.white60, fontSize: 12)),
+              const Text('Expected Change', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
               Text(
                 '${_satsToS256(expectedChangeSats > 0 ? expectedChangeSats : 0).toStringAsFixed(8)} S256',
-                style: const TextStyle(color: Colors.white, fontSize: 12),
+                style: const TextStyle(color: S256Colors.text, fontSize: 12),
               ),
             ],
           ),
@@ -1947,9 +1948,9 @@ class _SendViewState extends State<SendView> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: Colors.white12),
+        color: S256Colors.text.withValues(alpha: 0.04),
+        borderRadius: S256Theme.borderRadius,
+        border: Border.all(color: S256Colors.line),
       ),
       child: Row(
         children: [
@@ -1959,7 +1960,7 @@ class _SendViewState extends State<SendView> {
               children: [
                 Text(
                   'Subtract Fee From Amount',
-                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                  style: TextStyle(color: S256Colors.text, fontSize: 12, fontWeight: FontWeight.w600),
                 ),
                 SizedBox(height: 2),
                 Text(
@@ -1979,7 +1980,7 @@ class _SendViewState extends State<SendView> {
             Text(
               'Net ${effectiveAmount > 0 ? effectiveAmount.toStringAsFixed(8) : '-'}',
               style: TextStyle(
-                color: effectiveAmount > 0 ? Colors.greenAccent : Colors.redAccent,
+                color: effectiveAmount > 0 ? S256Colors.success : S256Colors.danger,
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
               ),
@@ -1996,10 +1997,10 @@ class _SendViewState extends State<SendView> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: const Color.fromARGB(255, 25, 25, 25),
+          backgroundColor: S256Colors.cardBg,
           title: const Text(
             'Network Fee Required',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: S256Colors.text),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -2007,26 +2008,26 @@ class _SendViewState extends State<SendView> {
             children: [
               const Text(
                 'The network requires a higher fee for this transaction.',
-                style: TextStyle(color: Colors.white70),
+                style: TextStyle(color: S256Colors.textLight),
               ),
               const SizedBox(height: 16),
               Text(
                 'Current fee rate: ${currentFee.toStringAsFixed(8)} S256/kvB',
-                style: const TextStyle(color: Colors.white60),
+                style: const TextStyle(color: S256Colors.textLight),
               ),
               Text(
                 'Required fee rate: ${suggestedFee.toStringAsFixed(8)} S256/kvB',
-                style: const TextStyle(color: Colors.white60),
+                style: const TextStyle(color: S256Colors.textLight),
               ),
               const SizedBox(height: 16),
               const Text(
                 'You can either:',
-                style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+                style: TextStyle(color: S256Colors.textLight, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              const Text('• Retry with the higher fee (recommended)', style: TextStyle(color: Colors.white60)),
-              const Text('• Wait 20-30 minutes for network conditions to improve', style: TextStyle(color: Colors.white60)),
-              const Text('• Cancel and try again later', style: TextStyle(color: Colors.white60)),
+              const Text('• Retry with the higher fee (recommended)', style: TextStyle(color: S256Colors.textLight)),
+              const Text('• Wait 20-30 minutes for network conditions to improve', style: TextStyle(color: S256Colors.textLight)),
+              const Text('• Cancel and try again later', style: TextStyle(color: S256Colors.textLight)),
             ],
           ),
           actions: [
@@ -2038,7 +2039,7 @@ class _SendViewState extends State<SendView> {
               onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(
                 backgroundColor: S256Colors.primary,
-                foregroundColor: Colors.black,
+                foregroundColor: S256Colors.onPrimary,
               ),
               child: const Text('Retry with Higher Fee'),
             ),
@@ -2068,22 +2069,22 @@ class _SendViewState extends State<SendView> {
       barrierDismissible: false,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: const Color.fromARGB(255, 25, 25, 25),
-          title: const Text('Confirm Transaction', style: TextStyle(color: Colors.white)),
+          backgroundColor: S256Colors.cardBg,
+          title: const Text('Confirm Transaction', style: TextStyle(color: S256Colors.text)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('To: $toAddress', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+              Text('To: $toAddress', style: const TextStyle(color: S256Colors.textLight, fontSize: 12)),
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Amount Mode', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                  const Text('Amount Mode', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
                   Text(
                     amountModeLabel,
                     style: TextStyle(
-                      color: subtractFeeFromAmount ? Colors.amberAccent : Colors.greenAccent,
+                      color: subtractFeeFromAmount ? S256Colors.accent : S256Colors.success,
                       fontWeight: FontWeight.w600,
                       fontSize: 12,
                     ),
@@ -2091,19 +2092,19 @@ class _SendViewState extends State<SendView> {
                 ],
               ),
               const SizedBox(height: 4),
-              Text('Entered amount: ${enteredAmount.toStringAsFixed(8)} S256', style: const TextStyle(color: Colors.white70)),
+              Text('Entered amount: ${enteredAmount.toStringAsFixed(8)} S256', style: const TextStyle(color: S256Colors.textLight)),
               const SizedBox(height: 4),
-              Text('Recipient amount: ${amount.toStringAsFixed(8)} S256', style: const TextStyle(color: Colors.white70)),
+              Text('Recipient amount: ${amount.toStringAsFixed(8)} S256', style: const TextStyle(color: S256Colors.textLight)),
               const SizedBox(height: 4),
-              Text('Estimated fee: ${estimatedFee.toStringAsFixed(8)} S256', style: const TextStyle(color: Colors.white70)),
+              Text('Estimated fee: ${estimatedFee.toStringAsFixed(8)} S256', style: const TextStyle(color: S256Colors.textLight)),
               const SizedBox(height: 4),
-              Text('Total spend (est.): ${totalSpend.toStringAsFixed(8)} S256', style: const TextStyle(color: Colors.white70)),
+              Text('Total spend (est.): ${totalSpend.toStringAsFixed(8)} S256', style: const TextStyle(color: S256Colors.textLight)),
               const SizedBox(height: 4),
-              Text('Fee source: ${_feeSourceLabel(provider)}', style: const TextStyle(color: Colors.white70)),
+              Text('Fee source: ${_feeSourceLabel(provider)}', style: const TextStyle(color: S256Colors.textLight)),
               const SizedBox(height: 4),
               Text(
                 'Fee rate: ${provider.feeRate.toStringAsFixed(8)} S256/kvB (${_formatSatVb(provider.feeRate)} sat/vB)',
-                style: const TextStyle(color: Colors.white70),
+                style: const TextStyle(color: S256Colors.textLight),
               ),
             ],
           ),
@@ -2134,12 +2135,12 @@ class _SendViewState extends State<SendView> {
       barrierDismissible: false,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: const Color.fromARGB(255, 25, 25, 25),
+          backgroundColor: S256Colors.cardBg,
           title: const Row(
             children: [
-              Icon(Icons.check_circle, color: Colors.greenAccent, size: 24),
+              Icon(Icons.check_circle, color: S256Colors.success, size: 24),
               SizedBox(width: 8),
-              Text('Transaction Sent', style: TextStyle(color: Colors.white)),
+              Text('Transaction Sent', style: TextStyle(color: S256Colors.text)),
             ],
           ),
           content: Column(
@@ -2150,14 +2151,14 @@ class _SendViewState extends State<SendView> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(2),
-                  border: Border.all(color: Colors.green.withValues(alpha: 0.35)),
+                  color: S256Colors.success.withValues(alpha: 0.12),
+                  borderRadius: S256Theme.borderRadius,
+                  border: Border.all(color: S256Colors.success.withValues(alpha: 0.35)),
                 ),
                 child: const Text(
                   'Broadcasted to network',
                   style: TextStyle(
-                    color: Colors.greenAccent,
+                    color: S256Colors.success,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -2169,7 +2170,7 @@ class _SendViewState extends State<SendView> {
                   const Text('Amount Sent', style: TextStyle(color: S256Colors.textLight, fontSize: 12)),
                   Text(
                     '${amount.toStringAsFixed(8)} S256',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    style: const TextStyle(color: S256Colors.text, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -2186,19 +2187,19 @@ class _SendViewState extends State<SendView> {
               ),
               if (txid.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                const Text('TXID', style: TextStyle(color: Colors.white60, fontWeight: FontWeight.w600)),
+                const Text('TXID', style: TextStyle(color: S256Colors.textLight, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 4),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(2),
-                    border: Border.all(color: Colors.white24),
+                    color: S256Colors.darkBg,
+                    borderRadius: S256Theme.borderRadius,
+                    border: Border.all(color: S256Colors.lineStrong),
                   ),
                   child: SelectableText(
                     txid,
-                    style: const TextStyle(fontSize: 12, fontFamily: 'monospace', color: S256Colors.primary),
+                    style: const TextStyle(fontSize: 12, fontFamily: S256Theme.mono, color: S256Colors.primary),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -2234,14 +2235,14 @@ class _SendViewState extends State<SendView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: S256Colors.darkBg,
         elevation: 0,
         title: const Text(
           'Send S256',
-          style: TextStyle(color: Colors.white, fontSize: 20),
+          style: TextStyle(color: S256Colors.text, fontSize: 20),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: S256Colors.text),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -2249,7 +2250,7 @@ class _SendViewState extends State<SendView> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
+            icon: const Icon(Icons.refresh, color: S256Colors.text),
             onPressed: _isSending ? null : _refreshBalance,
             tooltip: 'Refresh Balance',
           ),
@@ -2260,7 +2261,7 @@ class _SendViewState extends State<SendView> {
         bottom: true,
         minimum: const EdgeInsets.only(bottom: 8),
         child: Container(
-          color: Colors.black,
+          color: S256Colors.darkBg,
           constraints: const BoxConstraints.expand(),
           child: Consumer<WalletProvider>(
           builder: (context, walletProvider, child) {
@@ -2283,22 +2284,22 @@ class _SendViewState extends State<SendView> {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(2),
-                            border: Border.all(color: Colors.white24),
+                            color: S256Colors.text.withValues(alpha: 0.1),
+                            borderRadius: S256Theme.borderRadius,
+                            border: Border.all(color: S256Colors.lineStrong),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
                                 'Available Balance',
-                                style: TextStyle(color: Colors.white70, fontSize: 14),
+                                style: TextStyle(color: S256Colors.textLight, fontSize: 14),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 '${walletProvider.balance?.toStringAsFixed(8) ?? '0.00000000'} S256',
                                 style: const TextStyle(
-                                  color: Colors.white,
+                                  color: S256Colors.text,
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -2308,17 +2309,17 @@ class _SendViewState extends State<SendView> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: Colors.orange.withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(2),
+                                    color: S256Colors.primary.withValues(alpha: 0.2),
+                                    borderRadius: S256Theme.borderRadius,
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.access_time, color: Colors.orange, size: 16),
+                                      const Icon(Icons.access_time, color: S256Colors.primary, size: 16),
                                       const SizedBox(width: 4),
                                       Text(
                                         '${walletProvider.pendingTransactionsCount} pending',
-                                        style: const TextStyle(color: Colors.orange, fontSize: 12),
+                                        style: const TextStyle(color: S256Colors.primary, fontSize: 12),
                                       ),
                                     ],
                                   ),
@@ -2334,22 +2335,22 @@ class _SendViewState extends State<SendView> {
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: walletProvider.message.contains('❌')
-                                  ? Colors.red.withValues(alpha: 0.12)
+                                  ? S256Colors.danger.withValues(alpha: 0.12)
                                   : walletProvider.message.contains('⚠️')
-                                      ? Colors.orange.withValues(alpha: 0.12)
-                                      : Colors.green.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(2),
+                                      ? S256Colors.primary.withValues(alpha: 0.12)
+                                      : S256Colors.success.withValues(alpha: 0.12),
+                              borderRadius: S256Theme.borderRadius,
                               border: Border.all(
                                 color: walletProvider.message.contains('❌')
-                                    ? Colors.red.withValues(alpha: 0.35)
+                                    ? S256Colors.danger.withValues(alpha: 0.35)
                                     : walletProvider.message.contains('⚠️')
-                                        ? Colors.orange.withValues(alpha: 0.35)
-                                        : Colors.green.withValues(alpha: 0.35),
+                                        ? S256Colors.primary.withValues(alpha: 0.35)
+                                        : S256Colors.success.withValues(alpha: 0.35),
                               ),
                             ),
                             child: Text(
                               walletProvider.message,
-                              style: const TextStyle(color: Colors.white),
+                              style: const TextStyle(color: S256Colors.text),
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -2359,7 +2360,7 @@ class _SendViewState extends State<SendView> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Send Mode', style: TextStyle(color: Colors.white70)),
+                            const Text('Send Mode', style: TextStyle(color: S256Colors.textLight)),
                             ToggleButtons(
                               isSelected: [!_advancedSend, _advancedSend],
                               onPressed: _isSending
@@ -2377,7 +2378,7 @@ class _SendViewState extends State<SendView> {
                                         walletProvider.resetCoinControl();
                                       }
                                     },
-                              borderRadius: BorderRadius.circular(2),
+                              borderRadius: S256Theme.borderRadius,
                               children: const [
                                 Padding(
                                   padding: EdgeInsets.symmetric(horizontal: 12),
@@ -2406,26 +2407,26 @@ class _SendViewState extends State<SendView> {
                           decoration: InputDecoration(
                             labelText: 'Recipient Address (s21...)',
                             errorText: _addressValid == false ? 'Invalid address' : null,
-                            labelStyle: const TextStyle(color: Colors.white70),
+                            labelStyle: const TextStyle(color: S256Colors.textLight),
                             hintText: 's21q...',
-                            hintStyle: const TextStyle(color: Colors.white30),
+                            hintStyle: const TextStyle(color: S256Colors.textLight),
                             filled: true,
-                            fillColor: Colors.black,
+                            fillColor: S256Colors.darkBg,
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(2),
+                              borderRadius: S256Theme.borderRadius,
                               borderSide: BorderSide.none,
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(2),
+                              borderRadius: S256Theme.borderRadius,
                               borderSide: const BorderSide(color: S256Colors.lineStrong, width: 1.0),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(2),
+                              borderRadius: S256Theme.borderRadius,
                               borderSide: const BorderSide(color: S256Colors.primary, width: 1.0),
                             ),
                             disabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(2),
-                              borderSide: const BorderSide(color: Colors.white24, width: 1.0),
+                              borderRadius: S256Theme.borderRadius,
+                              borderSide: const BorderSide(color: S256Colors.lineStrong, width: 1.0),
                             ),
                             suffixIcon: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -2439,7 +2440,7 @@ class _SendViewState extends State<SendView> {
                                   onPressed: _isSending ? null : _pickAddressFromAddressbook,
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
+                                  icon: const Icon(Icons.qr_code_scanner, color: S256Colors.text),
                                   onPressed: _isSending ? null : () async {
                                     final scanned = await Navigator.push(
                                       context,
@@ -2466,13 +2467,13 @@ class _SendViewState extends State<SendView> {
                                     padding: const EdgeInsets.only(right: 8),
                                     child: Icon(
                                       _addressValid! ? Icons.check_circle : Icons.cancel,
-                                      color: _addressValid! ? Colors.green : Colors.red,
+                                      color: _addressValid! ? S256Colors.success : S256Colors.danger,
                                     ),
                                   ),
                               ],
                             ),
                           ),
-                          style: const TextStyle(color: Colors.white, fontFamily: 'monospace'),
+                          style: const TextStyle(color: S256Colors.text, fontFamily: S256Theme.mono),
                         ),
                         const SizedBox(height: 20),
 
@@ -2496,27 +2497,27 @@ class _SendViewState extends State<SendView> {
                                 decoration: InputDecoration(
                                   labelText: 'Amount (S256)',
                                   errorText: amountErr,
-                                  labelStyle: const TextStyle(color: Colors.white70),
+                                  labelStyle: const TextStyle(color: S256Colors.textLight),
                                   filled: true,
-                                  fillColor: Colors.black,
+                                  fillColor: S256Colors.darkBg,
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(2),
+                                    borderRadius: S256Theme.borderRadius,
                                     borderSide: BorderSide.none,
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(2),
+                                    borderRadius: S256Theme.borderRadius,
                                     borderSide: const BorderSide(color: S256Colors.lineStrong, width: 1.0),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(2),
+                                    borderRadius: S256Theme.borderRadius,
                                     borderSide: const BorderSide(color: S256Colors.primary, width: 1.0),
                                   ),
                                   disabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(2),
-                                    borderSide: const BorderSide(color: Colors.white24, width: 1.0),
+                                    borderRadius: S256Theme.borderRadius,
+                                    borderSide: const BorderSide(color: S256Colors.lineStrong, width: 1.0),
                                   ),
                                 ),
-                                style: const TextStyle(color: Colors.white),
+                                style: const TextStyle(color: S256Colors.text),
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -2567,14 +2568,14 @@ class _SendViewState extends State<SendView> {
                               children: [
                                 Icon(
                                   Icons.warning_amber_rounded,
-                                  color: Colors.amberAccent,
+                                  color: S256Colors.accent,
                                   size: 14,
                                 ),
                                 SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
                                     walletProvider.feeRateStatusMessage,
-                                    style: TextStyle(fontSize: 11, color: Colors.amberAccent),
+                                    style: TextStyle(fontSize: 11, color: S256Colors.accent),
                                   ),
                                 ),
                               ],
@@ -2595,18 +2596,18 @@ class _SendViewState extends State<SendView> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.red.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(2),
-                              border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                              color: S256Colors.danger.withValues(alpha: 0.1),
+                              borderRadius: S256Theme.borderRadius,
+                              border: Border.all(color: S256Colors.danger.withValues(alpha: 0.3)),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                                const Icon(Icons.error_outline, color: S256Colors.danger, size: 20),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     _errorMessage,
-                                    style: const TextStyle(color: Colors.red),
+                                    style: const TextStyle(color: S256Colors.danger),
                                   ),
                                 ),
                               ],
@@ -2638,13 +2639,13 @@ class _SendViewState extends State<SendView> {
                                   }
                                 });
                               },
-                              checkColor: Colors.black,
-                              activeColor: Colors.white,
+                              checkColor: S256Colors.onPrimary,
+                              activeColor: S256Colors.text,
                             ),
                             const Expanded(
                               child: Text(
                                 'I confirm that the details are correct',
-                                style: TextStyle(color: Colors.white),
+                                style: TextStyle(color: S256Colors.text),
                               ),
                             ),
                           ],
@@ -2670,7 +2671,7 @@ class _SendViewState extends State<SendView> {
                 // Loading Overlay
                 if (walletProvider.isLoading || _isSending)
                   Container(
-                    color: Colors.black54,
+                    color: S256Colors.darkBg.withValues(alpha: 0.8),
                     child: const Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -2679,7 +2680,7 @@ class _SendViewState extends State<SendView> {
                           SizedBox(height: 16),
                           Text(
                             'Processing...',
-                            style: TextStyle(color: Colors.white),
+                            style: TextStyle(color: S256Colors.text),
                           ),
                         ],
                       ),

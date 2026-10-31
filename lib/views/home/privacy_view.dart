@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:s256_wallet/theme/s256_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:s256_wallet/widgets/app_background.dart';
 
@@ -64,7 +65,7 @@ class _PrivacyViewState extends State<PrivacyView>
   Widget build(BuildContext context) {
     return Theme(
       data: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: Colors.black,
+        scaffoldBackgroundColor: S256Colors.darkBg,
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -115,16 +116,16 @@ class _PrivacyViewState extends State<PrivacyView>
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
-      backgroundColor: _isScrolled ? Colors.black.withValues(alpha: 0.9) : Colors.transparent,
+      backgroundColor: _isScrolled ? S256Colors.darkBg.withValues(alpha: 0.9) : Colors.transparent,
       elevation: _isScrolled ? 1 : 0,
       leading: Container(
         margin: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(2),
+          color: S256Colors.text.withValues(alpha: 0.1),
+          borderRadius: S256Theme.borderRadius,
         ),
         child: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new, color: S256Colors.text, size: 20),
           onPressed: () {
             HapticFeedback.lightImpact();
             Navigator.pop(context);
@@ -137,7 +138,7 @@ class _PrivacyViewState extends State<PrivacyView>
         child: const Text(
           'Privacy Policy',
           style: TextStyle(
-            color: Colors.white,
+            color: S256Colors.text,
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -155,7 +156,7 @@ class _PrivacyViewState extends State<PrivacyView>
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: S256Colors.cardBg,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: S256Theme.borderRadius,
           ),
           child: const Text(
             'PRIVACY FIRST',
@@ -163,7 +164,7 @@ class _PrivacyViewState extends State<PrivacyView>
               fontSize: 11,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.2,
-              color: Colors.white,
+              color: S256Colors.text,
             ),
           ),
         ),
@@ -173,35 +174,35 @@ class _PrivacyViewState extends State<PrivacyView>
           style: TextStyle(
             fontSize: 36,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: S256Colors.text,
             letterSpacing: -0.5,
           ),
         ),
         const SizedBox(height: 8),
         Row(
           children: [
-            Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade400),
+            Icon(Icons.calendar_today, size: 14, color: S256Colors.textLight),
             const SizedBox(width: 6),
             Text(
               'Last updated: June 22, 2026',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade400,
+                color: S256Colors.textLight,
               ),
             ),
             const SizedBox(width: 10),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
+                color: S256Colors.text.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: Colors.white24),
+                border: Border.all(color: S256Colors.lineStrong),
               ),
               child: Text(
                 'Revision 2026.06.22',
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.grey.shade300,
+                  color: S256Colors.textLight,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -217,9 +218,9 @@ class _PrivacyViewState extends State<PrivacyView>
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: S256Colors.cardBg,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: S256Theme.borderRadius,
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.1),
+          color: S256Colors.text.withValues(alpha: 0.1),
           width: 1,
         ),
       ),
@@ -232,7 +233,7 @@ class _PrivacyViewState extends State<PrivacyView>
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: S256Colors.primary.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: S256Theme.borderRadius,
                 ),
                 child: const Icon(
                   Icons.shield_outlined,
@@ -246,7 +247,7 @@ class _PrivacyViewState extends State<PrivacyView>
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: S256Colors.text,
                 ),
               ),
             ],
@@ -257,7 +258,7 @@ class _PrivacyViewState extends State<PrivacyView>
                 'This Privacy Policy outlines the data we collect, how we use it, and your rights regarding your '
                 'data. By using our app, you agree to the processing of your data as described in this policy.',
             style: TextStyle(
-              color: Colors.grey.shade300,
+              color: S256Colors.textLight,
               fontSize: 15,
               height: 1.6,
             ),
@@ -272,7 +273,7 @@ List<Widget> _buildSections() {
     {
       'icon': Icons.data_usage,
       'title': 'Data Collection and Processing',
-      'color': Colors.orange,
+      'color': S256Colors.primary,
       'points': <String>[
         'We do not collect personal information unless you voluntarily provide it.',
         'The S256 Wallet operates without requiring account registration.',
@@ -289,7 +290,7 @@ List<Widget> _buildSections() {
     {
       'icon': Icons.analytics_outlined,
       'title': 'Use of Collected Data',
-      'color': Colors.green,
+      'color': S256Colors.success,
       'points': <String>[
         'The data collected through the app is used solely to ensure the functionality of the wallet.',
         'We do not collect or store personal data on our servers.',
@@ -310,7 +311,7 @@ List<Widget> _buildSections() {
     {
       'icon': Icons.security,
       'title': 'Data Security',
-      'color': Colors.red,
+      'color': S256Colors.danger,
       'points': <String>[
         'The security of your data is a top priority for us. Your private keys and sensitive information are stored only locally on your device and are never transmitted to us or third parties.',
         'All cryptographic operations, including transaction signing, are performed entirely on your device. Only the resulting signed transaction hex is sent to the network — never your private key, seed phrase, or any intermediate signing material.',
@@ -320,7 +321,7 @@ List<Widget> _buildSections() {
     {
       'icon': Icons.person_outline,
       'title': 'User Rights',
-      'color': Colors.cyan,
+      'color': S256Colors.primary,
       'points': <String>[
         'Since we do not collect or store personal data, you can delete the app at any time without us retaining any information about you.',
         'If this changes in the future, you will be informed and have the right to view, modify, or delete your data.',
@@ -330,7 +331,7 @@ List<Widget> _buildSections() {
     {
       'icon': Icons.update,
       'title': 'Changes to the Privacy Policy',
-      'color': Colors.amber,
+      'color': S256Colors.primary,
       'points': <String>[
         'We reserve the right to modify this privacy policy to reflect new legal requirements or changes to our app.',
         'The current version of the privacy policy will always be available in the app and on our website.',
@@ -340,7 +341,7 @@ List<Widget> _buildSections() {
     {
       'icon': Icons.mail_outline,
       'title': 'Contact',
-      'color': Colors.teal,
+      'color': S256Colors.success,
       'points': <String>[
         'If you have any questions regarding this privacy policy, feel free to contact us at info@sha256coin.eu',
       ],
@@ -387,7 +388,7 @@ List<Widget> _buildSections() {
                 height: 32,
                 decoration: BoxDecoration(
                   color: S256Colors.cardBg,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: S256Theme.borderRadius,
                 ),
                 child: Center(
                   child: Text(
@@ -409,7 +410,7 @@ List<Widget> _buildSections() {
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: S256Colors.text,
                   ),
                 ),
               ),
@@ -424,7 +425,7 @@ List<Widget> _buildSections() {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: S256Theme.borderRadius,
                 border: Border(
                   left: BorderSide(
                     color: color.withValues(alpha: 0.5),
@@ -464,7 +465,7 @@ List<Widget> _buildSections() {
             child: Text(
               text,
               style: TextStyle(
-                color: Colors.grey.shade300,
+                color: S256Colors.textLight,
                 fontSize: 15,
                 height: 1.5,
               ),
@@ -491,7 +492,7 @@ List<Widget> _buildSections() {
             child: Text(
               text,
               style: TextStyle(
-                color: Colors.grey.shade400,
+                color: S256Colors.textLight,
                 fontSize: 14,
                 height: 1.4,
               ),
@@ -507,9 +508,9 @@ List<Widget> _buildSections() {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: S256Colors.cardBg,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: S256Theme.borderRadius,
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.1),
+          color: S256Colors.text.withValues(alpha: 0.1),
         ),
       ),
       child: Column(
@@ -524,7 +525,7 @@ List<Widget> _buildSections() {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                  color: S256Colors.text,
                 ),
               ),
             ],
@@ -534,7 +535,7 @@ List<Widget> _buildSections() {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               color: S256Colors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: S256Theme.borderRadius,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -555,7 +556,7 @@ List<Widget> _buildSections() {
           Text(
             'Your privacy is our priority',
             style: TextStyle(
-              color: Colors.grey.shade500,
+              color: S256Colors.textLight,
               fontSize: 13,
               fontStyle: FontStyle.italic,
             ),

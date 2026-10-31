@@ -56,18 +56,18 @@ class _TransactionModalState extends State<TransactionModal> {
           topRight: Radius.circular(2),
         ),
         child: Container(
-          color: Colors.black,
+          color: S256Colors.darkBg,
           padding: const EdgeInsets.all(16.0),
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _hasError
                   ? const Center(
                       child: Text('Failed to load transaction details',
-                          style: TextStyle(color: Colors.white)))
+                          style: TextStyle(color: S256Colors.text)))
                   : _transactionData == null
                       ? const Center(
                           child: Text('No transaction data available',
-                              style: TextStyle(color: Colors.white)))
+                              style: TextStyle(color: S256Colors.text)))
                       : SingleChildScrollView(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -89,7 +89,7 @@ class _TransactionModalState extends State<TransactionModal> {
                                 'Input:',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                                  color: S256Colors.text,
                                 ),
                               ),
                               ...(_transactionData!['vin'] as List).map((vin) {
@@ -103,7 +103,7 @@ class _TransactionModalState extends State<TransactionModal> {
                                 'Output:',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                                  color: S256Colors.text,
                                 ),
                               ),
                               ...(_transactionData!['vout'] as List)
@@ -128,14 +128,14 @@ class _TransactionModalState extends State<TransactionModal> {
           Text(
             title,
             style: const TextStyle(
-              color: Colors.white,
+              color: S256Colors.text,
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: S256Colors.text),
             ),
           ),
         ],

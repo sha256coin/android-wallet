@@ -269,12 +269,22 @@ class WalletService {
 
     final List<Map<String, dynamic>> confirmedUtxos = [];
     if (result != null && result['result'] != null) {
+      // scantxoutset already returns each output's scriptPubKey. Keeping it
+      // saves sendTransaction one gettxout round trip per UTXO, which made a
+      // send from a wallet with hundreds of UTXOs take tens of seconds. Only
+      // the address's own script is accepted: addr(<address>) can't match
+      // any other, so anything else from the server is dropped and looked up.
+      String? ownScript;
+      try {
+        ownScript = HEX.encode(S256Signer.scriptFromAddress(address));
+      } catch (_) {}
       final unspents = result['result']['unspents'] as List<dynamic>? ?? [];
       for (var u in unspents) {
         final int utxoHeight = (u['height'] as num).toInt();
         final int conf = currentHeight > 0 && utxoHeight > 0
             ? currentHeight - utxoHeight + 1
             : 1;
+        final script = u['scriptPubKey'];
         confirmedUtxos.add({
           'txid': u['txid'],
           'vout': u['vout'],
@@ -283,6 +293,8 @@ class WalletService {
               : double.tryParse(u['amount'].toString()) ?? 0.0,
           'height': utxoHeight,
           'confirmations': conf,
+          if (script is String && ownScript != null && script.toLowerCase() == ownScript)
+            'scriptPubKey': ownScript,
         });
       }
     }

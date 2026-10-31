@@ -16,6 +16,18 @@ class S256Colors {
   static const line = Color(0x17d6deeb);         // Hairline, 9%
   static const lineStrong = Color(0x2ed6deeb);   // Stronger hairline, 18%
   static const danger = Color(0xFFff6b6b);
+  static const dangerBg = Color(0xFF4a1c1c);    // Error snack bars
+  static const success = Color(0xFF4ade80);
+  static const glow = Color(0x1Ff5a524);         // Amber glow, 12%
+  static const gridLine = Color(0x0Ad6deeb);     // Background grid, 4%
+
+  /// Brushed platinum for display type (the website's --platinum, dark theme).
+  static const platinum = [
+    Color(0xFFf5f7fa),
+    Color(0xFFb8c0cb),
+    Color(0xFFf0f3f7),
+    Color(0xFF8f99a7),
+  ];
 
   static const gradient = LinearGradient(
     colors: [Color(0xFFf7b53b), Color(0xFFe58b0f)],
@@ -57,21 +69,37 @@ class AppBackground extends StatelessWidget {
   }
 }
 
-// Name kept from the old glow painter; it now draws the faint grid.
+// Name kept from the old glow painter. It draws the website's hero: a 48px
+// grid that fades out towards the bottom and an amber glow at the top right.
 class S256ShimmerPainter extends CustomPainter {
   const S256ShimmerPainter();
 
+  static const double _cell = 48;
+
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0x0ad6deeb)
-      ..strokeWidth = 1;
-    const step = 40.0;
-    for (double x = 0; x < size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (double y = 0; y < size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    final rect = Offset.zero & size;
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = const RadialGradient(
+          center: Alignment(0.56, -0.8),
+          radius: 0.9,
+          colors: [S256Colors.glow, Colors.transparent],
+        ).createShader(rect),
+    );
+
+    // Drawn one row of cells at a time so each row gets its own alpha.
+    final fadeTo = size.height < 1100 ? size.height : 1100.0;
+    final line = Paint()..strokeWidth = 1;
+    for (double y = 0; y < fadeTo; y += _cell) {
+      final t = y / fadeTo;
+      final fade = t < 0.55 ? 1.0 : (1 - (t - 0.55) / 0.45).clamp(0.0, 1.0);
+      line.color = S256Colors.gridLine.withValues(alpha: S256Colors.gridLine.a * fade);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), line);
+      for (double x = 0; x < size.width; x += _cell) {
+        canvas.drawLine(Offset(x, y), Offset(x, y + _cell > fadeTo ? fadeTo : y + _cell), line);
+      }
     }
   }
 
@@ -138,13 +166,13 @@ class SilverCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title!.toUpperCase(),
+                  '// ${title!.toUpperCase()}',
                   style: const TextStyle(
-                    fontFamily: 'ChakraPetch',
+                    fontFamily: 'IBMPlexMono',
                     fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 1.4,
-                    color: S256Colors.textLight,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 1.8,
+                    color: S256Colors.primary,
                   ),
                 ),
                 const SizedBox(height: 12),

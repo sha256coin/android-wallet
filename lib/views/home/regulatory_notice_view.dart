@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:s256_wallet/theme/s256_theme.dart';
 import 'package:s256_wallet/widgets/app_background.dart';
 
 class RegulatoryNoticeView extends StatelessWidget {
@@ -11,10 +12,10 @@ class RegulatoryNoticeView extends StatelessWidget {
         elevation: 0,
         title: const Text(
           'Regulatory Notice',
-          style: TextStyle(color: Colors.white, fontSize: 20),
+          style: TextStyle(color: S256Colors.text, fontSize: 20),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: S256Colors.text),
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
@@ -30,7 +31,7 @@ class RegulatoryNoticeView extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: S256Colors.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: S256Theme.borderRadius,
                   border: Border.all(color: S256Colors.primary.withValues(alpha: 0.35)),
                 ),
                 child: const Column(
@@ -44,7 +45,7 @@ class RegulatoryNoticeView extends StatelessWidget {
                           child: Text(
                             'Disclaimer & Transparency',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: S256Colors.text,
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),
@@ -55,7 +56,7 @@ class RegulatoryNoticeView extends StatelessWidget {
                     SizedBox(height: 10),
                     Text(
                       'This section provides transparency information for users in line with current crypto-asset compliance expectations.',
-                      style: TextStyle(color: Colors.white70, height: 1.4),
+                      style: TextStyle(color: S256Colors.textLight, height: 1.4),
                     ),
                   ],
                 ),
@@ -66,7 +67,7 @@ class RegulatoryNoticeView extends StatelessWidget {
                 text:
                     'S256 Wallet is a non-custodial software wallet. Private keys remain on your device. The wallet operator does not hold, recover, or control user funds.',
                 icon: Icons.key_rounded,
-                color: Colors.green,
+                color: S256Colors.success,
               ),
               const SizedBox(height: 12),
               _NoticeBlock(
@@ -74,7 +75,7 @@ class RegulatoryNoticeView extends StatelessWidget {
                 text:
                     'The app does not execute trades on your behalf and does not provide order routing or brokerage services. External exchange links are user-initiated.',
                 icon: Icons.open_in_new_rounded,
-                color: Colors.teal,
+                color: S256Colors.success,
               ),
               const SizedBox(height: 12),
               _NoticeBlock(
@@ -82,7 +83,7 @@ class RegulatoryNoticeView extends StatelessWidget {
                 text:
                     'Crypto-assets are highly volatile and can become illiquid. You may lose all value. Network fees, smart contract risk, and third-party platform risk may apply.',
                 icon: Icons.warning_amber_rounded,
-                color: Colors.orange,
+                color: S256Colors.primary,
               ),
               const SizedBox(height: 12),
               _NoticeBlock(
@@ -97,13 +98,13 @@ class RegulatoryNoticeView extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(2),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                  color: S256Colors.text.withValues(alpha: 0.06),
+                  borderRadius: S256Theme.borderRadius,
+                  border: Border.all(color: S256Colors.text.withValues(alpha: 0.12)),
                 ),
                 child: const Text(
                   'Reminder: Always verify destination addresses, URL authenticity of external services, and legal availability in your jurisdiction before transacting.',
-                  style: TextStyle(color: Colors.white70, height: 1.45),
+                  style: TextStyle(color: S256Colors.textLight, height: 1.45),
                 ),
               ),
             ],
@@ -134,7 +135,7 @@ class _NoticeBlock extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: S256Theme.borderRadius,
         border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Row(
@@ -149,7 +150,7 @@ class _NoticeBlock extends StatelessWidget {
                 Text(
                   title,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: S256Colors.text,
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                   ),
@@ -157,7 +158,7 @@ class _NoticeBlock extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   text,
-                  style: const TextStyle(color: Colors.white70, height: 1.4),
+                  style: const TextStyle(color: S256Colors.textLight, height: 1.4),
                 ),
               ],
             ),

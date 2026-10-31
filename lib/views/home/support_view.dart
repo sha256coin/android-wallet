@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:s256_wallet/theme/s256_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:s256_wallet/widgets/app_background.dart';
@@ -13,10 +14,10 @@ class SupportView extends StatelessWidget {
         elevation: 0,
         title: const Text(
           'Support',
-          style: TextStyle(color: Colors.white, fontSize: 20),
+          style: TextStyle(color: S256Colors.text, fontSize: 20),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: S256Colors.text),
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
@@ -49,7 +50,7 @@ class SupportView extends StatelessWidget {
                 child: Text(
                   'Get Help & Connect',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: S256Colors.text,
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
                   ),
@@ -117,8 +118,8 @@ class SupportView extends StatelessWidget {
                 title: 'X (Twitter)',
                 subtitle: 'Follow S256 coin on X',
                 url: 'https://x.com/s256coin',
-                color: Colors.black,
-                iconColor: Colors.white,
+                color: S256Colors.darkBg,
+                iconColor: S256Colors.text,
               ),
 
               _buildContactCard(
@@ -143,7 +144,7 @@ class SupportView extends StatelessWidget {
                 subtitle: 'View our GitHub repository',
                 url: 'https://github.com/sha256coin/android-wallet',
                 color: const Color(0xFF24292e),
-                iconColor: Colors.white,
+                iconColor: S256Colors.text,
               ),
 /*
               _buildContactCard(
@@ -151,7 +152,7 @@ class SupportView extends StatelessWidget {
                 title: 'MiningPoolStat.app',
                 subtitle: 'Check S256 mining pools',
                 url: 'https://miningpoolstats.app/coins/S256',
-                color: Colors.green,
+                color: S256Colors.success,
               ),
 */
               const SizedBox(height: 32),
@@ -161,7 +162,7 @@ class SupportView extends StatelessWidget {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: S256Colors.cardBg,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: S256Theme.borderRadius,
                 ),
                 child: Row(
                   children: [
@@ -198,7 +199,7 @@ class SupportView extends StatelessWidget {
     return Text(
       title,
       style: const TextStyle(
-        color: Colors.white,
+        color: S256Colors.text,
         fontSize: 20,
         fontWeight: FontWeight.bold,
       ),
@@ -220,14 +221,14 @@ class SupportView extends StatelessWidget {
         builder: (BuildContext builderContext) {
           return InkWell(
             onTap: () => _openUrl(context ?? builderContext, url, title),
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: S256Theme.borderRadius,
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(2),
+                color: S256Colors.text.withValues(alpha: 0.05),
+                borderRadius: S256Theme.borderRadius,
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.1),
+                  color: S256Colors.text.withValues(alpha: 0.1),
                   width: 1,
                 ),
               ),
@@ -237,11 +238,11 @@ class SupportView extends StatelessWidget {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: color,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: S256Theme.borderRadius,
                     ),
                     child: Icon(
                       icon,
-                      color: iconColor ?? Colors.white,
+                      color: iconColor ?? S256Colors.text,
                       size: 24,
                     ),
                   ),
@@ -253,7 +254,7 @@ class SupportView extends StatelessWidget {
                         Text(
                           title,
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: S256Colors.text,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -262,7 +263,7 @@ class SupportView extends StatelessWidget {
                         Text(
                           subtitle,
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.6),
+                            color: S256Colors.text.withValues(alpha: 0.6),
                             fontSize: 14,
                           ),
                         ),
@@ -271,7 +272,7 @@ class SupportView extends StatelessWidget {
                   ),
                   Icon(
                     Icons.arrow_forward_ios,
-                    color: Colors.white.withValues(alpha: 0.3),
+                    color: S256Colors.text.withValues(alpha: 0.3),
                     size: 16,
                   ),
                 ],
@@ -320,7 +321,7 @@ class SupportView extends StatelessWidget {
         return AlertDialog(
           backgroundColor: S256Colors.cardBg,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: S256Theme.borderRadius,
             side: BorderSide(
               color: S256Colors.accent.withValues(alpha: 0.3),
               width: 1,
@@ -334,7 +335,7 @@ class SupportView extends StatelessWidget {
                 child: Text(
                   'Open $title',
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: S256Colors.text,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
@@ -349,7 +350,7 @@ class SupportView extends StatelessWidget {
               Text(
                 'Unable to open this link automatically. Copy the URL below:',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
+                  color: S256Colors.text.withValues(alpha: 0.7),
                   fontSize: 14,
                 ),
               ),
@@ -357,8 +358,8 @@ class SupportView extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(2),
+                  color: S256Colors.text.withValues(alpha: 0.05),
+                  borderRadius: S256Theme.borderRadius,
                   border: Border.all(
                     color: S256Colors.accent.withValues(alpha: 0.3),
                   ),
@@ -384,10 +385,10 @@ class SupportView extends StatelessWidget {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: const Text('Link copied to clipboard'),
-                            backgroundColor: Colors.green,
+                            backgroundColor: S256Colors.success,
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(2),
+                              borderRadius: S256Theme.borderRadius,
                             ),
                           ),
                         );
@@ -440,14 +441,14 @@ class SupportView extends StatelessWidget {
             _showEmailDialog(context, email);
           }
         },
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: S256Theme.borderRadius,
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(2),
+            color: S256Colors.text.withValues(alpha: 0.05),
+            borderRadius: S256Theme.borderRadius,
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.1),
+              color: S256Colors.text.withValues(alpha: 0.1),
               width: 1,
             ),
           ),
@@ -456,12 +457,12 @@ class SupportView extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.red,
-                  borderRadius: BorderRadius.circular(2),
+                  color: S256Colors.danger,
+                  borderRadius: S256Theme.borderRadius,
                 ),
                 child: const Icon(
                   Icons.email,
-                  color: Colors.white,
+                  color: S256Colors.text,
                   size: 24,
                 ),
               ),
@@ -473,7 +474,7 @@ class SupportView extends StatelessWidget {
                     const Text(
                       'Email',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: S256Colors.text,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -482,7 +483,7 @@ class SupportView extends StatelessWidget {
                     Text(
                       email,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.6),
+                        color: S256Colors.text.withValues(alpha: 0.6),
                         fontSize: 14,
                       ),
                     ),
@@ -491,7 +492,7 @@ class SupportView extends StatelessWidget {
               ),
               Icon(
                 Icons.arrow_forward_ios,
-                color: Colors.white.withValues(alpha: 0.3),
+                color: S256Colors.text.withValues(alpha: 0.3),
                 size: 16,
               ),
             ],
@@ -508,7 +509,7 @@ class SupportView extends StatelessWidget {
         return AlertDialog(
           backgroundColor: S256Colors.cardBg,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: S256Theme.borderRadius,
             side: BorderSide(
               color: S256Colors.accent.withValues(alpha: 0.3),
               width: 1,
@@ -521,7 +522,7 @@ class SupportView extends StatelessWidget {
               const Text(
                 'Contact Email',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: S256Colors.text,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
@@ -535,7 +536,7 @@ class SupportView extends StatelessWidget {
               Text(
                 'Copy the email address below:',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
+                  color: S256Colors.text.withValues(alpha: 0.7),
                   fontSize: 14,
                 ),
               ),
@@ -543,8 +544,8 @@ class SupportView extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(2),
+                  color: S256Colors.text.withValues(alpha: 0.05),
+                  borderRadius: S256Theme.borderRadius,
                   border: Border.all(
                     color: S256Colors.accent.withValues(alpha: 0.3),
                   ),
@@ -569,10 +570,10 @@ class SupportView extends StatelessWidget {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: const Text('Email copied to clipboard'),
-                            backgroundColor: Colors.green,
+                            backgroundColor: S256Colors.success,
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(2),
+                              borderRadius: S256Theme.borderRadius,
                             ),
                           ),
                         );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:s256_wallet/models/price_info.dart';
 import 'package:s256_wallet/providers/blockchain_provider.dart';
+import 'package:s256_wallet/theme/s256_theme.dart';
 import 'package:s256_wallet/widgets/app_background.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -147,7 +148,7 @@ class ExchangeView extends StatelessWidget {
                   body: 'Crypto-assets are volatile and may become illiquid. You can lose all value. Verify '
                       'destination addresses, platform terms, and local legal/tax obligations before trading or '
                       'transferring assets.',
-                  color: Colors.orange,
+                  color: S256Colors.primary,
                 ),
                 const SizedBox(height: 10),
                 _notice(
@@ -238,6 +239,27 @@ class ExchangeView extends StatelessWidget {
               ),
             ],
           ),
+          if (info.change24h case final change? when info.hasPrice) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(
+                  change >= 0 ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                  size: 14,
+                  color: change >= 0 ? S256Colors.success : S256Colors.danger,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${PriceInfo.formatChange(change)} 24h',
+                  style: TextStyle(
+                    fontFamily: S256Theme.mono,
+                    fontSize: 13,
+                    color: change >= 0 ? S256Colors.success : S256Colors.danger,
+                  ),
+                ),
+              ],
+            ),
+          ],
           if (info.hasPrice) ...[
             const SizedBox(height: 10),
             const Divider(height: 1),
@@ -307,7 +329,7 @@ class ExchangeView extends StatelessWidget {
       height: 44,
       decoration: BoxDecoration(
         color: S256Colors.surface2,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: S256Theme.borderRadius,
         border: Border.all(color: S256Colors.line),
       ),
       clipBehavior: Clip.antiAlias,
@@ -389,8 +411,8 @@ class ExchangeView extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.10),
-                border: Border(left: BorderSide(color: Colors.orange.withValues(alpha: 0.8), width: 3)),
+                color: S256Colors.primary.withValues(alpha: 0.10),
+                border: Border(left: BorderSide(color: S256Colors.primary.withValues(alpha: 0.8), width: 3)),
               ),
               child: Text(
                 note,
@@ -409,7 +431,7 @@ class ExchangeView extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 foregroundColor: S256Colors.text,
                 side: const BorderSide(color: S256Colors.lineStrong),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
+                shape: RoundedRectangleBorder(borderRadius: S256Theme.borderRadius),
                 textStyle: const TextStyle(
                   fontFamily: 'ChakraPetch',
                   fontWeight: FontWeight.w600,
@@ -460,12 +482,12 @@ class ExchangeView extends StatelessWidget {
   }) {
     return InkWell(
       onTap: () => _openUrl(link),
-      borderRadius: BorderRadius.circular(2),
+      borderRadius: S256Theme.borderRadius,
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: S256Colors.cardBg,
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: S256Theme.borderRadius,
           border: Border.all(color: S256Colors.line),
         ),
         child: Row(
@@ -507,7 +529,7 @@ class ExchangeView extends StatelessWidget {
   Widget _linkRow(String name, String host, String link) {
     return InkWell(
       onTap: () => _openUrl(link),
-      borderRadius: BorderRadius.circular(2),
+      borderRadius: S256Theme.borderRadius,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(
@@ -601,7 +623,7 @@ class _Step extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: S256Colors.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: S256Theme.borderRadius,
               border: Border.all(color: S256Colors.primary.withValues(alpha: 0.5)),
             ),
             child: Text(

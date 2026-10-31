@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:s256_wallet/theme/s256_theme.dart';
 import 'package:s256_wallet/widgets/app_background.dart';
 
 class SkeletonLoader extends StatefulWidget {
@@ -49,7 +50,7 @@ class _SkeletonLoaderState extends State<SkeletonLoader>
           width: widget.width,
           height: widget.height,
           decoration: BoxDecoration(
-            borderRadius: widget.borderRadius ?? BorderRadius.circular(2),
+            borderRadius: widget.borderRadius ?? S256Theme.borderRadius,
             gradient: LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
@@ -83,14 +84,14 @@ class WalletBalanceSkeleton extends StatelessWidget {
         SkeletonLoader(
           width: 120,
           height: 20,
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: S256Theme.borderRadius,
         ),
         const SizedBox(height: 8),
         // S256 Balance skeleton
         SkeletonLoader(
           width: 200,
           height: 36,
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: S256Theme.borderRadius,
         ),
         const SizedBox(height: 30),
         // Chart skeleton
@@ -99,10 +100,10 @@ class WalletBalanceSkeleton extends StatelessWidget {
           margin: const EdgeInsets.symmetric(horizontal: 16),
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(2),
+            color: S256Colors.darkBg.withValues(alpha: 0.2),
+            borderRadius: S256Theme.borderRadius,
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.05),
+              color: S256Colors.text.withValues(alpha: 0.05),
               width: 1,
             ),
           ),
@@ -117,7 +118,7 @@ class WalletBalanceSkeleton extends StatelessWidget {
                     (index) => SkeletonLoader(
                       width: 20,
                       height: 50.0 + (index * 10.0),
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: S256Theme.borderRadius,
                     ),
                   ),
                 ),
@@ -130,7 +131,7 @@ class WalletBalanceSkeleton extends StatelessWidget {
         SkeletonLoader(
           width: 100,
           height: 12,
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: S256Theme.borderRadius,
         ),
       ],
     );
@@ -146,8 +147,8 @@ class TransactionSkeleton extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(2),
+        color: S256Colors.text.withValues(alpha: 0.05),
+        borderRadius: S256Theme.borderRadius,
       ),
       child: Row(
         children: [
@@ -155,7 +156,7 @@ class TransactionSkeleton extends StatelessWidget {
           SkeletonLoader(
             width: 40,
             height: 40,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: S256Theme.borderRadius,
           ),
           const SizedBox(width: 12),
           // Content skeleton
@@ -166,13 +167,13 @@ class TransactionSkeleton extends StatelessWidget {
                 SkeletonLoader(
                   width: 150,
                   height: 16,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: S256Theme.borderRadius,
                 ),
                 const SizedBox(height: 8),
                 SkeletonLoader(
                   width: 100,
                   height: 12,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: S256Theme.borderRadius,
                 ),
               ],
             ),
@@ -181,7 +182,7 @@ class TransactionSkeleton extends StatelessWidget {
           SkeletonLoader(
             width: 20,
             height: 20,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: S256Theme.borderRadius,
           ),
         ],
       ),

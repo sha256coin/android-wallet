@@ -125,10 +125,32 @@ class S256Theme {
           borderRadius: borderRadius,
           borderSide: BorderSide(color: S256Colors.primary, width: 1.5),
         ),
+        errorBorder: const OutlineInputBorder(
+          borderRadius: borderRadius,
+          borderSide: BorderSide(color: S256Colors.danger),
+        ),
+        focusedErrorBorder: const OutlineInputBorder(
+          borderRadius: borderRadius,
+          borderSide: BorderSide(color: S256Colors.danger, width: 1.5),
+        ),
       ),
+      // Dialogs float over the wallet like a heads-up display: amber
+      // corner brackets on a hairline frame (as in the web wallet).
       dialogTheme: const DialogThemeData(
         backgroundColor: S256Colors.cardBg,
         elevation: 0,
+        shape: BracketBorder(),
+      ),
+      tooltipTheme: const TooltipThemeData(
+        decoration: BoxDecoration(
+          color: S256Colors.surface2,
+          borderRadius: borderRadius,
+          border: Border.fromBorderSide(BorderSide(color: S256Colors.lineStrong)),
+        ),
+        textStyle: TextStyle(color: S256Colors.text, fontSize: 12, fontFamily: body),
+      ),
+      popupMenuTheme: const PopupMenuThemeData(
+        color: S256Colors.cardBg,
         shape: RoundedRectangleBorder(
           borderRadius: borderRadius,
           side: BorderSide(color: S256Colors.lineStrong),
@@ -179,4 +201,39 @@ class S256Theme {
       ),
     );
   }
+}
+
+/// A square frame with a hairline border and amber corner brackets, for
+/// shapes that Flutter paints itself (dialogs).
+class BracketBorder extends RoundedRectangleBorder {
+  final Color bracketColor;
+
+  const BracketBorder({this.bracketColor = S256Colors.primary})
+      : super(
+          borderRadius: S256Theme.borderRadius,
+          side: const BorderSide(color: S256Colors.lineStrong),
+        );
+
+  @override
+  void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {
+    super.paint(canvas, rect, textDirection: textDirection);
+    const len = 14.0;
+    final p = Paint()
+      ..color = bracketColor
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.square;
+    final l = rect.left, t = rect.top, r = rect.right, b = rect.bottom;
+    canvas.drawPath(
+      Path()
+        ..moveTo(l, t + len)..lineTo(l, t)..lineTo(l + len, t)
+        ..moveTo(r - len, t)..lineTo(r, t)..lineTo(r, t + len)
+        ..moveTo(r, b - len)..lineTo(r, b)..lineTo(r - len, b)
+        ..moveTo(l + len, b)..lineTo(l, b)..lineTo(l, b - len),
+      p,
+    );
+  }
+
+  @override
+  ShapeBorder scale(double t) => this;
 }

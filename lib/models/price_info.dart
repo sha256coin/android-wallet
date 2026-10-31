@@ -13,8 +13,12 @@ class PriceInfo {
   /// When [price] was last traded, or null when it is a live price.
   final DateTime? lastTraded;
 
+  /// 24h change in percent, or null when LiveCoinWatch has none (always null
+  /// for a last traded price).
+  final double? change24h;
+
   const PriceInfo(
-      {this.price, this.volume, this.cap, this.liquidity, this.lastTraded});
+      {this.price, this.volume, this.cap, this.liquidity, this.lastTraded, this.change24h});
 
   static const PriceInfo none = PriceInfo();
 
@@ -27,16 +31,19 @@ class PriceInfo {
   factory PriceInfo.fromJson(Map<String, dynamic> json) {
     double? number(dynamic v) =>
         v is num && v.isFinite && v >= 0 ? v.toDouble() : null;
+    final change = json['change24h'];
+    final lastTraded = number(json['lastTraded']);
     return PriceInfo(
       price: number(json['price']),
       volume: number(json['volume']),
       cap: number(json['cap']),
       liquidity: number(json['liquidity']),
-      lastTraded: switch (number(json['lastTraded'])) {
+      lastTraded: switch (lastTraded) {
         final ms? =>
           DateTime.fromMillisecondsSinceEpoch(ms.toInt(), isUtc: true),
         _ => null,
       },
+      change24h: lastTraded == null && change is num && change.isFinite ? change.toDouble() : null,
     );
   }
 
@@ -59,6 +66,10 @@ class PriceInfo {
     final d = date.toUtc();
     return '${d.day} ${months[d.month - 1]} ${d.year}';
   }
+
+  /// "+2.35%" / "−1.20%".
+  static String formatChange(double percent) =>
+      '${percent >= 0 ? '+' : '−'}${percent.abs().toStringAsFixed(2)}%';
 
   /// Small prices keep more decimals: $0.000123, $0.0123, $1.23.
   static String formatUsd(double value) {

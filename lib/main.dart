@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:s256_wallet/widgets/app_background.dart';
 import 'package:s256_wallet/theme/s256_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -25,20 +26,20 @@ void main() async {
     // Show error in UI
     runApp(MaterialApp(
       home: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: S256Colors.darkBg,
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error, color: Colors.red, size: 60),
+                const Icon(Icons.error, color: S256Colors.danger, size: 60),
                 const SizedBox(height: 20),
                 const Text('App Initialization Failed',
-                    style: TextStyle(color: Colors.white, fontSize: 20)),
+                    style: TextStyle(color: S256Colors.text, fontSize: 20)),
                 const SizedBox(height: 20),
                 Text('Error: $e',
-                    style: const TextStyle(color: Colors.red, fontSize: 14),
+                    style: const TextStyle(color: S256Colors.danger, fontSize: 14),
                     textAlign: TextAlign.center),
               ],
             ),

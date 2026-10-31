@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:s256_wallet/theme/s256_theme.dart';
 import 'package:s256_wallet/widgets/app_background.dart';
 
 /// Primary: amber fill with dark text. Secondary: hairline outline.
@@ -42,7 +43,7 @@ class ButtonWidget extends StatelessWidget {
       ),
       shape: WidgetStateProperty.all(
         RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: S256Theme.borderRadius,
           side: border,
         ),
       ),
@@ -58,7 +59,7 @@ class ButtonWidget extends StatelessWidget {
       return Container(
         decoration: BoxDecoration(
           color: fill,
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: S256Theme.borderRadius,
           border: border == BorderSide.none ? null : Border.all(color: S256Colors.lineStrong),
         ),
         child: IconButton(

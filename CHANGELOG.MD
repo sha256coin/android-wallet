@@ -2,6 +2,32 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.7.0] - Play Store versionCode 9
+
+The look of S256 web wallet 3.0 on the phone, faster sends from wallets with many coins, and a real balance chart.
+
+### Fixed
+
+- Sending from a wallet with many UTXOs took a long time: before signing, the app asked the node for every UTXO's script with a separate `gettxout` call, one after another (200 UTXOs meant 200 round trips, tens of seconds on mobile data). The script now comes from the `scantxoutset` answer the app already has, so a send needs no extra lookups. A script that is not the wallet address's own is not trusted and is still looked up. Advanced send (coin control) gets the same speed-up.
+- Balance chart: the gridlines and their values used steps of a fifth of the highest balance, which gave uneven numbers. They are now round (1, 2 or 5 × 10ⁿ).
+
+### Added
+
+- A status line at the top of the wallet: connection, block height, network hashrate, peers and the S256 price. It reads the node every two minutes and turns amber when the node cannot be reached.
+- 24h price change from the S256 explorer, on the Markets tab and next to the USD value, shown only while there is a live price (LiveCoinWatch has none while no market trades S256).
+
+### Changed
+
+- Balance card: amber corner brackets, the balance in large platinum figures with a slow sheen, the USD value and the last-traded date or 24h change under it, and the pending state as a badge.
+- Balance chart: time along the bottom instead of transaction order, a stepped line (the balance only changes at a transaction), round gridlines with their values, green and red markers for coins in and out, and a readout with date, balance and change when you touch a transaction or slide along the chart. A dashed step at the right edge shows a pending total. The chart library (fl_chart) is no longer needed.
+- Network Status screen: block height, hashrate, difficulty and peers as large figures, then the mempool and node details (with the best block).
+- Every dialog has the same corner-bracket frame, and section titles are small mono labels ("// RECENT TRANSACTIONS"), as in the web wallet.
+- Bottom bar: names under the icons (Wallet, Markets, Contacts, Settings) and an amber line over the open tab.
+- Setup screen: the grid background and the coin inside a slowly turning ring instead of the photo. Animations stop when the phone asks for reduced motion.
+- The background grid matches the website (48px cells with an amber glow, fading towards the bottom).
+- The remaining fixed white, black, orange, green and cyan colours now use the app's colours. The receive QR code stays on pure white.
+- Removed unused files: the background photo and two Roboto fonts (a smaller app).
+
 ## [1.6.6] - Play Store versionCode 8
 
 ### Added
