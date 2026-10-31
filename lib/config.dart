@@ -12,4 +12,7 @@ class Config {
   static const String getAddressTxsEndpoint = '/ext/getaddresstxs';
   static const String getTxEndpoint = '/ext/gettx';
 
+  // S256 price (the explorer reads it from LiveCoinWatch with its own API key)
+  static const String priceEndpoint = '/api/price';
+
 }

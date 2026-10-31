@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:s256_wallet/config.dart';
+import 'package:s256_wallet/models/price_info.dart';
 import 'package:s256_wallet/services/wallet_service.dart';
 
 class BlockchainProvider with ChangeNotifier {
@@ -14,11 +15,16 @@ class BlockchainProvider with ChangeNotifier {
   int _startIndex = 0;
   final int _limit = 50;
   int _txCount = 0;
+  PriceInfo _priceInfo = PriceInfo.none;
 
   String get timestamp => _timestamp;
   List get transactions => _transactions;
   bool get isLoading => _isLoading;
   bool get hasMore => _hasMore;
+  PriceInfo get priceInfo => _priceInfo;
+
+  /// USD price of one S256, or null when there is none.
+  double? get price => _priceInfo.hasPrice ? _priceInfo.price : null;
 
   Future<void> loadBlockchain(String? address) async {
     final DateTime now = DateTime.now();
@@ -28,9 +34,26 @@ class BlockchainProvider with ChangeNotifier {
     // screen and replaces it only once the newest page has arrived. Clearing
     // it first made the wallet show "No Transactions Yet" until the explorer
     // answered, and kept it empty if the request failed.
-    await _fetchPage(address, refresh: true);
+    await Future.wait([_fetchPage(address, refresh: true), fetchPrice()]);
     _timestamp = formattedDate;
     notifyListeners();
+  }
+
+  /// Loads the live price. On any failure the last known price stays.
+  Future<void> fetchPrice() async {
+    try {
+      final response = await http
+          .get(Uri.parse('${Config.explorerUrl}${Config.priceEndpoint}'))
+          .timeout(const Duration(seconds: 10));
+      if (response.statusCode != 200) return;
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) {
+        _priceInfo = PriceInfo.fromJson(data);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error fetching price: $e');
+    }
   }
 
   /// Loads the next page (infinite scroll).

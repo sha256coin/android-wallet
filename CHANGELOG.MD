@@ -12,9 +12,13 @@ All notable changes to this project are documented in this file.
 - Address book: a Send button on each contact opens Send with the address filled in.
 - Address book: scanning a QR with a name (for example `?label=miner-3`) fills in the name too, unless a contact already has that name.
 
+- Live price is back: the S256 price from LiveCoinWatch (read through the S256 explorer, so no API key is in the app) shows under the balance as an approximate USD value, and on the Markets tab with 24h volume, market cap and liquidity. Nothing is shown while LiveCoinWatch has no price for S256.
+
 ### Changed
 
 - New look that matches sha256coin.eu: graphite background with a faint grid, flat square cards with thin borders and small uppercase titles, a single amber accent instead of purple and cyan, and square buttons and inputs. Chakra Petch (headings and balance), IBM Plex Sans (text) and IBM Plex Mono (addresses) are bundled with the app. Secondary text is lighter for better contrast.
+- Markets tab redesigned with the content of sha256coin.eu/markets: exchanges (FynEx, Rabid Rabbit) with pair, type and a ticker warning, the market data trackers (CoinCarp, CoinCodex, LiveCoinWatch), and four safety checks before using an exchange. The notices moved to the bottom.
+- Balance chart: the explorer's per-transaction balance restarts at 0 on every page of 50 transactions, so the chart showed too low a line for wallets with many transactions. It is now drawn back from the real balance.
 - Request Amount (Receive): the amount must be above 0 with at most 8 decimals, and is saved in a standard form (`01.50` becomes `1.5`). The note is limited to 200 characters.
 
 ## [1.6.5] - Play Store versionCode 7

@@ -5,6 +5,7 @@ import 'package:s256_wallet/widgets/empty_state.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:s256_wallet/models/price_info.dart';
 import 'package:s256_wallet/providers/blockchain_provider.dart';
 import 'package:s256_wallet/providers/wallet_provider.dart';
 import 'package:s256_wallet/views/home/receive_view.dart';
@@ -445,6 +446,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
     final double? displayBalance = walletProvider.displayBalance;
     final double? confirmedBalance = walletProvider.balance;
     final bool hasPending = walletProvider.hasPendingTransactions;
+    final double? price = blockchainProvider.price;
 
     return Scaffold(
       body: RefreshIndicator(
@@ -564,6 +566,23 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                                 ),
                               ],
                             ),
+
+                            // Value in USD, only while the explorer has a price
+                            if (price != null && displayBalance != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 6),
+                                child: Text(
+                                  '≈ ${PriceInfo.formatUsd(displayBalance * price)}',
+                                  style: TextStyle(
+                                    fontFamily: 'ChakraPetch',
+                                    color: hasPending
+                                        ? Colors.orange.withValues(alpha: 0.8)
+                                        : S256Colors.textLight,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
 
                             // Show confirmed balance if different from display balance
                             if (hasPending && confirmedBalance != displayBalance)
