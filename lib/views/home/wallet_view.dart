@@ -162,34 +162,39 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
     );
   }
 
-  List<FlSpot> _generateDataPoints(List<dynamic> transactions) {
+  // The explorer's per-transaction "balance" is a running total that restarts
+  // at 0 for every page of 50, so it is wrong for any wallet with more
+  // transactions than one page. The chart is rebuilt from the real balance
+  // instead: the newest transaction ends at [currentBalance] and each earlier
+  // point is the later balance minus that transaction's net amount.
+  List<FlSpot> _generateDataPoints(List<dynamic> transactions, double? currentBalance) {
+    final end = currentBalance ?? 0.0;
     if (transactions.isEmpty) {
-      // Show a flat line at current balance or 0
-      return [
-        const FlSpot(0, 0),
-        const FlSpot(1, 0),
-      ];
+      // Show a flat line at the current balance
+      return [FlSpot(0, end), FlSpot(1, end)];
     }
 
-    // Create spots from transactions (reversed to show oldest first)
-    final reversedTransactions = transactions.reversed.toList();
-    final spots = <FlSpot>[];
-
-    // Start from 0 if we have transactions
-    spots.add(const FlSpot(0, 0));
-
-    // Add each transaction as a point
-    for (int i = 0; i < reversedTransactions.length; i++) {
-      final tx = reversedTransactions[i];
-      final balance = tx['balance']?.toDouble() ?? 0.0;
-      spots.add(FlSpot(i + 1.0, balance));
+    // transactions are newest first; walk back from the current balance
+    final balances = <double>[];
+    var after = end;
+    for (final tx in transactions) {
+      balances.add(after < 0 ? 0.0 : after);
+      final net = (tx['amount'] as num?)?.toDouble() ?? 0.0;
+      after = double.parse((after - net).toStringAsFixed(8));
     }
 
+    // First point: the balance before the oldest loaded transaction
+    // (0 when the whole history is loaded).
+    final spots = <FlSpot>[FlSpot(0, after < 0 ? 0.0 : after)];
+    final oldestFirst = balances.reversed.toList();
+    for (int i = 0; i < oldestFirst.length; i++) {
+      spots.add(FlSpot(i + 1.0, oldestFirst[i]));
+    }
     return spots;
   }
 
   LineChartData _buildChartData(List<dynamic> transactions, double? currentBalance) {
-    final spots = _generateDataPoints(transactions);
+    final spots = _generateDataPoints(transactions, currentBalance);
 
     // Calculate bounds
     double maxY = currentBalance ?? 1.0;
@@ -231,7 +236,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
             return touchedSpots.map((LineBarSpot touchedSpot) {
               if (touchedSpot.x == 0) {
                 return LineTooltipItem(
-                  'Starting Point\n',
+                  'Before these transactions\n',
                   const TextStyle(
                     color: Colors.white70,
                     fontSize: 12,
@@ -239,7 +244,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                   ),
                   children: [
                     TextSpan(
-                      text: '0.00 S256',
+                      text: '${touchedSpot.y.toStringAsFixed(4)} S256',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 14,
@@ -618,7 +623,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                                 ),
                               )
                                   : LineChart(
-                                _buildChartData(transactions, displayBalance),
+                                _buildChartData(transactions, confirmedBalance ?? displayBalance),
                                 duration: const Duration(milliseconds: 250),
                               ),
                                 ),
