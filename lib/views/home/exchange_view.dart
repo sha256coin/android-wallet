@@ -232,7 +232,10 @@ class ExchangeView extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const Text('per S256', style: TextStyle(color: S256Colors.textLight, fontSize: 13)),
+              Text(
+                info.isLastTrade ? 'per S256 · last traded' : 'per S256',
+                style: const TextStyle(color: S256Colors.textLight, fontSize: 13),
+              ),
             ],
           ),
           if (info.hasPrice) ...[
@@ -242,9 +245,18 @@ class ExchangeView extends StatelessWidget {
             if (info.cap != null) ...[_fact('Mkt cap', PriceInfo.formatCompactUsd(info.cap!)), const Divider(height: 1)],
             if (info.liquidity != null) ...[_fact('Liquidity', PriceInfo.formatCompactUsd(info.liquidity!)), const Divider(height: 1)],
           ],
+          if (info.isLastTrade) ...[
+            const SizedBox(height: 10),
+            _fact('Traded', PriceInfo.formatDate(info.lastTraded!)),
+            const Divider(height: 1),
+          ],
           const SizedBox(height: 10),
           _fineprint(
-            info.hasPrice
+            info.isLastTrade
+                ? 'This is the last traded price, not a live price: LiveCoinWatch currently sees no market '
+                    'trading S256. Source: LiveCoinWatch, read through the S256 explorer. It is not a valuation '
+                    'of S256.'
+                : info.hasPrice
                 ? 'Source: LiveCoinWatch, read through the S256 explorer. It comes from a few low-volume markets '
                     'and is not a valuation of S256.'
                 : 'LiveCoinWatch has no price for S256 at the moment. It will appear here and under your balance '

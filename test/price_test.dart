@@ -20,6 +20,16 @@ void main() {
       expect(p.liquidity, isNull);
     });
 
+    test('a last traded price carries its date and is not live', () {
+      final p = PriceInfo.fromJson({'price': 0.0034969, 'volume': null, 'lastTraded': 1792295700000});
+      expect(p.hasPrice, isTrue);
+      expect(p.isLastTrade, isTrue);
+      expect(p.lastTraded!.toUtc(), DateTime.utc(2026, 10, 18, 3, 55));
+      expect(PriceInfo.formatDate(p.lastTraded!), '18 Oct 2026');
+      expect(PriceInfo.fromJson({'price': 0.05}).isLastTrade, isFalse);
+      expect(PriceInfo.fromJson({'price': null, 'lastTraded': 1792295700000}).isLastTrade, isFalse);
+    });
+
     test('nulls, zero, negative and non-numbers are no price', () {
       expect(PriceInfo.fromJson({'price': null, 'volume': null, 'cap': null}).hasPrice, isFalse);
       expect(PriceInfo.fromJson({'price': 0}).hasPrice, isFalse);

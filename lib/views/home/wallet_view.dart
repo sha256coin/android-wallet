@@ -571,8 +571,20 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                             if (price != null && displayBalance != null)
                               Padding(
                                 padding: const EdgeInsets.only(top: 6),
-                                child: Text(
-                                  '≈ ${PriceInfo.formatUsd(displayBalance * price)}',
+                                child: Text.rich(
+                                  TextSpan(
+                                    children: [
+                                      TextSpan(text: '≈ ${PriceInfo.formatUsd(displayBalance * price)}'),
+                                      // Not a live price: say when it last traded
+                                      if (blockchainProvider.priceInfo.isLastTrade)
+                                        TextSpan(
+                                          text: '  last traded '
+                                              '${PriceInfo.formatDate(blockchainProvider.priceInfo.lastTraded!)}',
+                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
+                                        ),
+                                    ],
+                                  ),
+                                  textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontFamily: 'ChakraPetch',
                                     color: hasPending
