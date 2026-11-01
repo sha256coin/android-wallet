@@ -24,41 +24,27 @@
 - **Advanced Send (Coin Control)**: Manual UTXO selection with input scanning, select-all/clear, and confirmation-aware filtering.
 - **Transaction Preview**: Clear pre-send summary of selected inputs, send amount, estimated fee, and expected change.
 - **QR Code Scanning**: Supports BIP21 URI format for easy payments.
+- **Payment Requests**: reads `sha256coin:` requests and web wallet pay links, and shares them from Receive.
+- **Balance Chart & Status Line**: stepped balance history with a touch readout, and live block height, hashrate, peers and price.
 - **Transaction Tracking**: Real-time history with smart confirmation tracking.
 - **Flexible Pending Logic**: Sending is not blocked globally by pending transactions when selected UTXOs are free to spend.
 - **Compliance Surfaces**: In-app Regulatory Notice and updated About/Exchange informational views.
 - **Biometric Security**: Protect your wallet and recovery phrase with fingerprint or face recognition.
 - **Secure Storage**: Sensitive keys and mnemonics are stored in encrypted secure storage.
 
-## Release 1.6
+## Release 1.7.0
 
-Release date: 2026-08-02
+Version `1.7.0` (Play Store versionCode 9). The look of S256 web wallet 3.0 on the phone, faster sends, and a real balance chart:
 
-Send flow improvements:
+- **Faster send:** a wallet with many UTXOs no longer makes one `gettxout` call per UTXO; the script comes from the `scantxoutset` answer. Advanced send (coin control) gets the same speed-up.
+- **Balance chart:** time along the bottom, a stepped line, round gridlines with values, green and red markers for coins in and out, and a readout with date, balance and change when you touch the chart.
+- **Status line:** connection, block height, hashrate, peers and S256 price at the top of the wallet.
+- **Digital Platinum look:** matches sha256coin.eu and web wallet 3.0, with a redesigned balance card, Network Status screen, dialogs and bottom bar.
+- **24h price change** from the explorer, shown only while there is a live price.
 
-- Added batch-send candidate assessment and decision flow (batch vs normal send).
-- Added normal-send failure recovery path with retry-as-batch prompt.
-- Added unified post-send acknowledgements for both single tx and batch txid results.
-- Added compact confirmation labels (`K/M/B/T`) in advanced UTXO selection to improve readability.
+Release 1.6.6 added payment requests (`sha256coin:` requests and web wallet pay links, with the name and note shown as not verified) and a Send button on each contact.
 
-Migration safety improvements:
-
-- Migration sweep now uses provider send flow with batch support enabled.
-- Added partial-batch safety handling with backup-first guidance before next actions.
-- Added explicit manual remaining-funds instructions and optional retry sweep path.
-- Added recovery path when migration broadcast succeeds but wallet finalization fails, including TXID copy + backup continuation.
-
-Wallet state consistency:
-
-- Improved new-wallet load behavior after migration by resetting transient runtime send state.
-- Preserved clean coin-control and pending state transitions during wallet switch.
-- Removed unused provider-level migration entry point to keep a single active migration flow in Settings.
-
-Address book and receive UX:
-
-- Wired Address Book into bottom navigation for direct access.
-- Hardened address book file export path handling for reliable saved output.
-- Updated Receive QR to a static (non-animated) render and capped responsive sizing for tablet scan reliability.
+Release 1.6 (2026-08-02) added batch-send decisions and retry, safer migration with backup-first guidance, the Address Book in the bottom navigation, and a static Receive QR for reliable scanning on tablets.
 
 See [CHANGELOG.MD](CHANGELOG.MD) for full release history.
 
