@@ -37,7 +37,7 @@
 Version `1.7.1` (Play Store versionCode 10):
 
 - **Scrolling status line:** when the network line at the top does not fit the screen, it now scrolls by itself, slowly and smoothly in a loop. It pauses while you touch it and stays still when the phone asks for reduced motion.
-- **Markets tab:** NestEx added (S256/USDT), FynEx now lists S256/USDC too, newest listing first.
+- **Markets tab:** updated.
 - Camera scanner library updated (mobile_scanner 7.5.0).
 
 ## Release 1.7.0
