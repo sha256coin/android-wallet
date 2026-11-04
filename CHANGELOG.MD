@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.7.1] - Play Store versionCode 10
+
+### Added
+
+- Markets tab: the NestEx exchange (S256/USDT) and the S256/USDC pair on FynEx. The list now shows the newest listing first.
+
+### Changed
+
+- The status line at the top of the wallet scrolls by itself, slowly and smoothly in a loop, when its items do not fit the width. It pauses while you touch it (you can still drag it) and stays still when the phone asks for reduced motion.
+- Camera scanner library mobile_scanner 7.4.2 -> 7.5.0.
+
 ## [1.7.0] - Play Store versionCode 9
 
 The look of S256 web wallet 3.0 on the phone, faster sends from wallets with many coins, and a real balance chart.

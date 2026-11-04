@@ -33,13 +33,25 @@ class ExchangeView extends StatelessWidget {
                 _priceCard(context.watch<BlockchainProvider>().priceInfo),
                 const SizedBox(height: 28),
 
-                _sectionTitle('Exchanges', 'Listed in alphabetical order. The order is not a ranking.'),
+                _sectionTitle('Exchanges', 'Newest listing first. The order is not a ranking.'),
+                _exchangeCard(
+                  name: 'NestEx',
+                  host: 'trade.nestex.one',
+                  links: const [(null, 'https://trade.nestex.one/spot/S256')],
+                  logo: 'assets/images/nestex-logo.png',
+                  pair: 'S256/USDT',
+                  type: 'Custodial, centralized exchange',
+                ),
+                const SizedBox(height: 12),
                 _exchangeCard(
                   name: 'FynEx',
                   host: 'fyn-ex.uk',
-                  link: 'https://fyn-ex.uk/trading/s256usdt',
+                  links: const [
+                    ('S256/USDT', 'https://fyn-ex.uk/trading/s256usdt'),
+                    ('S256/USDC', 'https://fyn-ex.uk/trading/s256usdc'),
+                  ],
                   logo: 'assets/images/fynex-mark.png',
-                  pair: 'S256/USDT',
+                  pair: 'S256/USDT, S256/USDC',
                   type: 'Custodial, centralized exchange',
                   note: 'FynEx also lists SS256 ("SATOSHI-IS-SHA256"), a BNB Smart Chain token that is not S256. '
                       'Check the ticker before you deposit or trade.',
@@ -48,14 +60,14 @@ class ExchangeView extends StatelessWidget {
                 _exchangeCard(
                   name: 'Rabid Rabbit',
                   host: 'rabid-rabbit.org',
-                  link: 'https://rabid-rabbit.org/account/trade/S256-USDT',
+                  links: const [(null, 'https://rabid-rabbit.org/account/trade/S256-USDT')],
                   logo: 'assets/images/RR_Logo.png',
                   pair: 'S256/USDT',
                   type: 'Custodial, centralized exchange',
                 ),
                 const SizedBox(height: 10),
                 _fineprint(
-                  'Last checked: 13 October 2026. Listings, pairs, fees and limits change without notice: '
+                  'Last checked: 4 November 2026. Listings, pairs, fees and limits change without notice: '
                   'check them on the platform itself.',
                 ),
 
@@ -358,7 +370,7 @@ class ExchangeView extends StatelessWidget {
   Widget _exchangeCard({
     required String name,
     required String host,
-    required String link,
+    required List<(String?, String)> links,
     required String logo,
     required String pair,
     required String type,
@@ -421,26 +433,29 @@ class ExchangeView extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => _openUrl(link),
-              icon: const Icon(Icons.open_in_new_rounded, size: 16),
-              label: Text('VISIT ${host.toUpperCase()}'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                foregroundColor: S256Colors.text,
-                side: const BorderSide(color: S256Colors.lineStrong),
-                shape: RoundedRectangleBorder(borderRadius: S256Theme.borderRadius),
-                textStyle: const TextStyle(
-                  fontFamily: 'ChakraPetch',
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                  letterSpacing: 0.6,
+          for (final (i, l) in links.indexed) ...[
+            if (i > 0) const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _openUrl(l.$2),
+                icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                label: Text(l.$1 == null ? 'VISIT ${host.toUpperCase()}' : 'TRADE ${l.$1}'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  foregroundColor: S256Colors.text,
+                  side: const BorderSide(color: S256Colors.lineStrong),
+                  shape: RoundedRectangleBorder(borderRadius: S256Theme.borderRadius),
+                  textStyle: const TextStyle(
+                    fontFamily: 'ChakraPetch',
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    letterSpacing: 0.6,
+                  ),
                 ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:s256_wallet/models/price_info.dart';
@@ -27,6 +28,11 @@ String formatHashrate(dynamic hashrate) {
 /// hashrate, peers and price, as in the S256 web wallet. Reads the node every
 /// two minutes; a failed read marks the connection amber and keeps the last
 /// values.
+///
+/// When the items do not fit the width (most phones) the line scrolls by
+/// itself like a ticker: slow, steady, looping without a jump. It pauses while
+/// the user touches it (they can still drag it by hand) and stays still when
+/// the system asks for reduced motion.
 class StatusStrip extends StatefulWidget {
   const StatusStrip({super.key});
 
@@ -34,22 +40,73 @@ class StatusStrip extends StatefulWidget {
   State<StatusStrip> createState() => _StatusStripState();
 }
 
-class _StatusStripState extends State<StatusStrip> {
+class _StatusStripState extends State<StatusStrip> with SingleTickerProviderStateMixin {
+  /// Ticker speed in logical pixels per second.
+  static const double _speed = 26;
   Map<String, dynamic>? _info;
   bool _online = true;
   Timer? _timer;
+
+  final ScrollController _scroll = ScrollController();
+  final GlobalKey _copyKey = GlobalKey();
+  late final Ticker _ticker = createTicker(_tick);
+  Duration _last = Duration.zero;
+  bool _touching = false;
+  bool _reduceMotion = false;
+  bool _loop = false;
+  Timer? _resume;
 
   @override
   void initState() {
     super.initState();
     _load();
     _timer = Timer.periodic(const Duration(minutes: 2), (_) => _load());
+    _ticker.start();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _resume?.cancel();
+    _ticker.dispose();
+    _scroll.dispose();
     super.dispose();
+  }
+
+  void _tick(Duration elapsed) {
+    final dt = (elapsed - _last).inMicroseconds / 1e6;
+    _last = elapsed;
+    if (!_scroll.hasClients) return;
+    final copy = _copyKey.currentContext?.size?.width;
+    if (copy == null) return;
+    // 16 is the left padding: the line only loops when one copy is wider than the view.
+    final needsLoop = copy + 16 > _scroll.position.viewportDimension;
+    if (needsLoop != _loop) {
+      setState(() => _loop = needsLoop);
+      return;
+    }
+    if (!_loop || _touching || _reduceMotion || dt <= 0 || dt > 0.25) return;
+    var next = _scroll.offset + _speed * dt;
+    // The second copy is identical, so jumping back one copy width is invisible.
+    if (next >= copy) next -= copy;
+    if (next > _scroll.position.maxScrollExtent) return;
+    _scroll.jumpTo(next);
+  }
+
+  void _touchStart() {
+    _resume?.cancel();
+    _touching = true;
+  }
+
+  void _touchEnd() {
+    _resume?.cancel();
+    _resume = Timer(const Duration(seconds: 2), () => _touching = false);
   }
 
   Future<void> _load() async {
@@ -93,6 +150,20 @@ class _StatusStripState extends State<StatusStrip> {
       ),
     ];
 
+    // One copy of the line: the items with a divider after each, so two copies
+    // side by side look like an endless line.
+    List<Widget> copy() => [
+          for (final item in items) ...[
+            item,
+            Container(
+              width: 1,
+              height: 14,
+              margin: const EdgeInsets.symmetric(horizontal: 14),
+              color: S256Colors.lineStrong,
+            ),
+          ],
+        ];
+
     return Container(
       width: double.infinity,
       height: 34,
@@ -100,22 +171,20 @@ class _StatusStripState extends State<StatusStrip> {
         color: S256Colors.darkBg,
         border: Border(bottom: BorderSide(color: S256Colors.line)),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: [
-            for (var i = 0; i < items.length; i++) ...[
-              if (i > 0)
-                Container(
-                  width: 1,
-                  height: 14,
-                  margin: const EdgeInsets.symmetric(horizontal: 14),
-                  color: S256Colors.lineStrong,
-                ),
-              items[i],
+      child: Listener(
+        onPointerDown: (_) => _touchStart(),
+        onPointerUp: (_) => _touchEnd(),
+        onPointerCancel: (_) => _touchEnd(),
+        child: SingleChildScrollView(
+          controller: _scroll,
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.only(left: 16),
+          child: Row(
+            children: [
+              Row(key: _copyKey, children: copy()),
+              if (_loop) Row(children: copy()),
             ],
-          ],
+          ),
         ),
       ),
     );
