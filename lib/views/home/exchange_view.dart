@@ -74,6 +74,13 @@ class ExchangeView extends StatelessWidget {
                 const SizedBox(height: 28),
                 _sectionTitle('Market data', 'Independent trackers that show S256 prices, volume and supply.'),
                 _trackerTile(
+                  name: 'Blockspot',
+                  host: 'blockspot.io',
+                  link: 'https://blockspot.io/coin/sha256coin/',
+                  logo: 'assets/images/blockspot-mark.png',
+                ),
+                const SizedBox(height: 8),
+                _trackerTile(
                   name: 'CoinCarp',
                   host: 'coincarp.com',
                   link: 'https://www.coincarp.com/currencies/sha256coin/',
