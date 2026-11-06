@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.7.2] - Play Store versionCode 11
+
+### Added
+
+- Transaction details (tap a transaction): live confirmation count with a Pending/Confirmed status, date, block height, fee, and a copy button for the transaction ID. Tap an input or output address to copy it. Mining rewards show how many confirmations are left until they can be spent.
+- A transaction the explorer does not know yet (just sent) now shows its ID with the copy button and a short note, instead of an error.
+
+### Changed
+
+- Markets tab: Blockspot added to the market data trackers; Rabid Rabbit logo updated.
+
 ## [1.7.1] - Play Store versionCode 10
 
 ### Changed

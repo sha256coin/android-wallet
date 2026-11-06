@@ -32,6 +32,13 @@
 - **Biometric Security**: Protect your wallet and recovery phrase with fingerprint or face recognition.
 - **Secure Storage**: Sensitive keys and mnemonics are stored in encrypted secure storage.
 
+## Release 1.7.2
+
+Version `1.7.2` (Play Store versionCode 11):
+
+- **Transaction details:** tapping a transaction now shows the live number of confirmations, a Pending/Confirmed status, the date, block height and fee, and lets you copy the transaction ID (and any address) with one tap. Mining rewards show how many confirmations are left until they can be spent.
+- **Markets tab:** Blockspot added to the market data trackers, Rabid Rabbit logo updated.
+
 ## Release 1.7.1
 
 Version `1.7.1` (Play Store versionCode 10):
