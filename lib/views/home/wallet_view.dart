@@ -148,7 +148,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
     }
   }
 
-  void _showTransactionDetails(String txid) {
+  void _showTransactionDetails(String txid, [int? timestamp]) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -160,7 +160,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
             topRight: Radius.circular(2),
           ),
         ),
-        child: TransactionModal(txid: txid),
+        child: TransactionModal(txid: txid, timestamp: timestamp),
       ),
     );
   }
@@ -607,7 +607,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                               if (transactions.isNotEmpty) ...[
                                 ...transactions.take(5).map((tx) => TransactionTile(
                                   tx: tx,
-                                  onTap: () => _showTransactionDetails(tx['txid']),
+                                  onTap: () => _showTransactionDetails(tx['txid'], tx['timestamp'] as int?),
                                 )),
 
                                 if (transactions.length > 5)

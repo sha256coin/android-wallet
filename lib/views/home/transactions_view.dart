@@ -102,10 +102,10 @@ class _TransactionsViewState extends State<TransactionsView> {
     }
   }
 
-  void _showTransactionDetails(String txid) {
+  void _showTransactionDetails(String txid, [int? timestamp]) {
     showModalBottomSheet(
       context: context,
-      builder: (context) => TransactionModal(txid: txid),
+      builder: (context) => TransactionModal(txid: txid, timestamp: timestamp),
     );
   }
 
@@ -165,7 +165,7 @@ class _TransactionsViewState extends State<TransactionsView> {
                     ),
                   ...bp.transactions.map((tx) => TransactionTile(
                         tx: tx,
-                        onTap: () => _showTransactionDetails(tx['txid']),
+                        onTap: () => _showTransactionDetails(tx['txid'], tx['timestamp'] as int?),
                       )),
                   if (bp.isLoading && bp.transactions.isEmpty)
                     // Show skeleton loaders for initial load
